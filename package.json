@@ -1,7 +1,7 @@
 {
-  "name": "fake-build",
+  "name": "telegram-webapp",
   "version": "1.0.0",
   "scripts": {
-    "build": "echo 'skip build'"
+    "build": "mkdir -p build && cp -r web-frontend/* build/"
   }
 }
