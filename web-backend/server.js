@@ -216,16 +216,22 @@ console.log('[API] dbUser:', dbUser);
     try {
       dbUser = await prisma.user.findUnique({
         where: { tg_id: Number(tg_id) },
+        select: {
+          first_name: true,
+          tariffName: true,
+        }
       });
+
     } catch (e) {
       console.error('[prisma] findUnique error', e);
       // ⚠️ даже если ошибка — продолжаем с дефолтными данными
     }
 
     const profile = {
-  first_name: dbUser?.first_name || dbUser?.name || user?.first_name || 'друг',
-  tariffName: dbUser?.tariffName || dbUser?.tariff || 'Базовый',
-};
+      first_name: dbUser?.first_name || user?.first_name || 'друг',
+      tariffName: dbUser?.tariffName || 'Базовый',
+    };
+
 
 // лог для отладки
 console.log(`[API] User ${tg_id}: тариф = ${profile.tariffName}`);
