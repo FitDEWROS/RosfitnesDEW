@@ -182,6 +182,9 @@ app.get('/api/user', async (req, res) => {
     if (!initData || typeof initData !== 'string') {
       return res.status(400).json({ ok: false, error: 'no_initData' });
     }
+console.log('[API] initData:', initData);
+console.log('[API] params:', Object.fromEntries(params.entries()));
+console.log('[API] dbUser:', dbUser);
 
     // 1) валидируем подпись точно так же, как в /api/validate
     const params = new URLSearchParams(initData);
@@ -205,6 +208,7 @@ app.get('/api/user', async (req, res) => {
     const userStr = params.get('user');
     const user = userStr ? JSON.parse(userStr) : null;
     const tg_id = user?.id ? Number(user.id) : null;
+    console.log("[API] tg_id =", tg_id); // <--- добавь это
     if (!tg_id) return res.status(400).json({ ok: false, error: 'no_tg_id' });
 
     // 3) подгружаем профиль из Prisma (таблица user — см. schema.prisma)
