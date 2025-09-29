@@ -2,7 +2,7 @@
   "name": "telegram-webapp",
   "version": "1.0.0",
   "scripts": {
-    "build": "echo 'skip build'",
+    "build": "mkdir -p dist && cp -r web-frontend/* dist/",
     "start": "serve -s . -l $PORT"
   },
   "dependencies": {
