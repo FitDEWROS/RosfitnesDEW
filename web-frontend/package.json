@@ -1,9 +1,10 @@
 {
   "scripts": {
-    "start": "serve -s . -l $PORT",
-    "build": "echo \"no build step\""
+    "start": "serve -s build -l $PORT",
+    "build": "react-scripts build"
   },
   "dependencies": {
-    "serve": "^14.2.1"
+    "serve": "^14.2.1",
+    "react-scripts": "^5.0.1"
   }
 }
