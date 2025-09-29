@@ -1,7 +1,8 @@
 (function () {
   const tg = window.Telegram?.WebApp || null;
   const qs = new URLSearchParams(location.search);
-  const API_BASE = window.ENV?.API_BASE || "";
+  const API_BASE = process.env.REACT_APP_API_BASE || "";
+
 
   const envStatus   = document.getElementById('envStatus');
   const greetingEl  = document.getElementById('greeting');
