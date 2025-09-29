@@ -1,13 +1,13 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
-// 1) загружаем .env ИМЕННО из корня
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
-import dotenv from 'dotenv';
+
+// Загружаем .env
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
-// дальше обычные импорты
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
@@ -20,8 +20,8 @@ const ROOT      = path.resolve(__dirname, '..');
 const HOST      = '0.0.0.0';
 const PORT      = process.env.PORT || 8080;
 const PY        = process.env.PYTHON || 'python3';
-const PY_TARGET = path.join(ROOT, '.pylibs');          // куда ставим пакеты
-const BIN_DIR   = path.join(PY_TARGET, 'bin');         // тут будет prisma-client-py
+const PY_TARGET = path.join(ROOT, '.pylibs');
+const BIN_DIR   = path.join(PY_TARGET, 'bin');
 
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*')
   .split(',').map(s => s.trim()).filter(Boolean);
@@ -35,7 +35,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Prisma client (используем один экземпляр)
+// Prisma
 const prisma = new PrismaClient();
 
 // health
@@ -46,9 +46,13 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.get('/api/validate', (req, res) => {
   try {
     const initData = req.query.initData;
+    console.log('\n[api/validate] initData raw:', initData);
+
     if (!initData) return res.status(400).json({ ok: false, error: 'no_initData' });
 
     const params = new URLSearchParams(initData);
+    console.log('[api/validate] params:', Object.fromEntries(params.entries()));
+
     const hash = params.get('hash');
     if (!hash) return res.status(400).json({ ok: false, error: 'no_hash' });
 
@@ -63,6 +67,8 @@ app.get('/api/validate', (req, res) => {
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
     const calcHash  = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
+    console.log('[api/validate] calcHash=', calcHash, 'givenHash=', hash);
+
     if (calcHash !== hash) return res.status(401).json({ ok: false, error: 'bad_hash' });
 
     const authDate = Number(params.get('auth_date') || 0);
@@ -72,14 +78,16 @@ app.get('/api/validate', (req, res) => {
     const userStr = params.get('user');
     const user = userStr ? JSON.parse(userStr) : null;
 
+    console.log('[api/validate] user parsed:', user);
+
     res.json({ ok: true, user });
   } catch (e) {
-    console.error(e);
+    console.error('[api/validate] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
 
-// ---------- helpers ----------
+// helpers
 function run(cmd, args, opts = {}) {
   return new Promise(resolve => {
     const p = spawn(cmd, args, { stdio: 'inherit', ...opts });
@@ -88,10 +96,8 @@ function run(cmd, args, opts = {}) {
 }
 
 async function ensurePip() {
-  // есть ли pip?
   const ok = await run(PY, ['-m', 'pip', '--version'], { cwd: ROOT });
   if (ok) return;
-
   console.log('[pip] downloading get-pip.py ...');
   const tmp = '/tmp/get-pip.py';
   await new Promise((resolve, reject) => {
@@ -102,7 +108,6 @@ async function ensurePip() {
       file.on('finish', () => file.close(resolve));
     }).on('error', reject);
   });
-
   console.log('[pip] installing via get-pip.py ...');
   await run(PY, [tmp], { cwd: ROOT });
 }
@@ -112,7 +117,6 @@ async function installPyDeps() {
   const args = hasReq
     ? ['-m', 'pip', 'install', '--no-cache-dir', '--upgrade', '-r', 'requirements.txt', '--target', PY_TARGET]
     : ['-m', 'pip', 'install', '--no-cache-dir', '--upgrade', 'aiogram', 'python-dotenv', 'prisma', '--target', PY_TARGET];
-
   const ok = await run(PY, args, { cwd: ROOT });
   if (!ok) console.error('[pip] install failed (packages may be missing)');
 }
@@ -120,14 +124,12 @@ async function installPyDeps() {
 async function preparePrisma() {
   const env = {
     ...process.env,
-    PYTHONPATH: [PY_TARGET, process.env.PYTHONPATH || ''].filter(Boolean).join(':'), // импорт из .pylibs
-    PATH: [BIN_DIR, process.env.PATH || ''].filter(Boolean).join(':'),               // найдётся prisma-client-py
+    PYTHONPATH: [PY_TARGET, process.env.PYTHONPATH || ''].filter(Boolean).join(':'),
+    PATH: [BIN_DIR, process.env.PATH || ''].filter(Boolean).join(':'),
   };
-
   console.log('[prisma] generate...');
   const okGen = await run(PY, ['-m', 'prisma', 'generate'], { cwd: ROOT, env });
   if (!okGen) console.error('[prisma] generate failed');
-
   console.log('[prisma] db push...');
   const okPush = await run(PY, ['-m', 'prisma', 'db', 'push', '--accept-data-loss'], { cwd: ROOT, env });
   if (!okPush) console.error('[prisma] db push failed (check DATABASE_URL)');
@@ -139,55 +141,44 @@ function startPythonBot() {
     PYTHONPATH: [PY_TARGET, process.env.PYTHONPATH || ''].filter(Boolean).join(':'),
   };
   const botPath = path.join(ROOT, 'bot.py');
-
   const child = spawn(PY, [botPath], { cwd: ROOT, env, stdio: 'inherit' });
   console.log(`[bot] started pid=${child.pid}`);
-
   child.on('exit', (code, signal) => {
     console.log(`[bot] exited code=${code} signal=${signal} -> restart in 5s`);
     setTimeout(startPythonBot, 5000);
   });
-
   child.on('error', err => console.error('[bot] failed to start:', err?.message));
 }
 
-// ---------- boot ----------
+// boot
 (async () => {
   try {
-    // 1) pip
     await ensurePip();
-    // 2) зависимости
     await installPyDeps();
-    // 3) prisma generate + db push
     await preparePrisma();
   } finally {
-    // 4) бот + API
     startPythonBot();
     app.listen(PORT, () => {
       console.log(`✅ Server is running on port ${PORT}`);
     });
-
   }
 })();
-
 process.on('SIGTERM', () => process.exit(0));
 process.on('SIGINT',  () => process.exit(0));
 
-// ---------------------------
-// [GET] /api/user?initData=...
-// ---------------------------
+// /api/user
 app.get('/api/user', async (req, res) => {
   try {
     const initData = req.query.initData;
+    console.log('\n[api/user] initData raw:', initData);
+
     if (!initData || typeof initData !== 'string') {
       return res.status(400).json({ ok: false, error: 'no_initData' });
     }
-console.log('[API] initData:', initData);
-console.log('[API] params:', Object.fromEntries(params.entries()));
-console.log('[API] dbUser:', dbUser);
 
-    // 1) валидируем подпись точно так же, как в /api/validate
     const params = new URLSearchParams(initData);
+    console.log('[api/user] params:', Object.fromEntries(params.entries()));
+
     const hash = params.get('hash');
     if (!hash) return res.status(400).json({ ok: false, error: 'no_hash' });
 
@@ -202,29 +193,26 @@ console.log('[API] dbUser:', dbUser);
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
     const calcHash  = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
+    console.log('[api/user] calcHash=', calcHash, 'givenHash=', hash);
+
     if (calcHash !== hash) return res.status(401).json({ ok: false, error: 'bad_hash' });
 
-    // 2) получаем user из подписанной строки
     const userStr = params.get('user');
     const user = userStr ? JSON.parse(userStr) : null;
     const tg_id = user?.id ? Number(user.id) : null;
-    console.log("[API] tg_id =", tg_id); // <--- добавь это
+    console.log("[api/user] tg_id =", tg_id);
+
     if (!tg_id) return res.status(400).json({ ok: false, error: 'no_tg_id' });
 
-    // 3) подгружаем профиль из Prisma (таблица user — см. schema.prisma)
     let dbUser = null;
     try {
       dbUser = await prisma.user.findUnique({
         where: { tg_id: Number(tg_id) },
-        select: {
-          first_name: true,
-          tariffName: true,
-        }
+        select: { first_name: true, tariffName: true }
       });
-
+      console.log('[api/user] dbUser:', dbUser);
     } catch (e) {
-      console.error('[prisma] findUnique error', e);
-      // ⚠️ даже если ошибка — продолжаем с дефолтными данными
+      console.error('[api/user] prisma findUnique error', e);
     }
 
     const profile = {
@@ -232,12 +220,9 @@ console.log('[API] dbUser:', dbUser);
       tariffName: dbUser?.tariffName || 'Базовый',
     };
 
+    console.log(`[api/user] profile for ${tg_id}:`, profile);
 
-// лог для отладки
-console.log(`[API] User ${tg_id}: тариф = ${profile.tariffName}`);
-
-return res.json({ ok: true, user, profile });
-
+    return res.json({ ok: true, user, profile });
   } catch (e) {
     console.error('[api/user] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });

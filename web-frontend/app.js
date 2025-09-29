@@ -1,18 +1,13 @@
 (function () {
-  // Telegram WebApp API (если запущено внутри Telegram)
   const tg = window.Telegram?.WebApp || null;
   const qs = new URLSearchParams(location.search);
-
-  // URL вашего бэкенда (Express из web-backend/server.js)
   const API_BASE = window.ENV?.API_BASE || "";
 
-  // DOM-элементы
-  const envStatus  = document.getElementById('envStatus');
-  const greetingEl = document.getElementById('greeting');
-  const tariffEl   = document.getElementById('tariff');
+  const envStatus   = document.getElementById('envStatus');
+  const greetingEl  = document.getElementById('greeting');
+  const tariffEl    = document.getElementById('tariff');
   const themeNameEl = document.getElementById('themeName');
 
-  // Строим initData, если не передан как строка (собираем вручную из unsafe)
   function buildInitData() {
     const raw = tg?.initData || '';
     if (raw && raw.length > 0) return raw;
@@ -32,12 +27,20 @@
     return p.toString();
   }
 
-  // Получить данные пользователя и тарифа после валидации
   async function fetchUserAndRender(initData) {
     try {
-      const res = await fetch(`${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`);
+      const url = `${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`;
+      console.log("[api/user] ➜", url);
+
+      const res = await fetch(url);
       const json = await res.json().catch(() => ({}));
-      if (!json?.ok) return;
+
+      console.log("[api/user] ⬅", json);
+
+      if (!json?.ok) {
+        console.warn("[api/user] ⚠ Неудача", json);
+        return;
+      }
 
       const name = json.profile?.first_name || json.user?.first_name || 'друг';
       const tariff = json.profile?.tariffName || 'неизвестно';
@@ -46,7 +49,8 @@
       tariffEl.textContent = `Тариф: ${tariff}`;
       renderTilesByTariff(tariff);
     } catch (e) {
-      console.warn('[user] fetch failed', e);
+      console.error('[api/user] ❌ Ошибка запроса', e);
+      tariffEl.textContent = "Тариф: ошибка";
     }
   }
 
@@ -55,7 +59,6 @@
     if (!tiles) return;
 
     tiles.innerHTML = "";
-
     let actions = [];
 
     if (tariff === "Базовый") {
@@ -92,11 +95,11 @@
   };
 
   const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
-
   const waitReady = () => { try { tg?.ready?.(); } catch (_) {} };
 
   async function init() {
     try {
+      console.log(">>> INIT: запуск WebApp");
       if (tg) {
         waitReady();
         tg.expand?.();
@@ -108,7 +111,9 @@
       }
 
       const qpTariff = qs.get('tariff');
-      tariffEl.textContent = `Тариф: ${qpTariff || 'неизвестно'}`;
+      if (qpTariff) {
+        tariffEl.textContent = `Тариф: ${qpTariff}`;
+      }
 
       document.querySelectorAll('.tile').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -118,13 +123,16 @@
       });
 
       if (API_BASE && tg) {
+        console.log(">>> API_BASE:", API_BASE);
         envStatus.hidden = false;
         envStatus.textContent = 'Проверка доступа…';
 
         const initData = buildInitData();
+        console.log(">>> initData:", initData);
 
         const res = await fetch(`${API_BASE}/api/validate?initData=${encodeURIComponent(initData)}`);
         const json = await res.json().catch(() => ({}));
+        console.log("[api/validate] ⬅", json);
 
         if (json?.ok) {
           envStatus.textContent = 'Доступ подтверждён';
@@ -134,12 +142,12 @@
           envStatus.style.color = '#ff7a7a';
         }
 
-        // В любом случае пытаемся подгрузить профиль
         await fetchUserAndRender(initData);
-
+      } else {
+        console.warn("❌ API_BASE или Telegram WebApp не определены");
       }
     } catch (e) {
-      console.error(e);
+      console.error("❌ Ошибка инициализации", e);
       showAlert('Ошибка инициализации приложения');
     }
   }
