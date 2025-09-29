@@ -1,4 +1,11 @@
 {
   "name": "telegram-webapp",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'skip build'",
+    "start": "serve -s . -l $PORT"
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  }
 }
