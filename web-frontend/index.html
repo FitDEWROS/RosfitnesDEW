@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RosApp — Telegram WebApp</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">🏋️</div>
+        <div>
+          <h1>RosApp</h1>
+          <p class="muted">Твой путь к форме начинается здесь</p>
+        </div>
+      </div>
+      <div class="user" id="userbox">
+        <div id="greeting">Привет!</div>
+        <div class="badge" id="tariff">Тариф: неизвестно</div>
+      </div>
+    </header>
+
+    <main>
+      <section class="notice" id="envStatus" hidden>Проверка доступа…</section>
+
+      <section class="grid" id="tiles">
+        <!-- плитки добавляются из app.js -->
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span><div style='margin-top: 20px;'>v0.1.0</div></span>
+      <span>•</span>
+      <span id="themeName">Тема</span>
+    </footer>
+  </div>
+</body>
+</html>
