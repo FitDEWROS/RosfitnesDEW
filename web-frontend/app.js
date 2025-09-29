@@ -7,29 +7,10 @@
   const API_BASE = window.ENV?.API_BASE || "";
 
   // DOM-элементы
-  const envStatus   = document.getElementById('envStatus');
-  const greetingEl  = document.getElementById('greeting');
-  const tariffEl    = document.getElementById('tariff');
+  const envStatus  = document.getElementById('envStatus');
+  const greetingEl = document.getElementById('greeting');
+  const tariffEl   = document.getElementById('tariff');
   const themeNameEl = document.getElementById('themeName');
-
-  // Установка кастомных CSS-переменных из темы Telegram
-  const setCSSFromTheme = (p = {}) => {
-    const map = {
-      '--bg':     p.bg_color,
-      '--text':   p.text_color,
-      '--card':   p.secondary_bg_color,
-      '--card-2': p.section_bg_color,
-    };
-    for (const [k, v] of Object.entries(map)) {
-      if (v) document.documentElement.style.setProperty(k, v);
-    }
-  };
-
-  // Показывать alert либо системный, либо telegram-овский
-  const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
-
-  // Telegram WebApp ready
-  const waitReady = () => { try { tg?.ready?.(); } catch (_) {} };
 
   // Строим initData, если не передан как строка (собираем вручную из unsafe)
   function buildInitData() {
@@ -68,51 +49,51 @@
       console.warn('[user] fetch failed', e);
     }
   }
-function renderTilesByTariff(tariff) {
-  const tiles = document.getElementById("tiles");
-  if (!tiles) return;
 
-  tiles.innerHTML = ""; // очищаем
+  function renderTilesByTariff(tariff) {
+    const tiles = document.getElementById("tiles");
+    if (!tiles) return;
+
+    tiles.innerHTML = "";
 
     let actions = [];
 
-  if (tariff === "Базовый") {
-    actions = [
-      "Тренировки",
-      "Дневник тренировок",
-      "Дневник питания",
-      "Упражнения"
-    ];
-  } else if (tariff === "Выгодный") {
-    actions = [
-      "Тренировки",
-      "Дневник тренировок",
-      "Дневник питания",
-      "Упражнения",
-      "Связь с куратором"
-    ];
-  } else {
-    actions = [
-      "Тренировки",
-      "Дневник тренировок",
-      "Дневник питания",
-      "Упражнения"
-    ];
+    if (tariff === "Базовый") {
+      actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения"];
+    } else if (tariff === "Выгодный") {
+      actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения", "Связь с куратором"];
+    } else {
+      actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения"];
+    }
+
+    actions.forEach(label => {
+      const tile = document.createElement("button");
+      tile.className = "tile";
+      tile.dataset.action = label;
+      tile.innerHTML = `
+        <div class="title">${label}</div>
+        <div class="desc">Раздел в разработке</div>
+      `;
+      tile.addEventListener("click", () => showAlert(`«${label}» — раздел в разработке`));
+      tiles.appendChild(tile);
+    });
   }
 
+  const setCSSFromTheme = (p = {}) => {
+    const map = {
+      '--bg':     p.bg_color,
+      '--text':   p.text_color,
+      '--card':   p.secondary_bg_color,
+      '--card-2': p.section_bg_color,
+    };
+    for (const [k, v] of Object.entries(map)) {
+      if (v) document.documentElement.style.setProperty(k, v);
+    }
+  };
 
-  actions.forEach(label => {
-    const tile = document.createElement("button");
-    tile.className = "tile";
-    tile.dataset.action = label;
-    tile.innerHTML = `
-      <div class="title">${label}</div>
-      <div class="desc">Раздел в разработке</div>
-    `;
-    tile.addEventListener("click", () => showAlert(`«${label}» — раздел в разработке`));
-    tiles.appendChild(tile);
-  });
-}
+  const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+
+  const waitReady = () => { try { tg?.ready?.(); } catch (_) {} };
 
   async function init() {
     try {
@@ -129,7 +110,6 @@ function renderTilesByTariff(tariff) {
       const qpTariff = qs.get('tariff');
       tariffEl.textContent = `Тариф: ${qpTariff || 'неизвестно'}`;
 
-      // Кнопки-заглушки
       document.querySelectorAll('.tile').forEach(btn => {
         btn.addEventListener('click', () => {
           const action = btn.getAttribute('data-action');
@@ -137,7 +117,6 @@ function renderTilesByTariff(tariff) {
         });
       });
 
-      // Валидация initData через бэкенд
       if (API_BASE && tg) {
         envStatus.hidden = false;
         envStatus.textContent = 'Проверка доступа…';
@@ -161,7 +140,7 @@ function renderTilesByTariff(tariff) {
     }
   }
 
-  // --- DEBUG EXPORTS ---
+  // DEBUG EXPORTS
   window.API_BASE = API_BASE;
   window.tg = tg;
   window.buildInitData = buildInitData;

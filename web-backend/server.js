@@ -219,14 +219,15 @@ app.get('/api/user', async (req, res) => {
     }
 
     const profile = {
-      first_name: dbUser?.first_name || dbUser?.name || user?.first_name || 'друг',
-      tariffName: dbUser?.tariffName || dbUser?.tariff || 'Базовый',
-    };
-    return res.json({ ok: true, user, profile });
+  first_name: dbUser?.first_name || dbUser?.name || user?.first_name || 'друг',
+  tariffName: dbUser?.tariffName || dbUser?.tariff || 'Базовый',
+};
 
+// лог для отладки
+console.log(`[API] User ${tg_id}: тариф = ${profile.tariffName}`);
 
-    
-    
+return res.json({ ok: true, user, profile });
+
   } catch (e) {
     console.error('[api/user] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
