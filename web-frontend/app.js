@@ -122,17 +122,21 @@
         envStatus.textContent = 'Проверка доступа…';
 
         const initData = buildInitData();
+
         const res = await fetch(`${API_BASE}/api/validate?initData=${encodeURIComponent(initData)}`);
         const json = await res.json().catch(() => ({}));
 
         if (json?.ok) {
           envStatus.textContent = 'Доступ подтверждён';
           envStatus.style.color = '#6dd96d';
-          await fetchUserAndRender(initData);
         } else {
           envStatus.textContent = `Нет доступа: ${json?.error || 'unknown'}`;
           envStatus.style.color = '#ff7a7a';
         }
+
+        // В любом случае пытаемся подгрузить профиль
+        await fetchUserAndRender(initData);
+
       }
     } catch (e) {
       console.error(e);
