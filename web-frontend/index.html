@@ -42,11 +42,6 @@
               <rect x="56" y="28" width="4" height="20" rx="2" fill="currentColor"/>
             </g>
           </svg>
-
-
-
-
-
         </div>
         <div>
           <h1 class="app-title">RosApp</h1>
@@ -75,5 +70,39 @@
   </div>
 
   <noscript>Для работы приложения нужен включённый JavaScript.</noscript>
+
+  <script>
+    // Анимация рук синхронно со штангой
+    function animateArms() {
+      const left = document.querySelector('.arm-left');
+      const right = document.querySelector('.arm-right');
+      const bar = document.querySelector('.bar');
+
+      let up = false;
+
+      setInterval(() => {
+        up = !up;
+        if (up) {
+          // штанга вверх
+          bar.setAttribute('transform', 'translate(0,-35)');
+          // руки вытянулись вверх
+          left.setAttribute('x2', '20');
+          left.setAttribute('y2', '6');
+          right.setAttribute('x2', '44');
+          right.setAttribute('y2', '6');
+        } else {
+          // штанга вниз
+          bar.setAttribute('transform', 'translate(0,0)');
+          // руки вниз
+          left.setAttribute('x2', '20');
+          left.setAttribute('y2', '36');
+          right.setAttribute('x2', '44');
+          right.setAttribute('y2', '36');
+        }
+      }, 1000); // 1 сек вверх, 1 сек вниз
+    }
+
+    document.addEventListener('DOMContentLoaded', animateArms);
+  </script>
 </body>
 </html>

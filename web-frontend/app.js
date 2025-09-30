@@ -190,3 +190,31 @@ applyTheme();
 
   init();
 })();
+function animateArmsAndBar() {
+  const bar = document.querySelector('.bar');
+  const left = document.querySelector('.arm-left');
+  const right = document.querySelector('.arm-right');
+
+  let up = false;
+
+  setInterval(() => {
+    up = !up;
+
+    if (up) {
+      // Штанга вверх
+      bar.setAttribute('transform', 'translate(0,-35)');
+      // Руки тянутся вверх
+      left.setAttribute('y2', '6');
+      right.setAttribute('y2', '6');
+    } else {
+      // Штанга вниз
+      bar.setAttribute('transform', 'translate(0,0)');
+      // Руки возвращаются вниз
+      left.setAttribute('y2', '36');
+      right.setAttribute('y2', '36');
+    }
+  }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', animateArmsAndBar);
+

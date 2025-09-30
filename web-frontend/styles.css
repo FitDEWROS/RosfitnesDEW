@@ -141,19 +141,6 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   50%      { transform: translateY(-35px); }
 }
 
-.arm-left, .arm-right {
-  transform-box: fill-box;
-  transform-origin: top; /* фиксируем плечо */
-  animation: arms-scale 2s infinite ease-in-out;
-}
-
-@keyframes arms-scale {
-  0%, 100% { transform: scaleY(1); }
-  50%      { transform: scaleY(1.8); } /* удлиняем вверх */
-}
-
-
-
 /* Пользователи с reduced-motion — без анимации */
 @media (prefers-reduced-motion: reduce) {
   .barbell-lift .bar { animation: none; }
