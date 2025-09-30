@@ -135,19 +135,30 @@
   // -------------------------------
   let isDark = true;
 
-  function applyTheme() {
-    if (isDark) {
-      document.documentElement.style.setProperty("--bg", "#121212");
-      document.documentElement.style.setProperty("--text", "#ffffff");
-      document.documentElement.style.setProperty("--card", "#1e1e1e");
-      themeToggleBtn.textContent = "🌙";
-    } else {
-      document.documentElement.style.setProperty("--bg", "#ffffff");
-      document.documentElement.style.setProperty("--text", "#000000");
-      document.documentElement.style.setProperty("--card", "#f5f5f5");
-      themeToggleBtn.textContent = "☀️";
-    }
+// при старте читаем сохранённое
+const savedTheme = localStorage.getItem("theme");
+if (savedTheme) {
+  isDark = savedTheme === "dark";
+  applyTheme();
+}
+
+function applyTheme() {
+  if (isDark) {
+    document.documentElement.classList.remove("light");
+    themeToggleBtn.textContent = "🌙";
+    localStorage.setItem("theme", "dark");
+  } else {
+    document.documentElement.classList.add("light");
+    themeToggleBtn.textContent = "☀️";
+    localStorage.setItem("theme", "light");
   }
+}
+
+themeToggleBtn.addEventListener("click", () => {
+  isDark = !isDark;
+  applyTheme();
+});
+
 
   if (themeToggleBtn) {
     themeToggleBtn.addEventListener("click", () => {
