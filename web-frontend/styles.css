@@ -150,6 +150,14 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 @media (max-width: 420px) {
   #greeting { white-space: normal; }
 }
-.arm-left, .arm-right {
-  transition: y2 1s ease-in-out;
+/* Анимация штангиста — жим над головой (руки + штанга вместе) */
+.barbell-lift .bar-system {
+  animation: lift 2s infinite ease-in-out;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+@keyframes lift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-35px); }
 }
