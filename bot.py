@@ -73,3 +73,17 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
+from aiogram import Router, F
+from aiogram.types import Message
+from keyboards import app_inline_kb
+
+router = Router()
+
+async def send_app_button(message: Message):
+    await message.answer(
+        "Для входа в приложение нажмите на кнопку ниже:",
+        reply_markup=app_inline_kb()
+    )
+
+# И регистрируем
+router.message.register(send_app_button, F.text == "🚀 Приложение")

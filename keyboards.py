@@ -7,7 +7,7 @@ import os
 APP_URL = os.getenv("APP_URL")
 
 
-def client_kb(has_tariff: bool = False):
+def client_kb(has_tariff: bool = False) -> ReplyKeyboardMarkup:
     if not has_tariff:
         # Меню до покупки (Reply-клавиатура)
         rows = [
@@ -15,28 +15,18 @@ def client_kb(has_tariff: bool = False):
             [KeyboardButton(text="Тариф"), KeyboardButton(text="Профиль")],
             [KeyboardButton(text="Бесплатная консультация")],
         ]
-        return ReplyKeyboardMarkup(
-            keyboard=rows,
-            resize_keyboard=True,
-            is_persistent=False,
-            one_time_keyboard=False,
-        )
     else:
-        # Меню после покупки (Inline-клавиатура с web_app)
-        return InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="Тариф", callback_data="tariff"),
-                    InlineKeyboardButton(text="Профиль", callback_data="profile"),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="🚀 Приложение",
-                        web_app=WebAppInfo(url=APP_URL or "https://example.com")
-                    )
-                ]
-            ]
-        )
+        # Меню после покупки (Reply-клавиатура, без web_app)
+        rows = [
+            [KeyboardButton(text="Тариф"), KeyboardButton(text="Профиль")],
+            [KeyboardButton(text="🚀 Приложение")],  # просто текст, обработаем в хендлере
+        ]
+    return ReplyKeyboardMarkup(
+        keyboard=rows,
+        resize_keyboard=True,
+        is_persistent=False,
+        one_time_keyboard=False,
+    )
 
 
 def client_main_kb() -> ReplyKeyboardMarkup:
@@ -82,4 +72,18 @@ def empty_kb() -> ReplyKeyboardMarkup:
         keyboard=[],
         resize_keyboard=True,
         is_persistent=False
+    )
+
+
+# Инлайн-клава с рабочей web_app-кнопкой
+def app_inline_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🚀 Открыть приложение",
+                    web_app=WebAppInfo(url=APP_URL or "https://example.com")
+                )
+            ]
+        ]
     )
