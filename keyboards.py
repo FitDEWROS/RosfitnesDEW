@@ -5,6 +5,8 @@ from aiogram.types import (
 import os
 
 APP_URL = os.getenv("APP_URL")
+if not APP_URL:
+    raise RuntimeError("Не задан APP_URL в .env")
 
 
 def client_kb(has_tariff: bool = False) -> ReplyKeyboardMarkup:
@@ -19,7 +21,7 @@ def client_kb(has_tariff: bool = False) -> ReplyKeyboardMarkup:
         # Меню после покупки (Reply-клавиатура, без web_app)
         rows = [
             [KeyboardButton(text="Тариф"), KeyboardButton(text="Профиль")],
-            [KeyboardButton(text="🚀 Приложение")],  # просто текст, обработаем в хендлере
+            [KeyboardButton(text="Приложение")],  # просто текст, обрабатываем в хендлере
         ]
     return ReplyKeyboardMarkup(
         keyboard=rows,
@@ -82,7 +84,7 @@ def app_inline_kb() -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(
                     text="🚀 Открыть приложение",
-                    web_app=WebAppInfo(url=APP_URL or "https://example.com")
+                    web_app=WebAppInfo(url=APP_URL)
                 )
             ]
         ]

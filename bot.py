@@ -54,6 +54,11 @@ async def send_app_button(message: Message):
     )
 
 
+# Временный отладочный хендлер (чтобы видеть тексты в консоли)
+async def debug_all(message: Message):
+    print("DEBUG TEXT:", repr(message.text))
+
+
 async def main():
     if not BOT_TOKEN or "REPLACE_ME" in BOT_TOKEN:
         raise SystemExit("Заполни BOT_TOKEN (переменная окружения или константа в файле).")
@@ -71,7 +76,8 @@ async def main():
     router.message.register(on_start, CommandStart())
     router.message.register(on_client, F.text == "КЛИЕНТ")
     router.message.register(on_about, F.text == "ℹ️ О нас")
-    router.message.register(send_app_button, F.text == "🚀 Приложение")  # <-- добавили сюда
+    router.message.register(send_app_button, F.text.contains("Приложение"))  # <-- теперь ловит всё
+    router.message.register(debug_all)  # <-- для отладки
     dp.include_router(router)
 
     await reg_db.connect(timeout=20)
