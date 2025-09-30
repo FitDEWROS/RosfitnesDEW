@@ -25,13 +25,14 @@
    🖤 Базовые элементы
 ================================ */
 body {
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  transition: background var(--transition), color var(--transition);
+  transition: background-color var(--transition), color var(--transition);
   margin: 0;
   padding: 0;
 }
+
 
 h1, h2, h3, h4, h5 {
   margin: 0;
