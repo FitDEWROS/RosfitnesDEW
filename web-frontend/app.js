@@ -7,6 +7,7 @@
   const tariffEl    = document.getElementById('tariff');
   const themeToggleBtn = document.getElementById("themeToggle"); // кнопка-лампочка
 
+  // Формируем initData для API
   function buildInitData() {
     const raw = tg?.initData || '';
     if (raw && raw.length > 0) return raw;
@@ -26,6 +27,7 @@
     return p.toString();
   }
 
+  // Загружаем пользователя и рендерим плитки
   async function fetchUserAndRender(initData) {
     try {
       const url = `${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`;
@@ -53,6 +55,7 @@
     }
   }
 
+  // Рисуем плитки по тарифу
   function renderTilesByTariff(tariff) {
     const tiles = document.getElementById("tiles");
     if (!tiles) return;
@@ -61,13 +64,13 @@
     let actions = [];
 
     if (tariff === "Базовый") {
-      actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения"];
+      actions = ["Тренировки", "Дневник питания", "Упражнения"];
     } else if (tariff === "Выгодный") {
-      actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения", "Связь с куратором"];
+      actions = ["Тренировки", "Дневник питания", "Упражнения", "Связь с куратором"];
     } else if (tariff === "Максимальный") {
-      actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения", "Связь с куратором"];
+      actions = ["Тренировки", "Дневник питания", "Упражнения", "Связь с куратором"];
     } else {
-      actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения"];
+      actions = ["Тренировки", "Дневник питания", "Упражнения"];
     }
 
     actions.forEach(label => {
@@ -83,6 +86,7 @@
     });
   }
 
+  // Установка CSS из Telegram темы
   const setCSSFromTheme = (p = {}) => {
     const map = {
       '--bg':     p.bg_color,
@@ -98,6 +102,43 @@
   const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
   const waitReady = () => { try { tg?.ready?.(); } catch (_) {} };
 
+  // -------------------------------
+  // Переключатель темы 🌙 / ☀️
+  // -------------------------------
+  let isDark = true;
+
+  function applyTheme() {
+    if (isDark) {
+      document.documentElement.classList.remove("light");
+      themeToggleBtn.textContent = "🌙";
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.add("light");
+      themeToggleBtn.textContent = "☀️";
+      localStorage.setItem("theme", "light");
+    }
+  }
+
+  // читаем сохранённое
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) {
+    isDark = savedTheme === "dark";
+  }
+
+  // применяем при старте
+  applyTheme();
+
+  // обработчик на кнопку
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      isDark = !isDark;
+      applyTheme();
+    });
+  }
+
+  // -------------------------------
+  // Инициализация
+  // -------------------------------
   async function init() {
     try {
       console.log(">>> INIT: запуск WebApp");
@@ -129,46 +170,6 @@
       showAlert('Ошибка инициализации приложения');
     }
   }
-
-  // -------------------------------
-  // Переключатель темы 🌙 / ☀️
-  // -------------------------------
-  let isDark = true;
-
-// при старте читаем сохранённое
-const savedTheme = localStorage.getItem("theme");
-if (savedTheme) {
-  isDark = savedTheme === "dark";
-  applyTheme();
-}
-
-function applyTheme() {
-  if (isDark) {
-    document.documentElement.classList.remove("light");
-    themeToggleBtn.textContent = "🌙";
-    localStorage.setItem("theme", "dark");
-  } else {
-    document.documentElement.classList.add("light");
-    themeToggleBtn.textContent = "☀️";
-    localStorage.setItem("theme", "light");
-  }
-}
-
-themeToggleBtn.addEventListener("click", () => {
-  isDark = !isDark;
-  applyTheme();
-});
-
-
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener("click", () => {
-      isDark = !isDark;
-      applyTheme();
-    });
-  }
-
-  // применяем тему сразу при загрузке
-  applyTheme();
 
   // DEBUG EXPORTS
   window.API_BASE = API_BASE;

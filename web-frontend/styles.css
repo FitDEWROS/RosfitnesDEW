@@ -16,7 +16,7 @@
   --accent: #3b82f6; /* голубой акцент */
 }
 
-/* Фон */
+/* Фон и текст */
 body {
   background: var(--bg);
   color: var(--text);
@@ -56,14 +56,23 @@ body {
 }
 
 /* Кнопка-переключатель темы */
-#themeToggle {
+#themeToggle.theme-btn {
   margin-left: 12px;
   font-size: 1.4rem;
   cursor: pointer;
-  background: transparent;
-  border: none;
-  transition: transform 0.3s ease;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+  color: var(--text);
 }
-#themeToggle:hover {
-  transform: scale(1.2);
+
+#themeToggle.theme-btn:hover {
+  transform: rotate(20deg) scale(1.15);
+  box-shadow: 0 0 10px var(--accent);
 }
