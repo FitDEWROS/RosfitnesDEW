@@ -4,8 +4,8 @@ from keyboards import app_inline_kb
 
 router = Router()
 
-# Ловим Reply-кнопку «Приложение» и отвечаем Inline-кнопкой
-@router.message(F.text == "Приложение")
+# Ловим Reply-кнопку «Приложение» (с эмодзи или без) и отвечаем Inline-кнопкой
+@router.message(F.text.func(lambda t: t and "Приложение" in t))
 async def send_app_button(message: Message):
     await message.answer(
         "Для входа в приложение нажмите на кнопку ниже:",
