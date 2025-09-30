@@ -1,7 +1,7 @@
 (function () {
   const tg = window.Telegram?.WebApp || null;
   const qs = new URLSearchParams(location.search);
-  const API_BASE = import.meta.env.VITE_API_BASE || "";
+  const API_BASE = window.ENV?.API_BASE || "";
 
 
 
