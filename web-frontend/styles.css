@@ -150,3 +150,6 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 @media (max-width: 420px) {
   #greeting { white-space: normal; }
 }
+.arm-left, .arm-right {
+  transition: y2 1s ease-in-out;
+}

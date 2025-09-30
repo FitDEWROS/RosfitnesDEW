@@ -213,7 +213,7 @@ function animateArmsAndBar() {
       left.setAttribute('y2', '36');
       right.setAttribute('y2', '36');
     }
-  }, 1000);
+  }, 2000); // полный цикл = 2s (1s вверх, 1s вниз)
 }
 
 document.addEventListener('DOMContentLoaded', animateArmsAndBar);
