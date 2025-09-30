@@ -1,43 +1,111 @@
-/* Общие переменные */
+/* ================================
+   🎨 Глобальные переменные
+================================ */
 :root {
   --bg: #111113;
   --text: #ffffff;
   --card: rgba(255, 255, 255, 0.05);
   --card-border: rgba(255, 255, 255, 0.1);
-  --accent: #8b5cf6;
+  --accent: #8b5cf6; /* фиолетовый акцент */
+  --radius: 16px;
+  --transition: 0.3s ease;
 }
 
-/* Светлая тема */
+/* 🌞 Светлая тема */
 :root.light {
   --bg: #f5f7fa;
   --text: #111113;
-  --card: #ffffff;
+  --card: rgba(255, 255, 255, 0.6);
   --card-border: rgba(0, 0, 0, 0.05);
-  --accent: #3b82f6;
+  --accent: #3b82f6; /* голубой акцент */
 }
 
-/* Фон и текст */
+/* ================================
+   🖤 Базовые элементы
+================================ */
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
+  transition: background var(--transition), color var(--transition);
   margin: 0;
   padding: 0;
-  transition: background 0.3s ease, color 0.3s ease;
 }
 
-.wrap {
-  max-width: 420px;
-  margin: 0 auto;
+/* Заголовки / текст */
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  font-weight: 700;
+}
+.muted {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+/* ================================
+   🟦 Карточки
+================================ */
+.tile {
+  display: block;
   padding: 16px;
+  margin: 12px 0;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 0.2s ease, box-shadow var(--transition);
+  color: var(--text);
 }
 
-/* HEADER */
-.header {
+.tile:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 15px var(--accent);
+}
+
+.tile .title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 1.05rem;
+}
+
+.tile .desc {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+/* ================================
+   🌙 Кнопка переключателя темы
+================================ */
+#themeToggle.theme-btn {
+  margin-left: 12px;
+  font-size: 1.3rem;
+  cursor: pointer;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  justify-content: center;
+  transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition);
+  color: var(--text);
+}
+
+#themeToggle.theme-btn:hover {
+  transform: rotate(15deg) scale(1.15);
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* ================================
+   📱 Layout
+================================ */
+.header, .footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
 }
 
 .brand {
@@ -47,92 +115,14 @@ body {
 }
 
 .logo {
-  font-size: 2rem;
+  font-size: 1.6rem;
 }
 
-.brand-text h1 {
-  font-size: 1.5rem;
-  margin: 0;
-}
-
-.brand-text p {
-  font-size: 0.9rem;
-  opacity: 0.7;
-  margin: 2px 0 0;
-}
-
-.user {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-}
-
-.badge {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  padding: 4px 8px;
-  font-size: 0.85rem;
-}
-
-.theme-btn {
-  font-size: 1.2rem;
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.theme-btn:hover {
-  transform: rotate(20deg) scale(1.1);
-}
-
-/* Плитки */
-.grid {
-  margin-top: 20px;
-}
-
-.tile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  margin: 12px 0;
-  border-radius: 16px;
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
-}
-
-.tile:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.2), 0 0 10px var(--accent);
-}
-
-.tile .title {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.tile .desc {
-  font-size: 0.85rem;
-  opacity: 0.7;
-}
-
-/* FOOTER */
 .footer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 24px;
   font-size: 0.85rem;
-  opacity: 0.6;
-  gap: 6px;
+  opacity: 0.7;
+}
+
+.grid {
+  padding: 16px;
 }
