@@ -15,9 +15,9 @@
 :root.light {
   --bg: #f5f7fa;
   --text: #111113;
-  --card: #fdfdfd;           /* чуть серее чем чисто белый */
+  --card: #ffffff;
   --card-border: rgba(0, 0, 0, 0.1);
-  --accent: #3b82f6; /* голубой акцент */
+  --accent: #3b82f6;
 }
 
 
@@ -133,7 +133,7 @@ h1, h2, h3, h4, h5 {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: 8px; /* чуть больше отступ */
 }
 
 #greeting {
@@ -173,14 +173,13 @@ h1, h2, h3, h4, h5 {
 .user-row {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
 }
-/* Анимация SVG-штангиста */
-.barbell {
-  animation: lift 2s infinite ease-in-out;
+@keyframes press {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(2deg); }
 }
 
-@keyframes lift {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
+
+
