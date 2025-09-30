@@ -77,7 +77,6 @@ async def main():
     router.message.register(on_client, F.text == "КЛИЕНТ")
     router.message.register(on_about, F.text == "ℹ️ О нас")
     router.message.register(send_app_button, F.text.contains("Приложение"))  # <-- теперь ловит всё
-    router.message.register(debug_all)  # <-- для отладки
     dp.include_router(router)
 
     await reg_db.connect(timeout=20)
