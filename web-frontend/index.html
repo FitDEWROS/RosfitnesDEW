@@ -3,48 +3,45 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark light" />
   <title>RosApp — Telegram WebApp</title>
-
-  <!-- Fonts & Styles -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- Telegram SDK + env + app -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="env.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
   <div class="wrap">
+    <!-- HEADER -->
     <header class="header">
       <div class="brand">
-        <div class="logo" aria-hidden="true">🏋️</div>
-        <div>
-          <h1 class="app-title">RosApp</h1>
+        <div class="logo">🏋️</div>
+        <div class="brand-text">
+          <h1>RosApp</h1>
           <p class="muted">Твой путь к форме начинается здесь</p>
         </div>
       </div>
-
-      <div class="user" id="userbox">
-        <div id="greeting" class="greeting">Привет!</div>
+      <div class="user">
+        <div id="greeting">Привет!</div>
         <div class="badge" id="tariff">Тариф: неизвестно</div>
-        <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
+        <button id="themeToggle" class="theme-btn" title="Сменить тему">🌙</button>
       </div>
     </header>
 
+    <!-- MAIN -->
     <main>
-      <section class="grid" id="tiles" aria-live="polite">
-        <!-- Плитки добавляются из app.js -->
+      <section class="grid" id="tiles">
+        <!-- плитки добавляются из app.js -->
       </section>
     </main>
 
+    <!-- FOOTER -->
     <footer class="footer">
-      <span class="version">v0.1.0</span>
+      <span>v0.1.0</span>
+      <span class="dot">•</span>
+      <span>@Fitdew_bot</span>
     </footer>
   </div>
-
-  <noscript>Для работы приложения нужен включённый JavaScript.</noscript>
 </body>
 </html>
