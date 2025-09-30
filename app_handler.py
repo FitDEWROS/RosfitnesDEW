@@ -11,3 +11,6 @@ async def send_app_button(message: Message):
         "Для входа в приложение нажмите на кнопку ниже:",
         reply_markup=app_inline_kb()
     )
+@router.message()
+async def debug_all(message: Message):
+    print("DEBUG:", repr(message.text))
