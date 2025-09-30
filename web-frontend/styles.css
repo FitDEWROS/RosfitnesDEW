@@ -143,16 +143,13 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 
 /* Руки тянутся вверх */
 .arm-left, .arm-right {
-  animation: arms-move 2s infinite ease-in-out;
+  transform-origin: top center; /* фиксируем плечо */
+  animation: arms-scale 2s infinite ease-in-out;
 }
 
-@keyframes arms-move {
-  0%, 100% {
-    y2: 36; /* нижняя точка у туловища */
-  }
-  50% {
-    y2: 6;  /* поднимаем верх рук над головой */
-  }
+@keyframes arms-scale {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(1.6); } /* вытянулись */
 }
 
 
