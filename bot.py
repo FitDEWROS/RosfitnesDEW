@@ -8,7 +8,7 @@ from prisma import Prisma
 from dotenv import load_dotenv
 from pathlib import Path
 from helpers import send_keep, send_temp
-from keyboards import client_kb, app_inline_kb
+from keyboards import client_kb
 from aiogram.fsm.context import FSMContext
 
 # Загружаем .env
@@ -18,7 +18,6 @@ print("DEBUG .env BOT_TOKEN:", os.getenv("BOT_TOKEN"))
 # Prisma engine общается по localhost; прокси ломают соединение → отключаем прокси для локалхоста
 os.environ.setdefault("NO_PROXY", "127.0.0.1,localhost")
 os.environ.setdefault("no_proxy", "127.0.0.1,localhost")
-# (опционально) форсируем бинарный движок
 os.environ.setdefault("PRISMA_CLIENT_ENGINE_TYPE", "binary")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -47,19 +46,6 @@ async def on_about(message: Message):
     await message.answer("ℹ️ Тут будет в будущем крутой текст о боте 🚀")
 
 
-# Хендлер для Reply-кнопки "Приложение"
-async def send_app_button(message: Message):
-    await message.answer(
-        "Для входа в приложение нажмите на кнопку ниже:",
-        reply_markup=app_inline_kb()
-    )
-
-
-# Временный отладочный хендлер (чтобы видеть тексты в консоли)
-async def debug_all(message: Message):
-    print("DEBUG TEXT:", repr(message.text))
-
-
 async def main():
     if not BOT_TOKEN or "REPLACE_ME" in BOT_TOKEN:
         raise SystemExit("Заполни BOT_TOKEN (переменная окружения или константа в файле).")
@@ -69,17 +55,16 @@ async def main():
 
     # Роутеры
     from tariff_handlers import router as tariff_router
+    from app_handler import router as app_router  # наш новый модуль с кнопкой «Приложение»
     dp.include_router(tariff_router)
     dp.include_router(reg_router)
+    dp.include_router(app_router)
 
-    # Общий router для стартовых команд и кнопок
+    # Общий router для стартовых команд
     router = Router()
     router.message.register(on_start, CommandStart())
     router.message.register(on_client, F.text == "КЛИЕНТ")
     router.message.register(on_about, F.text == "ℹ️ О нас")
-    router.message.register(send_app_button, F.text == "Приложение")   # регистрация вынесенного хендлера
-    # router.message.register(debug_all)  # включи при необходимости
-
     dp.include_router(router)
 
     await reg_db.connect(timeout=20)
