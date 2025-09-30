@@ -176,7 +176,7 @@ async def accept_offer(message: Message, state: FSMContext):
 @router.message(ClientFSM.accept_offer, F.text.in_({"❌ Отклонить", "Отклонить"}))
 async def decline_offer(message: Message, state: FSMContext):
     await state.clear()
-    await send_temp(message, "❌ Регистрация отменена.", reply_markup=main_kb())
+    await send_keep(message, "❌ Регистрация отменена.", reply_markup=main_kb())
 
 
 @router.message(ClientFSM.email)
@@ -321,7 +321,7 @@ async def client_back(message: Message, state: FSMContext):
     await state.clear()
     u = await db.user.find_unique(where={"tg_id": message.from_user.id})
     has_tariff = bool(u and u.tariffName)
-    await send_temp(message, "🏠 Меню клиента", reply_markup=client_kb(has_tariff))
+    await send_keep(message, "🏠 Меню клиента", reply_markup=client_kb(has_tariff))
 
 @router.message(StateFilter(EditClientFSM), F.text == "⬅️ Назад")
 async def edit_client_back(message: Message, state: FSMContext):
@@ -337,7 +337,7 @@ async def back_to_main_menu(message: Message, state: FSMContext):
     await state.clear()
     u = await db.user.find_unique(where={"tg_id": message.from_user.id})
     has_tariff = bool(u and u.tariffName)
-    await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_tariff))
+    await send_keep(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_tariff))
 
 
 

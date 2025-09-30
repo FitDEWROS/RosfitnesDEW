@@ -28,18 +28,18 @@ async def on_start(message: Message):
     user = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     if user:
         has_tariff = bool(user.tariffName)
-        await send_temp(message, "👋 С возвращением! Главное меню клиента.", reply_markup=client_kb(has_tariff))
+        await send_keep(message, "👋 С возвращением! Главное меню клиента.", reply_markup=client_kb(has_tariff))
         return
     await send_keep(message, "👋 Добро пожаловать!\nТут будет в будущем крутой текст 🚀\n\n", reply_markup=main_kb())
-
 
 async def on_client(message: Message, state: FSMContext):
     user = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     if user:
         has_tariff = bool(user.tariffName)
-        await send_temp(message, "Открываю меню клиента.", reply_markup=client_kb(has_tariff))
+        await send_keep(message, "Открываю меню клиента.", reply_markup=client_kb(has_tariff))
         return
     await show_client_reg(message, state)
+
 
 
 async def on_about(message: Message):

@@ -11,11 +11,15 @@ router = Router()
 
 INVISIBLE = "\u2063"  # невидимый, но НЕ пустой символ
 
+from helpers import send_keep, send_temp  # send_keep уже нужен
+
 async def show_with_reply_kb(message: Message, text: str, kb: ReplyKeyboardMarkup, *, md: bool = True):
+    # Экраны-меню должны оставаться и заменять предыдущее меню
     if md:
-        await send_temp(message, text, parse_mode="Markdown", reply_markup=kb)
+        await send_keep(message, text, parse_mode="Markdown", reply_markup=kb)
     else:
-        await send_temp(message, text, reply_markup=kb)
+        await send_keep(message, text, reply_markup=kb)
+
 
 
 # ---------- временное состояние ----------
