@@ -29,3 +29,9 @@ body {
 .tile .title { font-weight:700; margin-bottom:6px; }
 .tile .desc { color: var(--muted); font-size:13px; }
 .footer { display:flex; gap:8px; align-items:center; justify-content:center; color:var(--muted); font-size:12px; padding:14px 0 6px; }
+.lamp {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}

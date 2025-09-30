@@ -3,12 +3,10 @@
   const qs = new URLSearchParams(location.search);
   const API_BASE = window.ENV?.API_BASE || "";
 
-
-
   const envStatus   = document.getElementById('envStatus');
   const greetingEl  = document.getElementById('greeting');
   const tariffEl    = document.getElementById('tariff');
-  const themeNameEl = document.getElementById('themeName');
+  const themeToggleBtn = document.getElementById("themeToggle"); // кнопка-лампочка
 
   function buildInitData() {
     const raw = tg?.initData || '';
@@ -106,8 +104,6 @@
         waitReady();
         tg.expand?.();
         setCSSFromTheme(tg.themeParams || {});
-        themeNameEl.textContent = `Тема: ${tg.colorScheme || 'system'}`;
-
         const u = tg.initDataUnsafe?.user;
         if (u?.first_name) greetingEl.textContent = `Привет, ${u.first_name}!`;
       }
@@ -116,13 +112,6 @@
       if (qpTariff) {
         tariffEl.textContent = `Тариф: ${qpTariff}`;
       }
-
-      document.querySelectorAll('.tile').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const action = btn.getAttribute('data-action');
-          showAlert(`«${action}» — раздел в разработке`);
-        });
-      });
 
       if (API_BASE && tg) {
         console.log(">>> API_BASE:", API_BASE);
@@ -136,14 +125,6 @@
         const json = await res.json().catch(() => ({}));
         console.log("[api/validate] ⬅", json);
 
-        if (json?.ok) {
-          envStatus.textContent = 'Доступ подтверждён';
-          envStatus.style.color = '#6dd96d';
-        } else {
-          envStatus.textContent = `Нет доступа: ${json?.error || 'unknown'}`;
-          envStatus.style.color = '#ff7a7a';
-        }
-
         await fetchUserAndRender(initData);
       } else {
         console.warn("❌ API_BASE или Telegram WebApp не определены");
@@ -152,6 +133,31 @@
       console.error("❌ Ошибка инициализации", e);
       showAlert('Ошибка инициализации приложения');
     }
+  }
+
+  // -------------------------------
+  // Переключатель темы 💡
+  // -------------------------------
+  let isDark = true;
+
+  function applyTheme() {
+    if (isDark) {
+      document.documentElement.style.setProperty("--bg", "#121212");
+      document.documentElement.style.setProperty("--text", "#ffffff");
+      document.documentElement.style.setProperty("--card", "#1e1e1e");
+    } else {
+      document.documentElement.style.setProperty("--bg", "#ffffff");
+      document.documentElement.style.setProperty("--text", "#000000");
+      document.documentElement.style.setProperty("--card", "#f5f5f5");
+    }
+  }
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      isDark = !isDark;
+      applyTheme();
+      themeToggleBtn.textContent = isDark ? "🌙" : "☀️"; // меняем иконку
+    });
   }
 
   // DEBUG EXPORTS
