@@ -76,7 +76,14 @@ async def main():
     router.message.register(on_start, CommandStart())
     router.message.register(on_client, F.text == "КЛИЕНТ")
     router.message.register(on_about, F.text == "ℹ️ О нас")
-    router.message.register(send_app_button, F.text.contains("Приложение"))  # <-- теперь ловит всё
+    # Хендлер нажатия Reply-кнопки "Приложение"
+    @router.message(F.text == "Приложение")
+    async def send_app_button(message: Message):
+        await message.answer(
+        "Для входа в приложение нажмите на кнопку ниже:",
+        reply_markup=app_inline_kb()
+    )
+
     dp.include_router(router)
 
     await reg_db.connect(timeout=20)
