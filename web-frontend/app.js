@@ -3,7 +3,6 @@
   const qs = new URLSearchParams(location.search);
   const API_BASE = window.ENV?.API_BASE || "";
 
-  const envStatus   = document.getElementById('envStatus');
   const greetingEl  = document.getElementById('greeting');
   const tariffEl    = document.getElementById('tariff');
   const themeToggleBtn = document.getElementById("themeToggle"); // кнопка-лампочка
@@ -65,6 +64,8 @@
       actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения"];
     } else if (tariff === "Выгодный") {
       actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения", "Связь с куратором"];
+    } else if (tariff === "Максимальный") {
+      actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения", "Связь с куратором"];
     } else {
       actions = ["Тренировки", "Дневник тренировок", "Дневник питания", "Упражнения"];
     }
@@ -115,16 +116,10 @@
 
       if (API_BASE && tg) {
         console.log(">>> API_BASE:", API_BASE);
-        envStatus.hidden = false;
-        envStatus.textContent = 'Проверка доступа…';
-
         const initData = buildInitData();
         console.log(">>> initData:", initData);
 
-        const res = await fetch(`${API_BASE}/api/validate?initData=${encodeURIComponent(initData)}`);
-        const json = await res.json().catch(() => ({}));
-        console.log("[api/validate] ⬅", json);
-
+        await fetch(`${API_BASE}/api/validate?initData=${encodeURIComponent(initData)}`).catch(() => ({}));
         await fetchUserAndRender(initData);
       } else {
         console.warn("❌ API_BASE или Telegram WebApp не определены");
@@ -136,7 +131,7 @@
   }
 
   // -------------------------------
-  // Переключатель темы 💡
+  // Переключатель темы 🌙 / ☀️
   // -------------------------------
   let isDark = true;
 
@@ -145,10 +140,12 @@
       document.documentElement.style.setProperty("--bg", "#121212");
       document.documentElement.style.setProperty("--text", "#ffffff");
       document.documentElement.style.setProperty("--card", "#1e1e1e");
+      themeToggleBtn.textContent = "🌙";
     } else {
       document.documentElement.style.setProperty("--bg", "#ffffff");
       document.documentElement.style.setProperty("--text", "#000000");
       document.documentElement.style.setProperty("--card", "#f5f5f5");
+      themeToggleBtn.textContent = "☀️";
     }
   }
 
@@ -156,9 +153,11 @@
     themeToggleBtn.addEventListener("click", () => {
       isDark = !isDark;
       applyTheme();
-      themeToggleBtn.textContent = isDark ? "🌙" : "☀️"; // меняем иконку
     });
   }
+
+  // применяем тему сразу при загрузке
+  applyTheme();
 
   // DEBUG EXPORTS
   window.API_BASE = API_BASE;
