@@ -47,6 +47,7 @@ async def on_about(message: Message):
     await message.answer("ℹ️ Тут будет в будущем крутой текст о боте 🚀")
 
 
+# Хендлер для Reply-кнопки "Приложение"
 async def send_app_button(message: Message):
     await message.answer(
         "Для входа в приложение нажмите на кнопку ниже:",
@@ -76,13 +77,8 @@ async def main():
     router.message.register(on_start, CommandStart())
     router.message.register(on_client, F.text == "КЛИЕНТ")
     router.message.register(on_about, F.text == "ℹ️ О нас")
-    # Хендлер нажатия Reply-кнопки "Приложение"
-    @router.message(F.text == "Приложение")
-    async def send_app_button(message: Message):
-        await message.answer(
-        "Для входа в приложение нажмите на кнопку ниже:",
-        reply_markup=app_inline_kb()
-    )
+    router.message.register(send_app_button, F.text == "Приложение")   # регистрация вынесенного хендлера
+    # router.message.register(debug_all)  # включи при необходимости
 
     dp.include_router(router)
 
