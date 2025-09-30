@@ -1,13 +1,17 @@
-/* Общие переменные */
+/* ================================
+   🎨 Глобальные переменные
+================================ */
 :root {
   --bg: #111113;
   --text: #ffffff;
   --card: rgba(255, 255, 255, 0.05);
   --card-border: rgba(255, 255, 255, 0.1);
   --accent: #8b5cf6; /* фиолетовый акцент */
+  --radius: 16px;
+  --transition: 0.3s ease;
 }
 
-/* Светлая тема */
+/* 🌞 Светлая тема */
 :root.light {
   --bg: #f5f7fa;
   --text: #111113;
@@ -16,25 +20,41 @@
   --accent: #3b82f6; /* голубой акцент */
 }
 
-/* Фон и текст */
+/* ================================
+   🖤 Базовые элементы
+================================ */
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', sans-serif;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background var(--transition), color var(--transition);
+  margin: 0;
+  padding: 0;
 }
 
-/* Карточки */
+/* Заголовки / текст */
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  font-weight: 700;
+}
+.muted {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+/* ================================
+   🟦 Карточки
+================================ */
 .tile {
   display: block;
   padding: 16px;
   margin: 12px 0;
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--card);
   border: 1px solid var(--card-border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow var(--transition);
   color: var(--text);
 }
 
@@ -43,36 +63,66 @@ body {
   box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 15px var(--accent);
 }
 
-/* Заголовок плитки */
 .tile .title {
   font-weight: 600;
   margin-bottom: 4px;
+  font-size: 1.05rem;
 }
 
-/* Подзаголовок плитки */
 .tile .desc {
   font-size: 0.85rem;
-  opacity: 0.8;
+  opacity: 0.75;
 }
 
-/* Кнопка-переключатель темы */
+/* ================================
+   🌙 Кнопка переключателя темы
+================================ */
 #themeToggle.theme-btn {
   margin-left: 12px;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   cursor: pointer;
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease;
+  transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition);
   color: var(--text);
 }
 
 #themeToggle.theme-btn:hover {
-  transform: rotate(20deg) scale(1.15);
-  box-shadow: 0 0 10px var(--accent);
+  transform: rotate(15deg) scale(1.15);
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* ================================
+   📱 Layout
+================================ */
+.header, .footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 1.6rem;
+}
+
+.footer {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.grid {
+  padding: 16px;
 }
