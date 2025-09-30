@@ -21,14 +21,23 @@
     <header class="header">
       <div class="brand">
         <div class="logo" aria-hidden="true">
-          <svg class="barbell" width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Штанга -->
-            <rect x="10" y="28" width="44" height="8" rx="2" fill="currentColor"/>
-            <rect x="6" y="22" width="4" height="20" rx="2" fill="currentColor"/>
-            <rect x="54" y="22" width="4" height="20" rx="2" fill="currentColor"/>
+          <svg class="barbell" width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Штанга (тонкий гриф) -->
+            <rect x="8" y="36" width="48" height="3" rx="1.5" fill="currentColor"/>
+            <rect x="4" y="28" width="4" height="20" rx="2" fill="currentColor"/>
+            <rect x="56" y="28" width="4" height="20" rx="2" fill="currentColor"/>
+            
             <!-- Человечек -->
-            <circle cx="32" cy="16" r="6" fill="currentColor"/>
-            <rect x="30" y="22" width="4" height="18" fill="currentColor"/>
+            <!-- Голова -->
+            <circle cx="32" cy="14" r="6" fill="currentColor"/>
+            <!-- Туловище -->
+            <rect x="30" y="20" width="4" height="14" fill="currentColor"/>
+            <!-- Руки -->
+            <line x1="30" y1="24" x2="20" y2="36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <line x1="34" y1="24" x2="44" y2="36" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <!-- Ноги -->
+            <line x1="30" y1="34" x2="24" y2="46" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <line x1="34" y1="34" x2="40" y2="46" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
           </svg>
         </div>
         <div>
@@ -53,7 +62,7 @@
     </main>
 
     <footer class="footer">
-      <span>@Fitdew_bot</span>
+      <!-- Можно оставить пустым или вставить что-то своё -->
     </footer>
   </div>
 
