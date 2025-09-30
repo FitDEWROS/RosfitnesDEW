@@ -1,25 +1,25 @@
 /* ================================
-   🎨 Глобальные переменные
+   🎨 Тема (переменные)
+   Привязали к html / html.light
 ================================ */
-:root {
+html {
   --bg: #111113;
   --text: #ffffff;
   --card: rgba(255, 255, 255, 0.05);
   --card-border: rgba(255, 255, 255, 0.1);
-  --accent: #8b5cf6; /* фиолетовый акцент */
+  --accent: #8b5cf6;
   --radius: 16px;
   --transition: 0.3s ease;
 }
 
 /* 🌞 Светлая тема */
-:root.light {
+html.light {
   --bg: #f5f7fa;
   --text: #111113;
   --card: #ffffff;
   --card-border: rgba(0, 0, 0, 0.1);
   --accent: #3b82f6;
 }
-
 
 /* ================================
    🖤 Базовые элементы
@@ -33,113 +33,35 @@ body {
   padding: 0;
 }
 
-
-h1, h2, h3, h4, h5 {
-  margin: 0;
-  font-weight: 700;
-}
-.muted {
-  opacity: 0.7;
-  font-size: 0.9rem;
-}
+h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
+.muted { opacity: 0.7; font-size: 0.9rem; }
 
 /* ================================
-   🟦 Карточки
+   📐 Layout
 ================================ */
-.tile {
-  display: block;
-  width: 260px;
-  text-align: center;
-  padding: 18px;
-  margin: 0;
-  border-radius: var(--radius);
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: transform 0.2s ease, box-shadow var(--transition);
-  color: var(--text);
-}
-
-.tile:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 15px var(--accent);
-}
-
-.tile .title {
-  font-weight: 600;
-  margin-bottom: 4px;
-  font-size: 1rem;
-}
-
-.tile .desc {
-  font-size: 0.85rem;
-  opacity: 0.75;
-}
-
-/* ================================
-   🌙 Кнопка переключателя темы
-================================ */
-#themeToggle.theme-btn {
-  font-size: 1rem;
-  cursor: pointer;
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition);
-  color: var(--text);
-}
-#themeToggle.theme-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 8px var(--accent);
-}
-
-/* ================================
-   📱 Layout
-================================ */
-.wrap {
-  max-width: 900px;
-  margin: 0 auto;
-}
+.wrap { max-width: 900px; margin: 0 auto; }
 
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;           /* чтобы приветствие не “сползало” вниз */
   justify-content: space-between;
   padding: 12px 16px;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo  { font-size: 1.6rem; }
+.app-title { font-size: 1.4rem; }
 
-.app-title {
-  font-size: 1.4rem;
-}
-
-.logo {
-  font-size: 1.6rem;
-}
-
-/* Блок справа */
+/* Правый блок */
 .user {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px; /* чуть больше отступ */
+  gap: 8px;
+  text-align: right;
 }
-
-#greeting {
-  font-size: 1rem;
-  font-weight: 600;
-}
+#greeting { font-size: 1rem; font-weight: 600; white-space: nowrap; } /* имя не переносим */
+.user-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 
 .badge {
   background: var(--accent);
@@ -153,7 +75,9 @@ h1, h2, h3, h4, h5 {
   gap: 6px;
 }
 
-/* Плитки */
+/* ================================
+   🟦 Карточки
+================================ */
 .grid {
   display: flex;
   flex-direction: column;
@@ -162,24 +86,66 @@ h1, h2, h3, h4, h5 {
   padding: 24px 16px;
 }
 
-/* Футер */
-.footer {
-  font-size: 0.85rem;
-  opacity: 0.7;
+.tile {
+  display: block;
+  width: 260px;
   text-align: center;
-  padding: 12px;
+  padding: 18px;
+  margin: 0;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 0.2s ease, box-shadow var(--transition), border-color var(--transition), background-color var(--transition), color var(--transition);
+  color: var(--text);
 }
-/* Строка для тариф + переключатель темы */
-.user-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
+.tile:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 15px var(--accent); }
+.tile .title { font-weight: 600; margin-bottom: 4px; font-size: 1rem; }
+.tile .desc  { font-size: 0.85rem; opacity: 0.75; }
+
+/* ================================
+   🌙 Переключатель темы
+================================ */
+#themeToggle.theme-btn {
+  font-size: 1rem;
+  cursor: pointer;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition), border-color var(--transition);
+  color: var(--text);
 }
+#themeToggle.theme-btn:hover { transform: scale(1.1); box-shadow: 0 0 8px var(--accent); }
+
+/* ================================
+   🦶 Футер
+================================ */
+.footer { font-size: 0.85rem; opacity: 0.7; text-align: center; padding: 12px; }
+
+/* ================================
+   💪 Анимация штангиста — жим над головой
+   (двигаем только штангу)
+================================ */
+.barbell-lift .bar {
+  animation: press 2s infinite ease-in-out;
+  transform-origin: center;
+  transform-box: fill-box; /* важно для <g> в SVG */
+}
+
 @keyframes press {
   0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(2deg); }
+  50%      { transform: translateY(-20px) rotate(2deg); }
 }
 
+/* Пользователи с reduced-motion — без анимации */
+@media (prefers-reduced-motion: reduce) {
+  .barbell-lift .bar { animation: none; }
+}
 
-
+/* Мобильные мелкие экраны — позволим переносить приветствие */
+@media (max-width: 420px) {
+  #greeting { white-space: normal; }
+}
