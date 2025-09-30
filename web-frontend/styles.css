@@ -15,8 +15,8 @@
 :root.light {
   --bg: #f5f7fa;
   --text: #111113;
-  --card: rgba(255, 255, 255, 0.6);
-  --card-border: rgba(0, 0, 0, 0.05);
+  --card: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.1);
   --accent: #3b82f6; /* голубой акцент */
 }
 
@@ -32,7 +32,6 @@ body {
   padding: 0;
 }
 
-/* Заголовки / текст */
 h1, h2, h3, h4, h5 {
   margin: 0;
   font-weight: 700;
@@ -47,8 +46,10 @@ h1, h2, h3, h4, h5 {
 ================================ */
 .tile {
   display: block;
-  padding: 16px;
-  margin: 12px 0;
+  width: 260px;
+  text-align: center;
+  padding: 18px;
+  margin: 0;
   border-radius: var(--radius);
   background: var(--card);
   border: 1px solid var(--card-border);
@@ -66,7 +67,7 @@ h1, h2, h3, h4, h5 {
 .tile .title {
   font-weight: 600;
   margin-bottom: 4px;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .tile .desc {
@@ -78,30 +79,33 @@ h1, h2, h3, h4, h5 {
    🌙 Кнопка переключателя темы
 ================================ */
 #themeToggle.theme-btn {
-  margin-left: 12px;
-  font-size: 1.3rem;
+  font-size: 1rem;
   cursor: pointer;
   background: var(--card);
   border: 1px solid var(--card-border);
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition);
   color: var(--text);
 }
-
 #themeToggle.theme-btn:hover {
-  transform: rotate(15deg) scale(1.15);
-  box-shadow: 0 0 12px var(--accent);
+  transform: scale(1.1);
+  box-shadow: 0 0 8px var(--accent);
 }
 
 /* ================================
    📱 Layout
 ================================ */
-.header, .footer {
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -114,15 +118,67 @@ h1, h2, h3, h4, h5 {
   gap: 12px;
 }
 
+.app-title {
+  font-size: 1.4rem;
+}
+
 .logo {
   font-size: 1.6rem;
 }
 
+/* Блок справа */
+.user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+#greeting {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.badge {
+  background: var(--accent);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Плитки */
+.grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 16px;
+}
+
+/* Футер */
 .footer {
   font-size: 0.85rem;
   opacity: 0.7;
+  text-align: center;
+  padding: 12px;
+}
+/* Строка для тариф + переключатель темы */
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Анимация SVG-штангиста */
+.barbell {
+  animation: lift 2s infinite ease-in-out;
 }
 
-.grid {
-  padding: 16px;
+@keyframes lift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }

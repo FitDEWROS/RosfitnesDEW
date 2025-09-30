@@ -20,7 +20,17 @@
   <div class="wrap">
     <header class="header">
       <div class="brand">
-        <div class="logo" aria-hidden="true">🏋️</div>
+        <div class="logo" aria-hidden="true">
+          <svg class="barbell" width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Штанга -->
+            <rect x="10" y="28" width="44" height="8" rx="2" fill="currentColor"/>
+            <rect x="6" y="22" width="4" height="20" rx="2" fill="currentColor"/>
+            <rect x="54" y="22" width="4" height="20" rx="2" fill="currentColor"/>
+            <!-- Человечек -->
+            <circle cx="32" cy="16" r="6" fill="currentColor"/>
+            <rect x="30" y="22" width="4" height="18" fill="currentColor"/>
+          </svg>
+        </div>
         <div>
           <h1 class="app-title">RosApp</h1>
           <p class="muted">Твой путь к форме начинается здесь</p>
@@ -29,8 +39,10 @@
 
       <div class="user" id="userbox">
         <div id="greeting" class="greeting">Привет!</div>
-        <div class="badge" id="tariff">Тариф: неизвестно</div>
-        <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
+        <div class="user-row">
+          <div class="badge" id="tariff">Тариф: неизвестно</div>
+          <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
+        </div>
       </div>
     </header>
 
@@ -41,7 +53,7 @@
     </main>
 
     <footer class="footer">
-      <span class="version">v0.1.0</span>
+      <span>@Fitdew_bot</span>
     </footer>
   </div>
 
