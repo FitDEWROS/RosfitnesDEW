@@ -132,12 +132,12 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 .barbell-lift .bar {
   animation: press 2s infinite ease-in-out;
   transform-origin: center;
-  transform-box: fill-box; /* важно для <g> в SVG */
+  transform-box: fill-box;
 }
 
 @keyframes press {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50%      { transform: translateY(-20px) rotate(2deg); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-35px); } /* теперь выше головы */
 }
 
 /* Пользователи с reduced-motion — без анимации */

@@ -108,25 +108,34 @@
   let isDark = true;
 
   function applyTheme() {
-    if (isDark) {
-      document.documentElement.classList.remove("light");
-      themeToggleBtn.textContent = "🌙";
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.add("light");
-      themeToggleBtn.textContent = "☀️";
-      localStorage.setItem("theme", "light");
-    }
+  clearInlineVars(); // ← важно
+  if (isDark) {
+    document.documentElement.classList.remove("light");
+    themeToggleBtn.textContent = "🌙";
+    localStorage.setItem("theme", "dark");
+  } else {
+    document.documentElement.classList.add("light");
+    themeToggleBtn.textContent = "☀️";
+    localStorage.setItem("theme", "light");
   }
+}
 
+  function clearInlineVars() {
+  const r = document.documentElement;
+  ['--bg','--text','--card','--card-border','--accent'].forEach(k => r.style.removeProperty(k));
+}
+
+  
   // читаем сохранённое
-  const savedTheme = localStorage.getItem("theme");
-  if (savedTheme) {
-    isDark = savedTheme === "dark";
-  }
+const savedTheme = localStorage.getItem("theme");
+if (savedTheme) {
+  isDark = savedTheme === "dark";
+} else if (tg) {
+  // Если пользователь не выбирал тему — подхватим палитру Telegram
+  setCSSFromTheme(tg.themeParams || {});
+}
+applyTheme();
 
-  // применяем при старте
-  applyTheme();
 
   // обработчик на кнопку
   if (themeToggleBtn) {
