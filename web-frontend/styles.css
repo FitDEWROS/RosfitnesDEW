@@ -129,16 +129,32 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
    💪 Анимация штангиста — жим над головой
    (двигаем только штангу)
 ================================ */
+/* Штанга движется вверх */
 .barbell-lift .bar {
-  animation: press 2s infinite ease-in-out;
+  animation: bar-move 2s infinite ease-in-out;
   transform-origin: center;
   transform-box: fill-box;
 }
 
-@keyframes press {
+@keyframes bar-move {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-35px); } /* теперь выше головы */
+  50%      { transform: translateY(-35px); }
 }
+
+/* Руки тянутся вверх */
+.arm-left, .arm-right {
+  animation: arms-move 2s infinite ease-in-out;
+}
+
+@keyframes arms-move {
+  0%, 100% {
+    y2: 36; /* нижняя точка у туловища */
+  }
+  50% {
+    y2: 6;  /* поднимаем верх рук над головой */
+  }
+}
+
 
 /* Пользователи с reduced-motion — без анимации */
 @media (prefers-reduced-motion: reduce) {
