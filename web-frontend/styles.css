@@ -229,3 +229,49 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   margin: 3px 0; font-size: 0.9rem;
   opacity: 0.85;
 }
+.exercise-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+.body-map {
+  width: 200px;
+  height: auto;
+}
+
+.muscle {
+  fill: rgba(139, 92, 246, 0.4); /* полупрозрачный акцент */
+  stroke: var(--accent);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: fill 0.3s;
+}
+.muscle:hover {
+  fill: var(--accent);
+}
+
+.exercise-list {
+  background: var(--card);
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  max-width: 400px;
+  color: var(--text);
+}
+.exercise-page h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--accent);
+}
+
+.exercise-list ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.exercise-list li {
+  margin: 4px 0;
+}
