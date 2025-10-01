@@ -3,23 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Упражнения</title>
+  <title>Раздел: Упражнения</title>
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .muscle { fill:#444; stroke:#8b5cf6; stroke-width:1; cursor:pointer; transition:0.3s; }
-    .muscle:hover { fill:#8b5cf6; }
-    #exercise-info {
-      margin-top: 20px;
-      padding: 16px;
-      border-radius: 12px;
-      background: var(--card);
-      border: 1px solid var(--card-border);
-    }
-    #exercise-info h3 {
-      margin: 0 0 8px;
-      color: var(--accent);
-    }
-  </style>
 </head>
 <body>
   <div class="wrap">
@@ -27,50 +12,56 @@
       <h1>Раздел: Упражнения</h1>
     </header>
 
-    <main>
-      <!-- SVG силуэт -->
-      <svg viewBox="0 0 200 400" width="200" height="400">
+    <main class="exercise-container">
+      <!-- Силуэт человека -->
+      <svg id="human-body" viewBox="0 0 200 500" width="220" height="500">
+
         <!-- Грудь -->
-        <rect class="muscle" id="chest" x="70" y="60" width="60" height="40"/>
+        <path id="chest" class="muscle"
+          d="M60,100 Q100,70 140,100 Q100,130 60,100 Z"
+          data-name="Грудь"
+          data-exercises="Жим лёжа, Отжимания, Сведение рук в тренажёре"/>
+
         <!-- Пресс -->
-        <rect class="muscle" id="abs" x="85" y="110" width="30" height="50"/>
-        <!-- Бицепсы -->
-        <rect class="muscle" id="left-arm" x="40" y="60" width="20" height="60"/>
-        <rect class="muscle" id="right-arm" x="140" y="60" width="20" height="60"/>
+        <rect id="abs" class="muscle" x="85" y="140" width="30" height="70"
+          data-name="Пресс"
+          data-exercises="Скручивания, Планка, Подъём ног"/>
+
+        <!-- Левая рука -->
+        <path id="left-arm" class="muscle"
+          d="M50,100 Q30,160 50,220 Q70,160 60,100 Z"
+          data-name="Левая рука"
+          data-exercises="Бицепс с гантелями, Подъём штанги, Молотки"/>
+
+        <!-- Правая рука -->
+        <path id="right-arm" class="muscle"
+          d="M150,100 Q170,160 150,220 Q130,160 140,100 Z"
+          data-name="Правая рука"
+          data-exercises="Трицепс на блоке, Жим узким хватом, Отжимания на брусьях"/>
+
         <!-- Ноги -->
-        <rect class="muscle" id="legs" x="80" y="180" width="40" height="100"/>
+        <path id="legs" class="muscle"
+          d="M80,220 Q100,450 120,220 Z"
+          data-name="Ноги"
+          data-exercises="Приседания, Выпады, Жим ногами"/>
       </svg>
 
-      <!-- Блок упражнений -->
-      <div id="exercise-info">
-        <h3>Выберите мышцу</h3>
-        <ul id="exercise-list">
-          <li>...</li>
-        </ul>
+      <!-- Блок информации -->
+      <div id="exercise-info" class="exercise-info">
+        <p>Нажмите на мышцу, чтобы увидеть упражнения</p>
       </div>
     </main>
   </div>
 
   <script>
-    const exercises = {
-      chest: ["Жим лёжа", "Отжимания", "Сведение рук в тренажёре"],
-      abs: ["Скручивания", "Планка", "Подъём ног"],
-      "left-arm": ["Бицепс с гантелями", "Подтягивания обратным хватом"],
-      "right-arm": ["Бицепс с гантелями", "Подтягивания обратным хватом"],
-      legs: ["Приседания", "Выпады", "Жим ногами"]
-    };
-
-    document.querySelectorAll(".muscle").forEach(m => {
-      m.addEventListener("click", () => {
-        const id = m.id;
-        const list = exercises[id] || [];
-        document.querySelector("#exercise-info h3").textContent =
-          id === "chest" ? "Грудь" :
-          id === "abs" ? "Пресс" :
-          id.includes("arm") ? "Руки" :
-          id === "legs" ? "Ноги" : "Мышца";
-        document.getElementById("exercise-list").innerHTML =
-          list.map(e => `<li>${e}</li>`).join("");
+    document.querySelectorAll(".muscle").forEach(part => {
+      part.addEventListener("click", () => {
+        const name = part.dataset.name;
+        const ex = part.dataset.exercises.split(", ");
+        document.getElementById("exercise-info").innerHTML = `
+          <h3 style="color:var(--accent)">${name}</h3>
+          <ul>${ex.map(e => `<li>${e}</li>`).join("")}</ul>
+        `;
       });
     });
   </script>

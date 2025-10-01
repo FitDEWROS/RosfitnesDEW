@@ -288,3 +288,42 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 .exercise-list li {
   margin: 4px 0;
 }
+.exercise-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+#human-body {
+  fill: #444;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.muscle {
+  cursor: pointer;
+  transition: fill 0.3s ease;
+}
+
+.muscle:hover {
+  fill: var(--accent);
+}
+
+.exercise-info {
+  background: var(--card);
+  color: var(--text);
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  width: 240px;
+  text-align: left;
+}
+.exercise-info h3 {
+  margin: 0 0 10px;
+}
+.exercise-info ul {
+  margin: 0;
+  padding-left: 20px;
+}
