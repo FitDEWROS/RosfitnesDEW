@@ -317,9 +317,23 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   padding: 16px;
   border-radius: var(--radius);
   border: 1px solid var(--card-border);
-  width: 240px;
+  width: 260px;
   text-align: left;
+  margin: 20px auto 0 auto; /* выше и по центру */
 }
+#muscle-map path,
+#muscle-map rect,
+#muscle-map circle {
+  cursor: pointer;
+  transition: fill 0.3s ease;
+}
+#muscle-map path:hover,
+#muscle-map rect:hover,
+#muscle-map circle:hover {
+  fill: var(--accent);
+}
+
+
 .exercise-info h3 {
   margin: 0 0 10px;
 }

@@ -12,55 +12,75 @@
       <h1>Раздел: Упражнения</h1>
     </header>
 
-    <main class="exercise-container">
+    <main>
       <!-- Силуэт человека -->
-      <svg id="human-body" viewBox="0 0 200 500" width="220" height="500">
+      <svg id="muscle-map" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;max-width:300px;display:block;margin:0 auto;">
 
         <!-- Грудь -->
-        <path id="chest" class="muscle"
-          d="M60,100 Q100,70 140,100 Q100,130 60,100 Z"
-          data-name="Грудь"
-          data-exercises="Жим лёжа, Отжимания, Сведение рук в тренажёре"/>
+        <path id="chest" d="M70,60 Q100,30 130,60 L130,100 Q100,120 70,100 Z"
+              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2" />
+
+        <!-- Плечи -->
+        <circle id="shoulder-left" cx="55" cy="70" r="15"
+                fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
+        <circle id="shoulder-right" cx="145" cy="70" r="15"
+                fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
+
+        <!-- Бицепсы -->
+        <rect id="bicep-left" x="45" y="95" width="15" height="40" rx="7"
+              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
+        <rect id="bicep-right" x="140" y="95" width="15" height="40" rx="7"
+              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
 
         <!-- Пресс -->
-        <rect id="abs" class="muscle" x="85" y="140" width="30" height="70"
-          data-name="Пресс"
-          data-exercises="Скручивания, Планка, Подъём ног"/>
+        <rect id="abs" x="90" y="120" width="20" height="60"
+              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
 
-        <!-- Левая рука -->
-        <path id="left-arm" class="muscle"
-          d="M50,100 Q30,160 50,220 Q70,160 60,100 Z"
-          data-name="Левая рука"
-          data-exercises="Бицепс с гантелями, Подъём штанги, Молотки"/>
+        <!-- Квадрицепсы -->
+        <rect id="quad-left" x="80" y="190" width="20" height="80" rx="10"
+              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
+        <rect id="quad-right" x="100" y="190" width="20" height="80" rx="10"
+              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
 
-        <!-- Правая рука -->
-        <path id="right-arm" class="muscle"
-          d="M150,100 Q170,160 150,220 Q130,160 140,100 Z"
-          data-name="Правая рука"
-          data-exercises="Трицепс на блоке, Жим узким хватом, Отжимания на брусьях"/>
-
-        <!-- Ноги -->
-        <path id="legs" class="muscle"
-          d="M80,220 Q100,450 120,220 Z"
-          data-name="Ноги"
-          data-exercises="Приседания, Выпады, Жим ногами"/>
+        <!-- Икры -->
+        <rect id="calf-left" x="85" y="280" width="15" height="60" rx="8"
+              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
+        <rect id="calf-right" x="100" y="280" width="15" height="60" rx="8"
+              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
       </svg>
 
       <!-- Блок информации -->
       <div id="exercise-info" class="exercise-info">
-        <p>Нажмите на мышцу, чтобы увидеть упражнения</p>
+        <h3>Выбери мышцу</h3>
+        <p>Нажми на любую область тела, чтобы увидеть упражнения</p>
       </div>
     </main>
   </div>
 
   <script>
-    document.querySelectorAll(".muscle").forEach(part => {
-      part.addEventListener("click", () => {
-        const name = part.dataset.name;
-        const ex = part.dataset.exercises.split(", ");
-        document.getElementById("exercise-info").innerHTML = `
-          <h3 style="color:var(--accent)">${name}</h3>
-          <ul>${ex.map(e => `<li>${e}</li>`).join("")}</ul>
+    const exercises = {
+      chest: ["Жим лёжа", "Отжимания", "Сведение рук"],
+      "shoulder-left": ["Жим штанги стоя", "Разводка гантелей в стороны"],
+      "shoulder-right": ["Жим штанги стоя", "Разводка гантелей в стороны"],
+      "bicep-left": ["Подъём штанги на бицепс", "Подъём гантелей сидя"],
+      "bicep-right": ["Подъём штанги на бицепс", "Подъём гантелей сидя"],
+      abs: ["Планка", "Скручивания", "Подъём ног"],
+      "quad-left": ["Приседания", "Выпады", "Жим ногами"],
+      "quad-right": ["Приседания", "Выпады", "Жим ногами"],
+      "calf-left": ["Подъёмы на носки", "Жим носками"],
+      "calf-right": ["Подъёмы на носки", "Жим носками"]
+    };
+
+    const infoBox = document.getElementById("exercise-info");
+
+    document.querySelectorAll("#muscle-map [id]").forEach(el => {
+      el.addEventListener("click", () => {
+        const id = el.id;
+        const list = exercises[id] || ["Упражнения не найдены"];
+        infoBox.innerHTML = `
+          <h3 style="color:var(--accent)">${id}</h3>
+          <ul>${list.map(x => `<li>${x}</li>`).join("")}</ul>
         `;
       });
     });
