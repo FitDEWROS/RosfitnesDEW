@@ -102,16 +102,25 @@
     }
 
     actions.forEach(label => {
-      const tile = document.createElement("button");
-      tile.className = "tile";
-      tile.dataset.action = label;
-      tile.innerHTML = `
-        <div class="title">${label}</div>
-        <div class="desc">Раздел в разработке</div>
-      `;
-      tile.addEventListener("click", () => showAlert(`«${label}» — раздел в разработке`));
-      tiles.appendChild(tile);
-    });
+  const tile = document.createElement("button");
+  tile.className = "tile";
+  tile.dataset.action = label;
+  tile.innerHTML = `
+    <div class="title">${label}</div>
+    <div class="desc">${label === "Упражнения" ? "Выбор мышц и упражнений" : "Раздел в разработке"}</div>
+  `;
+
+  tile.addEventListener("click", () => {
+    if (label === "Упражнения") {
+      window.location.href = "exercises.html"; // 🔹 переход на страницу упражнений
+    } else {
+      showAlert(`«${label}» — раздел в разработке`);
+    }
+  });
+
+  tiles.appendChild(tile);
+});
+
   }
 
   // -------------------------------
