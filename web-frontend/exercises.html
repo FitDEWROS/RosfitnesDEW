@@ -5,85 +5,217 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Раздел: Упражнения</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* 👇 Небольшие стили только для этой страницы */
+    .page-title { margin: 12px 16px 0; font-size: clamp(22px, 5vw, 36px); }
+    .muscle-wrap { display:flex; flex-direction:column; align-items:center; gap:18px; padding:10px 16px 80px; }
+    .view-switch { display:flex; gap:8px; }
+    .view-switch button{
+      background: var(--card); color: var(--text);
+      border:1px solid var(--card-border); border-radius: 10px;
+      padding:8px 12px; cursor:pointer;
+    }
+    .view-switch button.active{ outline:2px solid var(--accent); }
+    .canvas { width:100%; max-width:360px; }
+    svg{ width:100%; height:auto; display:block; }
+    .silhouette { fill: rgba(255,255,255,.02); stroke: #6e6e90; stroke-width:1.3; }
+    .muscle {
+      fill: rgba(139,92,246,0.25); stroke: #8b5cf6; stroke-width:2; cursor: pointer;
+      transition: filter .15s ease, fill .15s ease, stroke-width .15s ease;
+    }
+    .muscle:hover { filter: brightness(1.15); stroke-width:2.5; }
+    .muscle.active { fill: rgba(139,92,246,0.45); }
+    .info {
+      position: sticky; bottom: 16px; max-width: 560px;
+      width: calc(100% - 32px);
+      background: var(--card); border:1px solid var(--card-border);
+      border-radius:16px; padding:14px 16px; color:var(--text);
+      box-shadow: 0 6px 26px rgba(0,0,0,.35);
+    }
+    .info h3{ margin:0 0 6px; color: var(--accent); font-size: 18px; }
+    .info ul{ margin:0; padding-left:18px; }
+    .legend { opacity:.75; font-size: 12px; margin-top:6px; }
+  </style>
 </head>
 <body>
   <div class="wrap">
     <header class="header">
-      <h1>Раздел: Упражнения</h1>
+      <h1 class="page-title">Раздел: Упражнения</h1>
     </header>
 
-    <main>
-      <!-- Силуэт человека -->
-      <svg id="muscle-map" viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg"
-           style="width:100%;max-width:300px;display:block;margin:0 auto;">
-
-        <!-- Грудь -->
-        <path id="chest" d="M70,60 Q100,30 130,60 L130,100 Q100,120 70,100 Z"
-              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2" />
-
-        <!-- Плечи -->
-        <circle id="shoulder-left" cx="55" cy="70" r="15"
-                fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-        <circle id="shoulder-right" cx="145" cy="70" r="15"
-                fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-
-        <!-- Бицепсы -->
-        <rect id="bicep-left" x="45" y="95" width="15" height="40" rx="7"
-              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-        <rect id="bicep-right" x="140" y="95" width="15" height="40" rx="7"
-              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-
-        <!-- Пресс -->
-        <rect id="abs" x="90" y="120" width="20" height="60"
-              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-
-        <!-- Квадрицепсы -->
-        <rect id="quad-left" x="80" y="190" width="20" height="80" rx="10"
-              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-        <rect id="quad-right" x="100" y="190" width="20" height="80" rx="10"
-              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-
-        <!-- Икры -->
-        <rect id="calf-left" x="85" y="280" width="15" height="60" rx="8"
-              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-        <rect id="calf-right" x="100" y="280" width="15" height="60" rx="8"
-              fill="rgba(139,92,246,0.3)" stroke="#8b5cf6" stroke-width="2"/>
-      </svg>
-
-      <!-- Блок информации -->
-      <div id="exercise-info" class="exercise-info">
-        <h3>Выбери мышцу</h3>
-        <p>Нажми на любую область тела, чтобы увидеть упражнения</p>
+    <main class="muscle-wrap" aria-live="polite">
+      <div class="view-switch" role="tablist" aria-label="Выбор вида тела">
+        <button id="btnFront" class="active" role="tab" aria-selected="true">Вид спереди</button>
+        <button id="btnBack" role="tab" aria-selected="false">Вид сзади</button>
       </div>
+
+      <!-- ====== ВИД СПЕРЕДИ ====== -->
+      <div id="frontView" class="canvas" role="region" aria-label="Силуэт (спереди)">
+        <svg viewBox="0 0 300 620" xmlns="http://www.w3.org/2000/svg" aria-labelledby="frontTitle">
+          <title id="frontTitle">Силуэт человека спереди</title>
+          <!-- Силуэт -->
+          <path class="silhouette"
+            d="M150 20c20 0 34 12 34 35l-1 18c18 15 31 23 40 49 8 22 6 51-5 79 0 0 7 29 7 65s-13 100-38 128c-13 15-29 14-37 14s-24 1-37-14c-25-28-38-92-38-128s7-65 7-65c-11-28-13-57-5-79 9-26 22-34 40-49l-1-18c0-23 14-35 34-35Z"/>
+          <!-- Плечи -->
+          <ellipse id="delts-left"  class="muscle" cx="95"  cy="160" rx="28" ry="32"/>
+          <ellipse id="delts-right" class="muscle" cx="205" cy="160" rx="28" ry="32"/>
+          <!-- Грудь -->
+          <path id="chest" class="muscle"
+            d="M95 160c20-18 40-27 55-27s35 9 55 27v38c-20 14-38 21-55 21s-35-7-55-21v-38Z"/>
+          <!-- Бицепсы -->
+          <path id="biceps-left" class="muscle"
+            d="M66 205c-12 7-19 27-18 47 1 17 8 28 19 29 10 0 17-10 19-26 2-19-5-42-20-50Z"/>
+          <path id="biceps-right" class="muscle"
+            d="M234 205c12 7 19 27 18 47-1 17-8 28-19 29-10 0-17-10-19-26-2-19 5-42 20-50Z"/>
+          <!-- Предплечья -->
+          <rect id="forearm-left"  class="muscle" x="68"  y="265" width="22" height="70" rx="10"/>
+          <rect id="forearm-right" class="muscle" x="210" y="265" width="22" height="70" rx="10"/>
+          <!-- Пресс -->
+          <path id="abs" class="muscle"
+            d="M125 220h50c7 55 7 110 0 165h-50c-7-55-7-110 0-165Z"/>
+          <!-- Косые -->
+          <path id="obliques-left" class="muscle"  d="M110 230c-16 8-26 26-31 55 11 9 25 16 38 20-4-24-5-50-7-75Z"/>
+          <path id="obliques-right" class="muscle" d="M190 230c16 8 26 26 31 55-11 9-25 16-38 20 4-24 5-50 7-75Z"/>
+          <!-- Квадрицепсы -->
+          <rect id="quads-left"  class="muscle" x="105" y="365" width="32" height="120" rx="16"/>
+          <rect id="quads-right" class="muscle" x="163" y="365" width="32" height="120" rx="16"/>
+          <!-- Икры -->
+          <rect id="calves-left"  class="muscle" x="112" y="495" width="25" height="90" rx="14"/>
+          <rect id="calves-right" class="muscle" x="163" y="495" width="25" height="90" rx="14"/>
+        </svg>
+      </div>
+
+      <!-- ====== ВИД СЗАДИ ====== -->
+      <div id="backView" class="canvas" role="region" aria-label="Силуэт (сзади)" hidden>
+        <svg viewBox="0 0 300 620" xmlns="http://www.w3.org/2000/svg" aria-labelledby="backTitle">
+          <title id="backTitle">Силуэт человека сзади</title>
+          <!-- Силуэт -->
+          <path class="silhouette"
+            d="M150 20c20 0 34 12 34 35l-1 18c18 15 31 23 40 49 8 22 6 51-5 79 0 0 7 29 7 65s-13 100-38 128c-13 15-29 14-37 14s-24 1-37-14c-25-28-38-92-38-128s7-65 7-65c-11-28-13-57-5-79 9-26 22-34 40-49l-1-18c0-23 14-35 34-35Z"/>
+          <!-- Трапеции -->
+          <path id="traps" class="muscle"
+            d="M120 95c10-12 20-18 30-18s20 6 30 18c-12 20-28 30-60 0Z"/>
+          <!-- Широчайшие -->
+          <path id="lats-left" class="muscle"  d="M110 140c-16 14-26 40-24 78 12 12 26 21 38 25 0-42-4-72-14-103Z"/>
+          <path id="lats-right" class="muscle" d="M190 140c16 14 26 40 24 78-12 12-26 21-38 25 0-42 4-72 14-103Z"/>
+          <!-- Задние дельты -->
+          <ellipse id="rear-delts-left"  class="muscle" cx="95"  cy="165" rx="26" ry="30"/>
+          <ellipse id="rear-delts-right" class="muscle" cx="205" cy="165" rx="26" ry="30"/>
+          <!-- Трицепсы -->
+          <rect id="triceps-left"  class="muscle" x="70"  y="215" width="22" height="75" rx="10"/>
+          <rect id="triceps-right" class="muscle" x="208" y="215" width="22" height="75" rx="10"/>
+          <!-- Поясница -->
+          <rect id="erectors" class="muscle" x="125" y="230" width="50" height="110" rx="12"/>
+          <!-- Ягодицы -->
+          <path id="glutes-left"  class="muscle" d="M105 360c-18 8-30 24-30 47 0 23 15 40 33 40 20 0 34-18 34-42 0-17-11-33-37-45Z"/>
+          <path id="glutes-right" class="muscle" d="M195 360c18 8 30 24 30 47 0 23-15 40-33 40-20 0-34-18-34-42 0-17 11-33 37-45Z"/>
+          <!-- Бицепсы бедра -->
+          <rect id="hams-left"  class="muscle" x="108" y="448" width="30" height="105" rx="15"/>
+          <rect id="hams-right" class="muscle" x="162" y="448" width="30" height="105" rx="15"/>
+          <!-- Икры (сзади) -->
+          <rect id="calves-back-left"  class="muscle" x="112" y="530" width="25" height="70" rx="14"/>
+          <rect id="calves-back-right" class="muscle" x="163" y="530" width="25" height="70" rx="14"/>
+        </svg>
+      </div>
+
+      <!-- Инфо-бокс (липнет к низу экрана; «выше», не перекрывается футером) -->
+      <section id="info" class="info" aria-live="polite">
+        <h3>Выбери мышцу</h3>
+        <p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>
+      </section>
     </main>
   </div>
 
   <script>
-    const exercises = {
-      chest: ["Жим лёжа", "Отжимания", "Сведение рук"],
-      "shoulder-left": ["Жим штанги стоя", "Разводка гантелей в стороны"],
-      "shoulder-right": ["Жим штанги стоя", "Разводка гантелей в стороны"],
-      "bicep-left": ["Подъём штанги на бицепс", "Подъём гантелей сидя"],
-      "bicep-right": ["Подъём штанги на бицепс", "Подъём гантелей сидя"],
-      abs: ["Планка", "Скручивания", "Подъём ног"],
-      "quad-left": ["Приседания", "Выпады", "Жим ногами"],
-      "quad-right": ["Приседания", "Выпады", "Жим ногами"],
-      "calf-left": ["Подъёмы на носки", "Жим носками"],
-      "calf-right": ["Подъёмы на носки", "Жим носками"]
+    // ===== Переключение «спереди/сзади» =====
+    const btnFront = document.getElementById('btnFront');
+    const btnBack  = document.getElementById('btnBack');
+    const front    = document.getElementById('frontView');
+    const back     = document.getElementById('backView');
+
+    function setView(isFront){
+      front.hidden = !isFront;
+      back.hidden  = isFront;
+      btnFront.classList.toggle('active', isFront);
+      btnBack.classList.toggle('active', !isFront);
+      btnFront.setAttribute('aria-selected', String(isFront));
+      btnBack.setAttribute('aria-selected', String(!isFront));
+      // Снять предыдущие подсветки
+      document.querySelectorAll('.muscle.active').forEach(m => m.classList.remove('active'));
+      info.innerHTML = `<h3>Выбери мышцу</h3><p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>`;
+      // скролл к заголовку при смене вида (чтобы инфобокс не «уползал»)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    btnFront.onclick = () => setView(true);
+    btnBack.onclick  = () => setView(false);
+
+    // ===== Упражнения по мышцам =====
+    const DB = {
+      // Front
+      'delts-left':  ['Жим гантелей сидя', 'Разводка гантелей стоя', 'Подъём штанги к подбородку'],
+      'delts-right': ['Жим гантелей сидя', 'Разводка гантелей стоя', 'Подъём штанги к подбородку'],
+      'chest':       ['Жим лёжа', 'Отжимания', 'Сведение рук в тренажёре'],
+      'biceps-left': ['Подъём штанги на бицепс', 'Подъём гантелей сидя', 'Супинированные подъёмы'],
+      'biceps-right':['Подъём штанги на бицепс', 'Подъём гантелей сидя', 'Супинированные подъёмы'],
+      'forearm-left':['Сгибания кистей со штангой', 'Обратные сгибания кистей'],
+      'forearm-right':['Сгибания кистей со штангой', 'Обратные сгибания кистей'],
+      'abs':         ['Скручивания', 'Подъём ног в висе', 'Планка'],
+      'obliques-left':['Русские скручивания', 'Боковая планка'],
+      'obliques-right':['Русские скручивания', 'Боковая планка'],
+      'quads-left':  ['Приседания', 'Выпады', 'Жим ногами'],
+      'quads-right': ['Приседания', 'Выпады', 'Жим ногами'],
+      'calves-left': ['Подъёмы на носки стоя', 'Подъёмы сидя'],
+      'calves-right':['Подъёмы на носки стоя', 'Подъёмы сидя'],
+      // Back
+      'traps':       ['Тяга штанги к подбородку', 'Шраги со штангой/гантелями'],
+      'rear-delts-left':  ['Обратная развoдка', 'Тяга к лицу (Face Pull)'],
+      'rear-delts-right': ['Обратная развoдка', 'Тяга к лицу (Face Pull)'],
+      'lats-left':   ['Тяга верхнего блока к груди', 'Тяга штанги в наклоне'],
+      'lats-right':  ['Тяга верхнего блока к груди', 'Тяга штанги в наклоне'],
+      'triceps-left':['Жим узким хватом', 'Французский жим', 'Разгибания на блоке'],
+      'triceps-right':['Жим узким хватом', 'Французский жим', 'Разгибания на блоке'],
+      'erectors':    ['Гиперэкстензия', 'Тяга с пола (классика/сумо)'],
+      'glutes-left': ['Ягодичный мост', 'Румынская тяга', 'Выпады назад'],
+      'glutes-right':['Ягодичный мост', 'Румынская тяга', 'Выпады назад'],
+      'hams-left':   ['Сгибания ног лёжа', 'Тяга румынская'],
+      'hams-right':  ['Сгибания ног лёжа', 'Тяга румынская'],
+      'calves-back-left':  ['Подъёмы на носки стоя', 'Ослиные подъёмы'],
+      'calves-back-right': ['Подъёмы на носки стоя', 'Ослиные подъёмы'],
     };
 
-    const infoBox = document.getElementById("exercise-info");
+    const info = document.getElementById('info');
 
-    document.querySelectorAll("#muscle-map [id]").forEach(el => {
-      el.addEventListener("click", () => {
-        const id = el.id;
-        const list = exercises[id] || ["Упражнения не найдены"];
-        infoBox.innerHTML = `
-          <h3 style="color:var(--accent)">${id}</h3>
-          <ul>${list.map(x => `<li>${x}</li>`).join("")}</ul>
-        `;
+    function attachHandlers(scope){
+      scope.querySelectorAll('.muscle').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          // подсветка активной
+          scope.querySelectorAll('.muscle').forEach(m=>m.classList.remove('active'));
+          el.classList.add('active');
+          const list = DB[el.id] || ['Упражнения не найдены'];
+          info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+        });
       });
-    });
+    }
+    attachHandlers(front);
+    attachHandlers(back);
+
+    function humanName(id){
+      const map = {
+        'delts-left':'Плечо (дельта, лево)','delts-right':'Плечо (дельта, право)',
+        'rear-delts-left':'Задняя дельта (лево)','rear-delts-right':'Задняя дельта (право)',
+        'chest':'Грудь','biceps-left':'Бицепс (лево)','biceps-right':'Бицепс (право)',
+        'forearm-left':'Предплечье (лево)','forearm-right':'Предплечье (право)',
+        'abs':'Пресс','obliques-left':'Косые (лево)','obliques-right':'Косые (право)',
+        'quads-left':'Квадрицепс (лево)','quads-right':'Квадрицепс (право)',
+        'calves-left':'Икроножные (лево)','calves-right':'Икроножные (право)',
+        'traps':'Трапеции','lats-left':'Широчайшая (лево)','lats-right':'Широчайшая (право)',
+        'triceps-left':'Трицепс (лево)','triceps-right':'Трицепс (право)',
+        'erectors':'Разгибатели спины','glutes-left':'Ягодицы (лево)','glutes-right':'Ягодицы (право)',
+        'hams-left':'Бицепс бедра (лево)','hams-right':'Бицепс бедра (право)',
+        'calves-back-left':'Икры (лево, сзади)','calves-back-right':'Икры (право, сзади)'
+      };
+      return map[id] || id;
+    }
   </script>
 </body>
 </html>
