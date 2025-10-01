@@ -1,6 +1,5 @@
 /* ================================
    🎨 Тема (переменные)
-   Привязали к html / html.light
 ================================ */
 html {
   --bg: #111113;
@@ -12,7 +11,6 @@ html {
   --transition: 0.3s ease;
 }
 
-/* 🌞 Светлая тема */
 html.light {
   --bg: #f5f7fa;
   --text: #111113;
@@ -33,27 +31,17 @@ body {
   padding: 0;
 }
 
-h1, h2, h3, h4, h5 {
-  margin: 0;
-  font-weight: 700;
-}
-
-.muted {
-  opacity: 0.7;
-  font-size: 0.9rem;
-}
+h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
+.muted { opacity: 0.7; font-size: 0.9rem; }
 
 /* ================================
    📐 Layout
 ================================ */
-.wrap {
-  max-width: 900px;
-  margin: 0 auto;
-}
+.wrap { max-width: 900px; margin: 0 auto; }
 
 .header {
   display: flex;
-  align-items: flex-start; /* чтобы приветствие не “сползало” вниз */
+  align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
 }
@@ -64,27 +52,26 @@ h1, h2, h3, h4, h5 {
   gap: 12px;
 }
 
-.logo {
-  font-size: 1.6rem;
-}
+.brand-text { display: flex; flex-direction: column; }
 
-.app-title {
-  font-size: 1.4rem;
-}
+.logo { font-size: 1.6rem; }
+.app-title { font-size: 1.4rem; }
 
-/* Правый блок */
+/* ================================
+   Правый блок
+================================ */
 .user {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 6px;
   text-align: right;
 }
 
 #greeting {
   font-size: 1rem;
   font-weight: 600;
-  white-space: nowrap; /* имя не переносим */
+  white-space: nowrap;
 }
 
 .user-row {
@@ -131,138 +118,105 @@ h1, h2, h3, h4, h5 {
   transition: transform 0.2s ease, box-shadow var(--transition), border-color var(--transition), background-color var(--transition), color var(--transition);
   color: var(--text);
 }
-
 .tile:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 15px var(--accent);
 }
-
-.tile .title {
-  font-weight: 600;
-  margin-bottom: 4px;
-  font-size: 1rem;
-}
-
-.tile .desc {
-  font-size: 0.85rem;
-  opacity: 0.75;
-}
+.tile .title { font-weight: 600; margin-bottom: 4px; font-size: 1rem; }
+.tile .desc { font-size: 0.85rem; opacity: 0.75; }
 
 /* ================================
-   🌙 Переключатель темы
+   🌙 Кнопки (тема + профиль)
 ================================ */
-#themeToggle.theme-btn {
+.theme-btn {
   font-size: 1rem;
   cursor: pointer;
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 10px;
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: center; justify-content: center;
   transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition), border-color var(--transition);
   color: var(--text);
 }
-
-#themeToggle.theme-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 8px var(--accent);
-}
+.theme-btn:hover { transform: scale(1.1); box-shadow: 0 0 8px var(--accent); }
 
 /* ================================
    🦶 Футер
 ================================ */
-.footer {
-  font-size: 0.85rem;
-  opacity: 0.7;
-  text-align: center;
-  padding: 12px;
-}
+.footer { font-size: 0.85rem; opacity: 0.7; text-align: center; padding: 12px; }
 
 /* ================================
    📱 Mobile
 ================================ */
 @media (max-width: 420px) {
-  #greeting {
-    white-space: normal;
-  }
+  #greeting { white-space: normal; }
 }
-/* Модальное окно */
+
+/* ================================
+   🔹 Модальное окно профиля
+================================ */
 .modal {
   position: fixed;
   z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
   background: rgba(0,0,0,0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.3s ease;
 }
 
-.modal.hidden {
-  display: none;
-}
+.modal.hidden { display: none; }
 
 .modal-content {
   background: var(--card);
   color: var(--text);
   border-radius: var(--radius);
   padding: 20px;
-  width: 320px;
+  width: 340px;
   text-align: center;
   border: 1px solid var(--card-border);
   box-shadow: 0 8px 25px rgba(0,0,0,0.3);
   position: relative;
 }
 
-.modal-content h2 {
-  margin: 10px 0;
-  font-size: 1.2rem;
-}
-
-.modal-content p {
-  margin: 6px 0;
-  opacity: 0.9;
-  font-size: 0.95rem;
-}
+.modal-content h2 { margin: 10px 0; font-size: 1.2rem; }
+.modal-content p { margin: 6px 0; opacity: 0.9; font-size: 0.95rem; }
 
 .close {
   position: absolute;
-  top: 10px;
-  right: 15px;
+  top: 10px; right: 15px;
   font-size: 20px;
   cursor: pointer;
   color: var(--text);
 }
 
-.profile-card .avatar {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 12px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: #fff;
-}
-.profile-photo {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--accent);
-  margin-right: 12px;
-}
+/* ================================
+   🧑‍💻 Профиль внутри модалки
+================================ */
 .profile-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.profile-photo {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent);
+}
+
+.profile-info {
+  text-align: left;
+}
+.profile-info h2 {
+  margin: 0; font-size: 1.1rem;
+}
+.profile-info p {
+  margin: 3px 0; font-size: 0.9rem;
+  opacity: 0.85;
 }
