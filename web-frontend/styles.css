@@ -33,24 +33,44 @@ body {
   padding: 0;
 }
 
-h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
-.muted { opacity: 0.7; font-size: 0.9rem; }
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  font-weight: 700;
+}
+
+.muted {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
 
 /* ================================
    📐 Layout
 ================================ */
-.wrap { max-width: 900px; margin: 0 auto; }
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+}
 
 .header {
   display: flex;
-  align-items: flex-start;           /* чтобы приветствие не “сползало” вниз */
+  align-items: flex-start; /* чтобы приветствие не “сползало” вниз */
   justify-content: space-between;
   padding: 12px 16px;
 }
 
-.brand { display: flex; align-items: center; gap: 12px; }
-.logo  { font-size: 1.6rem; }
-.app-title { font-size: 1.4rem; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  font-size: 1.6rem;
+}
+
+.app-title {
+  font-size: 1.4rem;
+}
 
 /* Правый блок */
 .user {
@@ -60,8 +80,19 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   gap: 8px;
   text-align: right;
 }
-#greeting { font-size: 1rem; font-weight: 600; white-space: nowrap; } /* имя не переносим */
-.user-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+#greeting {
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap; /* имя не переносим */
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
 
 .badge {
   background: var(--accent);
@@ -100,9 +131,22 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   transition: transform 0.2s ease, box-shadow var(--transition), border-color var(--transition), background-color var(--transition), color var(--transition);
   color: var(--text);
 }
-.tile:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 15px var(--accent); }
-.tile .title { font-weight: 600; margin-bottom: 4px; font-size: 1rem; }
-.tile .desc  { font-size: 0.85rem; opacity: 0.75; }
+
+.tile:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 15px var(--accent);
+}
+
+.tile .title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 1rem;
+}
+
+.tile .desc {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
 
 /* ================================
    🌙 Переключатель темы
@@ -113,51 +157,35 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 10px;
-  width: 32px; height: 32px;
-  display: flex; align-items: center; justify-content: center;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition), border-color var(--transition);
   color: var(--text);
 }
-#themeToggle.theme-btn:hover { transform: scale(1.1); box-shadow: 0 0 8px var(--accent); }
+
+#themeToggle.theme-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 8px var(--accent);
+}
 
 /* ================================
    🦶 Футер
 ================================ */
-.footer { font-size: 0.85rem; opacity: 0.7; text-align: center; padding: 12px; }
+.footer {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  text-align: center;
+  padding: 12px;
+}
 
 /* ================================
-   💪 Анимация штангиста — жим над головой
-   (двигаем только штангу)
+   📱 Mobile
 ================================ */
-/* Штанга движется вверх */
-.barbell-lift .bar {
-  animation: bar-move 2s infinite ease-in-out;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-
-@keyframes bar-move {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-35px); }
-}
-
-/* Пользователи с reduced-motion — без анимации */
-@media (prefers-reduced-motion: reduce) {
-  .barbell-lift .bar { animation: none; }
-}
-
-/* Мобильные мелкие экраны — позволим переносить приветствие */
 @media (max-width: 420px) {
-  #greeting { white-space: normal; }
-}
-/* Анимация штангиста — жим над головой (руки + штанга вместе) */
-.barbell-lift .bar-system {
-  animation: lift 2s infinite ease-in-out;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-
-@keyframes lift {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-35px); }
+  #greeting {
+    white-space: normal;
+  }
 }

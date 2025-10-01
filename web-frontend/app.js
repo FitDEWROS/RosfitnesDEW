@@ -192,22 +192,3 @@ applyTheme();
 })();
 
 
-function animateArms() {
-  const left = document.querySelector('.arm-left');
-  const right = document.querySelector('.arm-right');
-
-  let up = false;
-
-  setInterval(() => {
-    up = !up;
-    if (up) {
-      left.setAttribute('y2', '6');
-      right.setAttribute('y2', '6');
-    } else {
-      left.setAttribute('y2', '36');
-      right.setAttribute('y2', '36');
-    }
-  }, 2000);
-}
-
-document.addEventListener('DOMContentLoaded', animateArms);
