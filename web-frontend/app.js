@@ -5,9 +5,21 @@
 
   const greetingEl  = document.getElementById('greeting');
   const tariffEl    = document.getElementById('tariff');
-  const themeToggleBtn = document.getElementById("themeToggle"); // кнопка-лампочка
+  const themeToggleBtn = document.getElementById("themeToggle");
 
+  // 🔹 Элементы профиля
+  const profileBtn = document.getElementById("profileBtn");
+  const profileModal = document.getElementById("profileModal");
+  const closeProfile = document.getElementById("closeProfile");
+  const profileNameEl = document.getElementById("profileName");
+  const profileUsernameEl = document.getElementById("profileUsername");
+  const profileIdEl = document.getElementById("profileId");
+  const profileTariffEl = document.getElementById("profileTariff");
+  const profilePhotoEl = document.getElementById("profilePhoto");
+
+  // -------------------------------
   // Формируем initData для API
+  // -------------------------------
   function buildInitData() {
     const raw = tg?.initData || '';
     if (raw && raw.length > 0) return raw;
@@ -27,7 +39,9 @@
     return p.toString();
   }
 
-  // Загружаем пользователя и рендерим плитки
+  // -------------------------------
+  // Получение данных юзера и рендер
+  // -------------------------------
   async function fetchUserAndRender(initData) {
     try {
       const url = `${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`;
@@ -43,19 +57,35 @@
         return;
       }
 
-      const name = json.profile?.first_name || json.user?.first_name || 'друг';
-      const tariff = json.profile?.tariffName || 'неизвестно';
+      const name = json.profile?.fio || json.profile?.first_name || json.user?.first_name || "друг";
+      const username = json.user?.username ? `@${json.user.username}` : "не указан";
+      const id = json.user?.id || "-";
+      const tariff = json.profile?.tariffName || "неизвестно";
+      const photoUrl = json.user?.photo_url || "";
 
+      // приветствие
       greetingEl.textContent = `Привет, ${name}!`;
       tariffEl.textContent = `Тариф: ${tariff}`;
       renderTilesByTariff(tariff);
+
+      // профиль в модалке
+      profileNameEl.textContent = name;
+      profileUsernameEl.textContent = username;
+      profileIdEl.textContent = id;
+      profileTariffEl.textContent = tariff;
+      if (profilePhotoEl) {
+        profilePhotoEl.src = photoUrl || "default-avatar.png";
+      }
+
     } catch (e) {
-      console.error('[api/user] ❌ Ошибка запроса', e);
+      console.error("[api/user] ❌ Ошибка запроса", e);
       tariffEl.textContent = "Тариф: ошибка";
     }
   }
 
-  // Рисуем плитки по тарифу
+  // -------------------------------
+  // Плитки по тарифу
+  // -------------------------------
   function renderTilesByTariff(tariff) {
     const tiles = document.getElementById("tiles");
     if (!tiles) return;
@@ -65,9 +95,7 @@
 
     if (tariff === "Базовый") {
       actions = ["Тренировки", "Дневник питания", "Упражнения"];
-    } else if (tariff === "Выгодный") {
-      actions = ["Тренировки", "Дневник питания", "Упражнения", "Связь с куратором"];
-    } else if (tariff === "Максимальный") {
+    } else if (tariff === "Выгодный" || tariff === "Максимальный") {
       actions = ["Тренировки", "Дневник питания", "Упражнения", "Связь с куратором"];
     } else {
       actions = ["Тренировки", "Дневник питания", "Упражнения"];
@@ -86,7 +114,9 @@
     });
   }
 
-  // Установка CSS из Telegram темы
+  // -------------------------------
+  // Стили Telegram темы
+  // -------------------------------
   const setCSSFromTheme = (p = {}) => {
     const map = {
       '--bg':     p.bg_color,
@@ -103,47 +133,55 @@
   const waitReady = () => { try { tg?.ready?.(); } catch (_) {} };
 
   // -------------------------------
-  // Переключатель темы 🌙 / ☀️
+  // Тема 🌙 / ☀️
   // -------------------------------
   let isDark = true;
 
   function applyTheme() {
-  clearInlineVars(); // ← важно
-  if (isDark) {
-    document.documentElement.classList.remove("light");
-    themeToggleBtn.textContent = "🌙";
-    localStorage.setItem("theme", "dark");
-  } else {
-    document.documentElement.classList.add("light");
-    themeToggleBtn.textContent = "☀️";
-    localStorage.setItem("theme", "light");
+    clearInlineVars();
+    if (isDark) {
+      document.documentElement.classList.remove("light");
+      themeToggleBtn.textContent = "🌙";
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.add("light");
+      themeToggleBtn.textContent = "☀️";
+      localStorage.setItem("theme", "light");
+    }
   }
-}
 
   function clearInlineVars() {
-  const r = document.documentElement;
-  ['--bg','--text','--card','--card-border','--accent'].forEach(k => r.style.removeProperty(k));
-}
+    const r = document.documentElement;
+    ['--bg','--text','--card','--card-border','--accent'].forEach(k => r.style.removeProperty(k));
+  }
 
-  
-  // читаем сохранённое
-const savedTheme = localStorage.getItem("theme");
-if (savedTheme) {
-  isDark = savedTheme === "dark";
-} else if (tg) {
-  // Если пользователь не выбирал тему — подхватим палитру Telegram
-  setCSSFromTheme(tg.themeParams || {});
-}
-applyTheme();
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) {
+    isDark = savedTheme === "dark";
+  } else if (tg) {
+    setCSSFromTheme(tg.themeParams || {});
+  }
+  applyTheme();
 
-
-  // обработчик на кнопку
   if (themeToggleBtn) {
     themeToggleBtn.addEventListener("click", () => {
       isDark = !isDark;
       applyTheme();
     });
   }
+
+  // -------------------------------
+  // Модалка профиля
+  // -------------------------------
+  if (profileBtn) {
+    profileBtn.addEventListener("click", () => profileModal.classList.remove("hidden"));
+  }
+  if (closeProfile) {
+    closeProfile.addEventListener("click", () => profileModal.classList.add("hidden"));
+  }
+  window.addEventListener("click", (e) => {
+    if (e.target === profileModal) profileModal.classList.add("hidden");
+  });
 
   // -------------------------------
   // Инициализация
@@ -160,35 +198,22 @@ applyTheme();
       }
 
       const qpTariff = qs.get('tariff');
-      if (qpTariff) {
-        tariffEl.textContent = `Тариф: ${qpTariff}`;
-      }
+      if (qpTariff) tariffEl.textContent = `Тариф: ${qpTariff}`;
 
       if (API_BASE && tg) {
-        console.log(">>> API_BASE:", API_BASE);
         const initData = buildInitData();
-        console.log(">>> initData:", initData);
-
         await fetch(`${API_BASE}/api/validate?initData=${encodeURIComponent(initData)}`).catch(() => ({}));
         await fetchUserAndRender(initData);
-      } else {
-        console.warn("❌ API_BASE или Telegram WebApp не определены");
       }
     } catch (e) {
       console.error("❌ Ошибка инициализации", e);
-      showAlert('Ошибка инициализации приложения');
+      showAlert("Ошибка инициализации приложения");
     }
   }
 
-  // DEBUG EXPORTS
   window.API_BASE = API_BASE;
   window.tg = tg;
   window.buildInitData = buildInitData;
 
-  console.log("tg.initData:", tg?.initData);
-  console.log("tg.initDataUnsafe:", tg?.initDataUnsafe);
-
   init();
 })();
-
-

@@ -44,6 +44,9 @@
         <div id="greeting" class="greeting">Привет!</div>
         <div class="user-row">
           <div class="badge" id="tariff">Тариф: неизвестно</div>
+          <!-- Кнопка профиль -->
+          <button id="profileBtn" class="theme-btn" title="Мой профиль" aria-label="Мой профиль">👤</button>
+          <!-- Кнопка тема -->
           <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
         </div>
       </div>
@@ -55,11 +58,45 @@
       </section>
     </main>
 
-    <footer class="footer">
-      <!-- Можно оставить пустым или вставить что-то своё -->
-    </footer>
+    <footer class="footer">@Fitdew_bot</footer>
+  </div>
+
+  <!-- 🔹 Модальное окно профиля -->
+  <div id="profileModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close" id="closeProfile">&times;</span>
+      <div class="profile-card">
+        <!-- Фото Telegram -->
+        <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Аватар">
+        <h2 id="profileName">Имя Фамилия</h2>
+        <p id="profileUsername">@username</p>
+        <p>ID Telegram: <span id="profileId"></span></p>
+        <p>Тариф: <span id="profileTariff"></span></p>
+      </div>
+    </div>
   </div>
 
   <noscript>Для работы приложения нужен включённый JavaScript.</noscript>
+
+  <script>
+    // === Модалка профиля ===
+    const profileBtn = document.getElementById("profileBtn");
+    const profileModal = document.getElementById("profileModal");
+    const closeProfile = document.getElementById("closeProfile");
+
+    profileBtn.addEventListener("click", () => {
+      profileModal.classList.remove("hidden");
+    });
+
+    closeProfile.addEventListener("click", () => {
+      profileModal.classList.add("hidden");
+    });
+
+    window.addEventListener("click", (e) => {
+      if (e.target === profileModal) {
+        profileModal.classList.add("hidden");
+      }
+    });
+  </script>
 </body>
 </html>
