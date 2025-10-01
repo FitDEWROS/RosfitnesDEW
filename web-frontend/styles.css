@@ -48,18 +48,30 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 
 .brand {
   display: flex;
-  flex-direction: column; /* теперь колонка */
-  align-items: center;    /* центрируем содержимое */
-  gap: 6px;
+  flex-direction: column;     /* заголовок сверху, ниже строка с иконкой+слоганом */
+  align-items: flex-start;
+  gap: 10px;
 }
-
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;                  /* расстояние между анимашкой и слоганом */
+}
 .brand-text {
   text-align: center; /* выравнивание текста по центру */
 }
 
 
-.logo { font-size: 1.6rem; }
-.app-title { font-size: 1.4rem; }
+.logo {                        /* контейнер под Lottie */
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-title { font-size: 1.8rem; }  /* чуть крупнее заголовок */
+.slogan    { max-width: 320px; }    /* чтобы слоган не «плыл» слишком широко */
 
 /* ================================
    Правый блок
@@ -166,11 +178,12 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   z-index: 1000;
   left: 0; top: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.75); /* было 0.6 — стало 0.75 */
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 
 .modal.hidden { display: none; }
 
