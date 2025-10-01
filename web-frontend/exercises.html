@@ -3,54 +3,76 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RosApp — Упражнения</title>
+  <title>Упражнения</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    .muscle { fill:#444; stroke:#8b5cf6; stroke-width:1; cursor:pointer; transition:0.3s; }
+    .muscle:hover { fill:#8b5cf6; }
+    #exercise-info {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 12px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+    }
+    #exercise-info h3 {
+      margin: 0 0 8px;
+      color: var(--accent);
+    }
+  </style>
 </head>
 <body>
   <div class="wrap">
-    <header class="header">     
-      <h1 class="app-title">Раздел: Упражнения</h1>
+    <header class="header">
+      <h1>Раздел: Упражнения</h1>
     </header>
 
-    <main class="exercise-page">
-      <!-- Схема человека -->
-      <svg class="body-map" viewBox="0 0 200 500">
+    <main>
+      <!-- SVG силуэт -->
+      <svg viewBox="0 0 200 400" width="200" height="400">
         <!-- Грудь -->
-        <path id="chest" d="M60,100 Q100,60 140,100 Q100,140 60,100 Z" class="muscle" />
-        <!-- Бицепсы -->
-        <path id="biceps-left" d="M40,120 Q50,180 60,120 Z" class="muscle" />
-        <path id="biceps-right" d="M140,120 Q150,180 160,120 Z" class="muscle" />
+        <rect class="muscle" id="chest" x="70" y="60" width="60" height="40"/>
         <!-- Пресс -->
-        <rect id="abs" x="85" y="160" width="30" height="60" class="muscle" />
+        <rect class="muscle" id="abs" x="85" y="110" width="30" height="50"/>
+        <!-- Бицепсы -->
+        <rect class="muscle" id="left-arm" x="40" y="60" width="20" height="60"/>
+        <rect class="muscle" id="right-arm" x="140" y="60" width="20" height="60"/>
+        <!-- Ноги -->
+        <rect class="muscle" id="legs" x="80" y="180" width="40" height="100"/>
       </svg>
 
-      <!-- Секция упражнений -->
-      <section id="exerciseList" class="exercise-list">
-        <p>Выберите мышцу, чтобы увидеть упражнения.</p>
-      </section>
+      <!-- Блок упражнений -->
+      <div id="exercise-info">
+        <h3>Выберите мышцу</h3>
+        <ul id="exercise-list">
+          <li>...</li>
+        </ul>
+      </div>
     </main>
   </div>
 
   <script>
     const exercises = {
-        chest: { name: "Грудь", list: ["Жим лёжа", "Отжимания", "Сведение рук в тренажёре"] },
-        "biceps-left": { name: "Бицепс (левая рука)", list: ["Сгибание рук со штангой", "Подъём гантелей сидя"] },
-        "biceps-right": { name: "Бицепс (правая рука)", list: ["Сгибание рук со штангой", "Подъём гантелей сидя"] },
-        abs: { name: "Пресс", list: ["Скручивания", "Подъём ног в висе", "Планка"] }
+      chest: ["Жим лёжа", "Отжимания", "Сведение рук в тренажёре"],
+      abs: ["Скручивания", "Планка", "Подъём ног"],
+      "left-arm": ["Бицепс с гантелями", "Подтягивания обратным хватом"],
+      "right-arm": ["Бицепс с гантелями", "Подтягивания обратным хватом"],
+      legs: ["Приседания", "Выпады", "Жим ногами"]
     };
 
     document.querySelectorAll(".muscle").forEach(m => {
-        m.addEventListener("click", () => {
-        const data = exercises[m.id];
-        if (!data) return;
-        const container = document.getElementById("exerciseList");
-        container.innerHTML = `
-            <h2>${data.name}</h2>
-            <ul>${data.list.map(e => `<li>${e}</li>`).join("")}</ul>
-        `;
-        });
+      m.addEventListener("click", () => {
+        const id = m.id;
+        const list = exercises[id] || [];
+        document.querySelector("#exercise-info h3").textContent =
+          id === "chest" ? "Грудь" :
+          id === "abs" ? "Пресс" :
+          id.includes("arm") ? "Руки" :
+          id === "legs" ? "Ноги" : "Мышца";
+        document.getElementById("exercise-list").innerHTML =
+          list.map(e => `<li>${e}</li>`).join("");
+      });
     });
-    </script>
-
+  </script>
 </body>
 </html>
