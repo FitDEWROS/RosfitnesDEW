@@ -226,7 +226,7 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   height: clamp(560px, 85vh, 1200px);
   display: block;
   margin: 0 auto;
-  transform: translateX(-30px); /* подгон сдвига */
+  transform: translateX(-50px); /* подгон сдвига */
 }
 
 /* 🔹 Общие стили мышц */
