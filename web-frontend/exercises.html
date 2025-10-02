@@ -15,7 +15,7 @@
       padding:8px 12px; cursor:pointer;
     }
     .view-switch button.active{ outline:2px solid var(--accent); }
-    .canvas { width:100%; max-width:360px; }
+    .canvas { width:100%; max-width:480px; }
     object { width:100%; height:auto; display:block; }
 
     /* Подсветка активной мышцы */
@@ -157,10 +157,23 @@
 
         const style = svgDoc.createElement("style");
         style.textContent = `
-          .muscle { cursor: pointer; transition: fill .3s, stroke .3s; }
-          .muscle.active { fill: rgba(139,92,246,0.45); stroke:#8b5cf6; stroke-width:2; }
-          .muscle-test { fill:red !important; opacity:0.5; }
+          .muscle { 
+            cursor: pointer; 
+            transition: fill .3s, stroke .3s; 
+            stroke-width: 20;       /* ← увеличиваем зону клика */
+            stroke: transparent;    /* невидимая обводка */
+          }
+          .muscle.active { 
+            fill: rgba(139,92,246,0.45); 
+            stroke:#8b5cf6; 
+            stroke-width:2;         /* видимая обводка только в активном состоянии */
+          }
+          .muscle-test { 
+            fill:red !important; 
+            opacity:0.5; 
+          }
         `;
+
         svgDoc.querySelector("svg").appendChild(style);
 
         svgDoc.querySelectorAll("path").forEach(el=>{
