@@ -15,9 +15,15 @@
       padding:8px 12px; cursor:pointer;
     }
     .view-switch button.active{ outline:2px solid var(--accent); }
-    .canvas { width:100%; max-width: 640px; }        /* шире холст */
-    .svg-host { height: clamp(560px, 86vh, 1200px);   /* ВЫСОТА человека */
-                width: auto; display:block; margin-inline:auto; }
+
+    /* Адаптивный контейнер */
+    .canvas { width:100%; max-width: 640px; }
+    .svg-host { 
+      height: clamp(560px, 86vh, 1200px);  /* человек подстраивается под экран */
+      width: auto; 
+      display:block; 
+      margin-inline:auto; 
+    }
 
     /* Подсветка при наведении */
     .muscle:hover { fill: rgba(139,92,246,0.25); stroke:#8b5cf6; stroke-width:2; }
@@ -149,7 +155,7 @@
         const svgDoc = obj.contentDocument || obj.getSVGDocument();
         if (!svgDoc) return;
 
-        // 1) ВСТАВЛЯЕМ СТИЛИ ВНУТРЬ SVG
+        // вставляем стили внутрь svg
         const style = svgDoc.createElement("style");
         style.textContent = `
           .muscle { transition: fill .3s, stroke .3s; stroke: transparent; stroke-width: 20px; pointer-events:auto; cursor: pointer; }
@@ -160,16 +166,15 @@
         const svgRoot = svgDoc.querySelector("svg");
         if (svgRoot) svgRoot.appendChild(style);
 
-        // 2) ПО МАПЕ DB АВТОМАТОМ ДОБАВЛЯЕМ КЛАСС .muscle ТЕМ path, У КОТОРЫХ ЕСТЬ id
+        // навешиваем класс muscle только тем path, у кого есть id из базы
         Object.keys(DB).forEach(id => {
           const el = svgDoc.getElementById(id);
           if (el) el.classList.add('muscle');
         });
 
-        // 3) КЛИК-ХЕНДЛЕРЫ (pointerdown более отзывчив на тач)
+        // клики по мышцам
         svgDoc.querySelectorAll("path").forEach(el => {
           el.addEventListener("pointerdown", () => {
-            // снимаем актив со всех мышц только в текущем SVG
             svgDoc.querySelectorAll(".muscle.active").forEach(m => m.classList.remove("active","muscle-test"));
 
             const id = el.id || "(без id)";
@@ -177,7 +182,6 @@
             const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
             const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
 
-            // Если этот path соответствует мышце из DB — гарантируем класс .muscle
             if (DB[el.id]) el.classList.add('muscle');
 
             if (debugMode) {
@@ -187,7 +191,6 @@
               return;
             }
 
-            // Обычный режим: работаем только с мышцами
             if (el.classList.contains("muscle")) {
               el.classList.add("active");
               const list = (DB[el.id] && DB[el.id].length) ? DB[el.id] : ['Нет упражнений'];
