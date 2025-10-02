@@ -48,30 +48,20 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 
 .brand {
   display: flex;
-  flex-direction: column;     /* заголовок сверху, ниже строка с иконкой+слоганом */
+  flex-direction: column;
   align-items: flex-start;
   gap: 10px;
 }
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 12px;                  /* расстояние между анимашкой и слоганом */
+  gap: 12px;
 }
-.brand-text {
-  text-align: center; /* выравнивание текста по центру */
-}
+.brand-text { text-align: center; }
 
-
-.logo {                        /* контейнер под Lottie */
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.app-title { font-size: 1.8rem; }  /* чуть крупнее заголовок */
-.slogan    { max-width: 320px; }    /* чтобы слоган не «плыл» слишком широко */
+.logo { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
+.app-title { font-size: 1.8rem; }
+.slogan { max-width: 320px; }
 
 /* ================================
    Правый блок
@@ -84,11 +74,7 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   text-align: right;
 }
 
-#greeting {
-  font-size: 1rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
+#greeting { font-size: 1rem; font-weight: 600; white-space: nowrap; }
 
 .user-row {
   display: flex;
@@ -125,12 +111,10 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   width: 260px;
   text-align: center;
   padding: 18px;
-  margin: 0;
   border-radius: var(--radius);
   background: var(--card);
   border: 1px solid var(--card-border);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   transition: transform 0.2s ease, box-shadow var(--transition), border-color var(--transition), background-color var(--transition), color var(--transition);
   color: var(--text);
 }
@@ -142,7 +126,7 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 .tile .desc { font-size: 0.85rem; opacity: 0.75; }
 
 /* ================================
-   🌙 Кнопки (тема + профиль)
+   🌙 Кнопки
 ================================ */
 .theme-btn {
   font-size: 1rem;
@@ -178,17 +162,15 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   z-index: 1000;
   left: 0; top: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.75); /* было 0.6 — стало 0.75 */
+  background: rgba(0,0,0,0.75);
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-
 .modal.hidden { display: none; }
 
 .modal-content {
-  background: var(--card); /* ← у тебя сейчас, оставляем */
+  background: var(--card);
   color: var(--text);
   border-radius: var(--radius);
   padding: 20px;
@@ -197,11 +179,8 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   border: 1px solid var(--card-border);
   box-shadow: 0 8px 25px rgba(0,0,0,0.5);
   position: relative;
-
-  /* 🔹 Добавим плотный фон */
   backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background-color: var(--card); /* гарантируем */
+  background-color: var(--card);
 }
 
 .modal-content h2 { margin: 10px 0; font-size: 1.2rem; }
@@ -218,31 +197,16 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 /* ================================
    🧑‍💻 Профиль внутри модалки
 ================================ */
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
+.profile-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.profile-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
+.profile-info { text-align: left; }
+.profile-info h2 { margin: 0; font-size: 1.1rem; }
+.profile-info p { margin: 3px 0; font-size: 0.9rem; opacity: 0.85; }
 
-.profile-photo {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--accent);
-}
-
-.profile-info {
-  text-align: left;
-}
-.profile-info h2 {
-  margin: 0; font-size: 1.1rem;
-}
-.profile-info p {
-  margin: 3px 0; font-size: 0.9rem;
-  opacity: 0.85;
-}
-.exercise-page {
+/* ================================
+   🏋️ Упражнения (карта тела)
+================================ */
+.exercise-page, .exercise-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -250,51 +214,7 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   padding: 20px;
 }
 
-.body-map {
-  width: 200px;
-  height: auto;
-}
-
-.muscle {
-  fill: rgba(139, 92, 246, 0.4); /* полупрозрачный акцент */
-  stroke: var(--accent);
-  stroke-width: 2;
-  cursor: pointer;
-  transition: fill 0.3s;
-}
-.muscle:hover {
-  fill: var(--accent);
-}
-
-.exercise-list {
-  background: var(--card);
-  padding: 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--card-border);
-  max-width: 400px;
-  color: var(--text);
-}
-.exercise-page h2 {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  color: var(--accent);
-}
-
-.exercise-list ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.exercise-list li {
-  margin: 4px 0;
-}
-.exercise-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-}
+.body-map { width: 200px; height: auto; }
 
 #human-body {
   fill: #444;
@@ -302,25 +222,6 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   stroke-width: 2;
 }
 
-.muscle {
-  cursor: pointer;
-  transition: fill 0.3s ease;
-}
-
-.muscle:hover {
-  fill: var(--accent);
-}
-
-.exercise-info {
-  background: var(--card);
-  color: var(--text);
-  padding: 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--card-border);
-  width: 260px;
-  text-align: left;
-  margin: 20px auto 0 auto; /* выше и по центру */
-}
 #muscle-map path,
 #muscle-map rect,
 #muscle-map circle {
@@ -333,11 +234,34 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   fill: var(--accent);
 }
 
+/* 🔹 Общие стили мышц */
+.muscle {
+  cursor: pointer;
+  fill: rgba(139, 92, 246, 0.4);
+  stroke: var(--accent);
+  stroke-width: 2;
+  transition: fill 0.2s, stroke 0.2s;
+}
+.muscle:hover { fill: var(--accent); }
+.muscle.active {
+  fill: rgba(139, 92, 246, 0.6);
+  stroke: #8b5cf6;
+  stroke-width: 3px;
+}
 
-.exercise-info h3 {
-  margin: 0 0 10px;
+/* ================================
+   Инфоблок
+================================ */
+.exercise-info, .exercise-list {
+  background: var(--card);
+  color: var(--text);
+  padding: 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  max-width: 400px;
+  text-align: left;
+  margin: 20px auto 0 auto;
 }
-.exercise-info ul {
-  margin: 0;
-  padding-left: 20px;
-}
+.exercise-info h3 { margin: 0 0 10px; color: var(--accent); }
+.exercise-info ul, .exercise-list ul { margin: 0; padding-left: 20px; }
+.exercise-info li, .exercise-list li { margin: 4px 0; }

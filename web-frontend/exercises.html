@@ -19,7 +19,12 @@
     object { width:100%; height:auto; display:block; }
 
     /* Подсветка активной мышцы */
-    .muscle.active { fill: rgba(139,92,246,0.45) !important; stroke:#8b5cf6; stroke-width:2; }
+    .muscle.active {
+      fill: rgba(139,92,246,0.45);
+      stroke: #8b5cf6;
+      stroke-width: 2;
+      cursor: pointer;
+    }
 
     .info {
       position: sticky; bottom: 16px; max-width: 560px;
@@ -123,7 +128,8 @@
           el.addEventListener("click", ()=>{
             svgDoc.querySelectorAll(".muscle").forEach(m=>m.classList.remove("active"));
             el.classList.add("active");
-            const list = DB[el.id] || ['Упражнения не найдены'];
+
+            const list = DB[el.id] && DB[el.id].length > 0 ? DB[el.id] : ['Нет упражнений'];
             info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
           });
         });
