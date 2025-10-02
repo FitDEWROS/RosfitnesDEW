@@ -83,14 +83,15 @@
       </div>
 
       <!-- ====== ВИД СПЕРЕДИ ====== -->
-      <div id="frontView" class="canvas">
+      <div id="frontView" class="canvas" style="display:block">
         <object id="svgFront" class="svg-host" type="image/svg+xml" data="front.svg"></object>
       </div>
 
       <!-- ====== ВИД СЗАДИ ====== -->
-      <div id="backView" class="canvas" hidden>
+      <div id="backView" class="canvas" style="display:none">
         <object id="svgBack" class="svg-host" type="image/svg+xml" data="back.svg"></object>
       </div>
+
 
       <section id="info" class="info" aria-live="polite">
         <h3>Выбери мышцу</h3>
@@ -116,14 +117,18 @@
     };
 
     function setView(isFront){
-      front.hidden = !isFront;
-      back.hidden  = isFront;
+      front.style.display = isFront ? "block" : "none";
+      back.style.display  = isFront ? "none" : "block";
+
       btnFront.classList.toggle('active', isFront);
       btnBack.classList.toggle('active', !isFront);
       btnFront.setAttribute('aria-selected', String(isFront));
       btnBack.setAttribute('aria-selected', String(!isFront));
-      info.innerHTML = `<h3>Выбери мышцу</h3><p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>`;
+
+      info.innerHTML = `<h3>Выбери мышцу</h3>
+        <p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>`;
     }
+
     btnFront.onclick = () => setView(true);
     btnBack.onclick  = () => setView(false);
 
