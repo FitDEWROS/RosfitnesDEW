@@ -17,6 +17,10 @@
     .view-switch button.active{ outline:2px solid var(--accent); }
     .canvas { width:100%; max-width:360px; }
     object { width:100%; height:auto; display:block; }
+
+    /* Подсветка активной мышцы */
+    .muscle.active { fill: rgba(139,92,246,0.45) !important; stroke:#8b5cf6; stroke-width:2; }
+
     .info {
       position: sticky; bottom: 16px; max-width: 560px;
       width: calc(100% - 32px);
@@ -51,7 +55,6 @@
         <object id="svgBack" type="image/svg+xml" data="back.svg"></object>
       </div>
 
-
       <section id="info" class="info" aria-live="polite">
         <h3>Выбери мышцу</h3>
         <p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>
@@ -80,16 +83,37 @@
 
     // ===== Упражнения по мышцам =====
     const DB = {
+      // Перед
       'chest':['Жим лёжа','Отжимания','Сведение рук в тренажёре'],
       'abs':['Скручивания','Подъём ног в висе','Планка'],
       'biceps-left':['Подъём штанги на бицепс','Гантели сидя'],
       'biceps-right':['Подъём штанги на бицепс','Гантели сидя'],
+      'delts-left':['Жим гантелей сидя','Разводка гантелей стоя'],
+      'delts-right':['Жим гантелей сидя','Разводка гантелей стоя'],
+      'forearm-left':['Сгибания кистей со штангой','Обратные сгибания'],
+      'forearm-right':['Сгибания кистей со штангой','Обратные сгибания'],
+      'obliques-left':['Русские скручивания','Боковая планка'],
+      'obliques-right':['Русские скручивания','Боковая планка'],
+      'quads-left':['Приседания','Выпады','Жим ногами'],
+      'quads-right':['Приседания','Выпады','Жим ногами'],
+      'calves-left':['Подъёмы на носки стоя','Подъёмы сидя'],
+      'calves-right':['Подъёмы на носки стоя','Подъёмы сидя'],
+
+      // Спина
       'traps':['Шраги','Тяга к подбородку'],
+      'rear-delts-left':['Обратная разводка','Тяга к лицу'],
+      'rear-delts-right':['Обратная разводка','Тяга к лицу'],
       'lats-left':['Тяга блока','Тяга в наклоне'],
       'lats-right':['Тяга блока','Тяга в наклоне'],
+      'triceps-left':['Французский жим','Разгибания на блоке'],
+      'triceps-right':['Французский жим','Разгибания на блоке'],
+      'erectors':['Гиперэкстензия','Тяга с пола'],
       'glutes-left':['Ягодичный мост','Румынская тяга'],
       'glutes-right':['Ягодичный мост','Румынская тяга'],
-      // ...дополни все id
+      'hams-left':['Сгибания ног лёжа','Тяга румынская'],
+      'hams-right':['Сгибания ног лёжа','Тяга румынская'],
+      'calves-back-left':['Подъёмы на носки стоя','Ослиные подъёмы'],
+      'calves-back-right':['Подъёмы на носки стоя','Ослиные подъёмы'],
     };
 
     function attachHandlers(obj){
@@ -109,9 +133,23 @@
     attachHandlers(document.getElementById("svgBack"));
 
     function humanName(id){
-      const map = { chest:"Грудь", abs:"Пресс", "biceps-left":"Бицепс (лево)", "biceps-right":"Бицепс (право)",
-                    traps:"Трапеции","lats-left":"Широчайшая (лево)","lats-right":"Широчайшая (право)",
-                    "glutes-left":"Ягодицы (лево)","glutes-right":"Ягодицы (право)" };
+      const map = {
+        chest:"Грудь", abs:"Пресс",
+        "biceps-left":"Бицепс (лево)", "biceps-right":"Бицепс (право)",
+        "delts-left":"Плечо (дельта, лево)", "delts-right":"Плечо (дельта, право)",
+        "forearm-left":"Предплечье (лево)", "forearm-right":"Предплечье (право)",
+        "obliques-left":"Косые (лево)", "obliques-right":"Косые (право)",
+        "quads-left":"Квадрицепс (лево)", "quads-right":"Квадрицепс (право)",
+        "calves-left":"Икры (лево)", "calves-right":"Икры (право)",
+        traps:"Трапеции",
+        "rear-delts-left":"Задняя дельта (лево)", "rear-delts-right":"Задняя дельта (право)",
+        "lats-left":"Широчайшая (лево)", "lats-right":"Широчайшая (право)",
+        "triceps-left":"Трицепс (лево)", "triceps-right":"Трицепс (право)",
+        erectors:"Разгибатели спины",
+        "glutes-left":"Ягодицы (лево)", "glutes-right":"Ягодицы (право)",
+        "hams-left":"Бицепс бедра (лево)", "hams-right":"Бицепс бедра (право)",
+        "calves-back-left":"Икры (лево, сзади)", "calves-back-right":"Икры (право, сзади)"
+      };
       return map[id] || id;
     }
   </script>
