@@ -17,13 +17,22 @@
     .view-switch button.active{ outline:2px solid var(--accent); }
 
     /* Адаптивный контейнер */
-    .canvas { width:100%; max-width: 640px; }
-    .svg-host { 
-      height: clamp(560px, 86vh, 1200px);  /* человек подстраивается под экран */
-      width: auto; 
-      display:block; 
-      margin-inline:auto; 
+    .canvas {
+      width: 100%;
+      height: 80vh;              /* контейнер по высоте экрана */
+      max-width: 640px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
+
+    .svg-host {
+      height: 100%;              /* тянем по высоте контейнера */
+      width: auto;               /* пропорции сохраняются */
+      display: block;
+    }
+
+
 
     /* Подсветка при наведении */
     .muscle:hover { fill: rgba(139,92,246,0.25); stroke:#8b5cf6; stroke-width:2; }
