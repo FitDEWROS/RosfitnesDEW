@@ -8,40 +8,28 @@
   <style>
     .page-title { margin: 12px 16px 0; font-size: clamp(22px, 5vw, 36px); }
     .muscle-wrap { display:flex; flex-direction:column; align-items:center; gap:18px; padding:10px 16px 80px; }
-    .view-switch { display:flex; gap:8px; }
+    .view-switch { display:flex; gap:8px; flex-wrap:wrap; }
     .view-switch button{
       background: var(--card); color: var(--text);
       border:1px solid var(--card-border); border-radius: 10px;
       padding:8px 12px; cursor:pointer;
     }
     .view-switch button.active{ outline:2px solid var(--accent); }
-    
-    /* Увеличиваем человека */
-    .canvas { 
-      width:100%; 
-      max-width:600px; /* ← было 480, теперь 600 */
-    }
-    object { 
-      width:100%; 
-      height:auto; 
-      display:block; 
-      /* если хочешь именно вытянуть по высоте: */
-      /* transform: scale(1,1.2); transform-origin: top center; */
-    }
+    .canvas { width:100%; max-width: 640px; }        /* шире холст */
+    .svg-host { height: clamp(560px, 86vh, 1200px);   /* ВЫСОТА человека */
+                width: auto; display:block; margin-inline:auto; }
 
-    /* Подсветка активной мышцы */
-    .muscle.active {
-      fill: rgba(139,92,246,0.45);
-      stroke: #8b5cf6;
-      stroke-width: 2;
-      cursor: pointer;
-    }
+    /* Подсветка при наведении */
+    .muscle:hover { fill: rgba(139,92,246,0.25); stroke:#8b5cf6; stroke-width:2; }
 
-    /* 🔧 Подсветка для отладки */
-    .muscle-test {
-      fill: red !important;
-      opacity: 0.5;
-    }
+    /* Подсветка выбранной мышцы */
+    .muscle.active { fill: rgba(139,92,246,0.55); stroke:#8b5cf6; stroke-width:2; cursor: pointer; }
+
+    /* Невидимая «подушка» клика */
+    .muscle { transition: fill .3s, stroke .3s; stroke: transparent; stroke-width: 20px; pointer-events: auto; }
+
+    /* 🔧 Отладка */
+    .muscle-test { fill: red !important; opacity: 0.5; }
 
     .info {
       position: sticky; bottom: 16px; max-width: 560px;
@@ -54,7 +42,6 @@
     .info ul{ margin:0; padding-left:18px; }
     .legend { opacity:.75; font-size: 12px; margin-top:6px; }
 
-    /* Кнопка режима */
     .debug-toggle {
       margin: 6px;
       padding:6px 10px;
@@ -64,10 +51,7 @@
       background: var(--card);
       color: var(--text);
     }
-    .debug-toggle.active {
-      outline:2px solid crimson;
-      color: crimson;
-    }
+    .debug-toggle.active { outline:2px solid crimson; color: crimson; }
   </style>
 </head>
 <body>
@@ -85,12 +69,12 @@
 
       <!-- ====== ВИД СПЕРЕДИ ====== -->
       <div id="frontView" class="canvas">
-        <object id="svgFront" type="image/svg+xml" data="front.svg"></object>
+        <object id="svgFront" class="svg-host" type="image/svg+xml" data="front.svg"></object>
       </div>
 
       <!-- ====== ВИД СЗАДИ ====== -->
       <div id="backView" class="canvas" hidden>
-        <object id="svgBack" type="image/svg+xml" data="back.svg"></object>
+        <object id="svgBack" class="svg-host" type="image/svg+xml" data="back.svg"></object>
       </div>
 
       <section id="info" class="info" aria-live="polite">
@@ -144,8 +128,6 @@
       'quads-right':['Приседания','Выпады','Жим ногами'],
       'calves-left':['Подъёмы на носки стоя','Подъёмы сидя'],
       'calves-right':['Подъёмы на носки стоя','Подъёмы сидя'],
-
-      // Спина
       traps:['Шраги','Тяга к подбородку'],
       'rear-delts-left':['Обратная разводка','Тяга к лицу'],
       'rear-delts-right':['Обратная разводка','Тяга к лицу'],
@@ -164,47 +146,52 @@
 
     function attachHandlers(obj){
       obj.addEventListener("load", () => {
-        const svgDoc = obj.contentDocument;
+        const svgDoc = obj.contentDocument || obj.getSVGDocument();
+        if (!svgDoc) return;
 
+        // 1) ВСТАВЛЯЕМ СТИЛИ ВНУТРЬ SVG
         const style = svgDoc.createElement("style");
         style.textContent = `
-          .muscle {
-            cursor: pointer;
-            transition: fill 0.3s, stroke 0.3s;
-            stroke: transparent;      /* невидимая граница */
-            stroke-width: 20px;       /* расширяет зону клика */
-          }
-          .muscle.active {
-            fill: rgba(139, 92, 246, 0.6);
-            stroke: #8b5cf6;          /* видимая подсветка */
-            stroke-width: 2px;        /* тонкая линия */
-          }
-          .muscle-test { 
-            fill:red !important; 
-            opacity:0.5; 
-          }
+          .muscle { transition: fill .3s, stroke .3s; stroke: transparent; stroke-width: 20px; pointer-events:auto; cursor: pointer; }
+          .muscle:hover { fill: rgba(139,92,246,0.25); stroke:#8b5cf6; stroke-width:2px; }
+          .muscle.active { fill: rgba(139,92,246,0.55); stroke:#8b5cf6; stroke-width:2px; }
+          .muscle-test { fill:red !important; opacity:0.5; }
         `;
-        svgDoc.querySelector("svg").appendChild(style);
+        const svgRoot = svgDoc.querySelector("svg");
+        if (svgRoot) svgRoot.appendChild(style);
 
-        svgDoc.querySelectorAll("path").forEach(el=>{
-          el.addEventListener("click", ()=>{
-            svgDoc.querySelectorAll("path").forEach(m=>m.classList.remove("active","muscle-test"));
+        // 2) ПО МАПЕ DB АВТОМАТОМ ДОБАВЛЯЕМ КЛАСС .muscle ТЕМ path, У КОТОРЫХ ЕСТЬ id
+        Object.keys(DB).forEach(id => {
+          const el = svgDoc.getElementById(id);
+          if (el) el.classList.add('muscle');
+        });
 
+        // 3) КЛИК-ХЕНДЛЕРЫ (pointerdown более отзывчив на тач)
+        svgDoc.querySelectorAll("path").forEach(el => {
+          el.addEventListener("pointerdown", () => {
+            // снимаем актив со всех мышц только в текущем SVG
+            svgDoc.querySelectorAll(".muscle.active").forEach(m => m.classList.remove("active","muscle-test"));
+
+            const id = el.id || "(без id)";
             const d = el.getAttribute("d") || "";
-            const match = d.match(/M\s*([0-9\.\-]+),\s*([0-9\.\-]+)/i);
-            let coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
-            const id = el.id ? el.id : "(без id)";
+            const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
+            const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
+
+            // Если этот path соответствует мышце из DB — гарантируем класс .muscle
+            if (DB[el.id]) el.classList.add('muscle');
 
             if (debugMode) {
               el.classList.add("muscle-test");
               alert(`Мышца: ${id}\nКоординаты: ${coords}`);
               console.log(`Мышца: ${id}, координаты: ${coords}`);
-            } else {
-              if(el.classList.contains("muscle")){
-                el.classList.add("active");
-                const list = DB[el.id] && DB[el.id].length ? DB[el.id] : ['Нет упражнений'];
-                info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
-              }
+              return;
+            }
+
+            // Обычный режим: работаем только с мышцами
+            if (el.classList.contains("muscle")) {
+              el.classList.add("active");
+              const list = (DB[el.id] && DB[el.id].length) ? DB[el.id] : ['Нет упражнений'];
+              info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
             }
           });
         });
