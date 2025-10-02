@@ -26,6 +26,12 @@
       cursor: pointer;
     }
 
+    /* 🔧 Подсветка для отладки */
+    .muscle-test {
+      fill: red !important;
+      opacity: 0.5;
+    }
+
     .info {
       position: sticky; bottom: 16px; max-width: 560px;
       width: calc(100% - 32px);
@@ -88,9 +94,8 @@
 
     // ===== Упражнения по мышцам =====
     const DB = {
-      // Перед
-      'chest':['Жим лёжа','Отжимания','Сведение рук в тренажёре'],
-      'abs':['Скручивания','Подъём ног в висе','Планка'],
+      chest:['Жим лёжа','Отжимания','Сведение рук в тренажёре'],
+      abs:['Скручивания','Подъём ног в висе','Планка'],
       'biceps-left':['Подъём штанги на бицепс','Гантели сидя'],
       'biceps-right':['Подъём штанги на бицепс','Гантели сидя'],
       'delts-left':['Жим гантелей сидя','Разводка гантелей стоя'],
@@ -105,14 +110,14 @@
       'calves-right':['Подъёмы на носки стоя','Подъёмы сидя'],
 
       // Спина
-      'traps':['Шраги','Тяга к подбородку'],
+      traps:['Шраги','Тяга к подбородку'],
       'rear-delts-left':['Обратная разводка','Тяга к лицу'],
       'rear-delts-right':['Обратная разводка','Тяга к лицу'],
       'lats-left':['Тяга блока','Тяга в наклоне'],
       'lats-right':['Тяга блока','Тяга в наклоне'],
       'triceps-left':['Французский жим','Разгибания на блоке'],
       'triceps-right':['Французский жим','Разгибания на блоке'],
-      'erectors':['Гиперэкстензия','Тяга с пола'],
+      erectors:['Гиперэкстензия','Тяга с пола'],
       'glutes-left':['Ягодичный мост','Румынская тяга'],
       'glutes-right':['Ягодичный мост','Румынская тяга'],
       'hams-left':['Сгибания ног лёжа','Тяга румынская'],
@@ -125,22 +130,30 @@
       obj.addEventListener("load", () => {
         const svgDoc = obj.contentDocument;
 
-        // ⬇ Вставляем CSS в сам SVG
+        // Стили для svg
         const style = svgDoc.createElement("style");
         style.textContent = `
           .muscle { cursor: pointer; transition: fill .3s, stroke .3s; }
           .muscle.active { fill: rgba(139,92,246,0.45); stroke:#8b5cf6; stroke-width:2; }
+          .muscle-test { fill:red !important; opacity:0.5; }
         `;
         svgDoc.querySelector("svg").appendChild(style);
 
-        // Навешиваем обработчики
         svgDoc.querySelectorAll(".muscle").forEach(el=>{
           el.addEventListener("click", ()=>{
-            svgDoc.querySelectorAll(".muscle").forEach(m=>m.classList.remove("active"));
+            svgDoc.querySelectorAll(".muscle").forEach(m=>m.classList.remove("active","muscle-test"));
             el.classList.add("active");
 
             const list = DB[el.id] && DB[el.id].length ? DB[el.id] : ['Нет упражнений'];
             info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+
+            // 🔧 Режим отладки: координаты
+            const d = el.getAttribute("d") || "";
+            const match = d.match(/M\s*([0-9\.\-]+),\s*([0-9\.\-]+)/i);
+            let coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
+            console.log(`Мышца: ${el.id || "(без id)"}, координаты: ${coords}`);
+            alert(`Мышца: ${el.id || "(без id)"}\nКоординаты: ${coords}`);
+            el.classList.add("muscle-test"); // временно красим для проверки
           });
         });
       });
@@ -167,7 +180,7 @@
         "hams-left":"Бицепс бедра (лево)", "hams-right":"Бицепс бедра (право)",
         "calves-back-left":"Икры (лево, сзади)", "calves-back-right":"Икры (право, сзади)"
       };
-      return map[id] || id;
+      return map[id] || id || "Без id";
     }
   </script>
 </body>

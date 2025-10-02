@@ -265,3 +265,8 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 .exercise-info h3 { margin: 0 0 10px; color: var(--accent); }
 .exercise-info ul, .exercise-list ul { margin: 0; padding-left: 20px; }
 .exercise-info li, .exercise-list li { margin: 4px 0; }
+.muscle-test {
+  fill: red !important;
+  opacity: 0.6;
+  cursor: pointer;
+}
