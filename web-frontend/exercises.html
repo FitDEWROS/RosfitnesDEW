@@ -15,8 +15,19 @@
       padding:8px 12px; cursor:pointer;
     }
     .view-switch button.active{ outline:2px solid var(--accent); }
-    .canvas { width:100%; max-width:480px; }
-    object { width:100%; height:auto; display:block; }
+    
+    /* Увеличиваем человека */
+    .canvas { 
+      width:100%; 
+      max-width:600px; /* ← было 480, теперь 600 */
+    }
+    object { 
+      width:100%; 
+      height:auto; 
+      display:block; 
+      /* если хочешь именно вытянуть по высоте: */
+      /* transform: scale(1,1.2); transform-origin: top center; */
+    }
 
     /* Подсветка активной мышцы */
     .muscle.active {
@@ -157,24 +168,22 @@
 
         const style = svgDoc.createElement("style");
         style.textContent = `
-        .muscle {
-          cursor: pointer;
-          transition: fill 0.3s, stroke 0.3s;
-          stroke: transparent;      /* невидимая граница */
-          stroke-width: 20px;       /* расширяет зону клика */
-        }
-
-        .muscle.active {
-          fill: rgba(139, 92, 246, 0.6);
-          stroke: #8b5cf6;          /* видимая подсветка */
-          stroke-width: 2px;        /* тонкая линия */
-        }
-
-        .muscle-test { 
-          fill:red !important; 
-          opacity:0.5; 
-        }
-      `;
+          .muscle {
+            cursor: pointer;
+            transition: fill 0.3s, stroke 0.3s;
+            stroke: transparent;      /* невидимая граница */
+            stroke-width: 20px;       /* расширяет зону клика */
+          }
+          .muscle.active {
+            fill: rgba(139, 92, 246, 0.6);
+            stroke: #8b5cf6;          /* видимая подсветка */
+            stroke-width: 2px;        /* тонкая линия */
+          }
+          .muscle-test { 
+            fill:red !important; 
+            opacity:0.5; 
+          }
+        `;
         svgDoc.querySelector("svg").appendChild(style);
 
         svgDoc.querySelectorAll("path").forEach(el=>{
@@ -187,12 +196,10 @@
             const id = el.id ? el.id : "(без id)";
 
             if (debugMode) {
-              // 🔴 Отладка
               el.classList.add("muscle-test");
               alert(`Мышца: ${id}\nКоординаты: ${coords}`);
               console.log(`Мышца: ${id}, координаты: ${coords}`);
             } else {
-              // 🟣 Обычный режим
               if(el.classList.contains("muscle")){
                 el.classList.add("active");
                 const list = DB[el.id] && DB[el.id].length ? DB[el.id] : ['Нет упражнений'];
