@@ -124,17 +124,28 @@
     function attachHandlers(obj){
       obj.addEventListener("load", () => {
         const svgDoc = obj.contentDocument;
+
+        // ⬇ Вставляем CSS в сам SVG
+        const style = svgDoc.createElement("style");
+        style.textContent = `
+          .muscle { cursor: pointer; transition: fill .3s, stroke .3s; }
+          .muscle.active { fill: rgba(139,92,246,0.45); stroke:#8b5cf6; stroke-width:2; }
+        `;
+        svgDoc.querySelector("svg").appendChild(style);
+
+        // Навешиваем обработчики
         svgDoc.querySelectorAll(".muscle").forEach(el=>{
           el.addEventListener("click", ()=>{
             svgDoc.querySelectorAll(".muscle").forEach(m=>m.classList.remove("active"));
             el.classList.add("active");
 
-            const list = DB[el.id] && DB[el.id].length > 0 ? DB[el.id] : ['Нет упражнений'];
+            const list = DB[el.id] && DB[el.id].length ? DB[el.id] : ['Нет упражнений'];
             info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
           });
         });
       });
     }
+
     attachHandlers(document.getElementById("svgFront"));
     attachHandlers(document.getElementById("svgBack"));
 
