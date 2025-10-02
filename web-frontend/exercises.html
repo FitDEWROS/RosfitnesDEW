@@ -42,6 +42,21 @@
     .info h3{ margin:0 0 6px; color: var(--accent); font-size: 18px; }
     .info ul{ margin:0; padding-left:18px; }
     .legend { opacity:.75; font-size: 12px; margin-top:6px; }
+
+    /* Кнопка режима */
+    .debug-toggle {
+      margin: 6px;
+      padding:6px 10px;
+      border:1px solid var(--card-border);
+      border-radius:8px;
+      cursor:pointer;
+      background: var(--card);
+      color: var(--text);
+    }
+    .debug-toggle.active {
+      outline:2px solid crimson;
+      color: crimson;
+    }
   </style>
 </head>
 <body>
@@ -54,6 +69,7 @@
       <div class="view-switch" role="tablist" aria-label="Выбор вида тела">
         <button id="btnFront" class="active" role="tab" aria-selected="true">Вид спереди</button>
         <button id="btnBack" role="tab" aria-selected="false">Вид сзади</button>
+        <button id="btnDebug" class="debug-toggle">Режим отладки</button>
       </div>
 
       <!-- ====== ВИД СПЕРЕДИ ====== -->
@@ -76,9 +92,18 @@
   <script>
     const btnFront = document.getElementById('btnFront');
     const btnBack  = document.getElementById('btnBack');
+    const btnDebug = document.getElementById('btnDebug');
     const front    = document.getElementById('frontView');
     const back     = document.getElementById('backView');
     const info     = document.getElementById('info');
+
+    let debugMode = false;
+
+    btnDebug.onclick = () => {
+      debugMode = !debugMode;
+      btnDebug.classList.toggle("active", debugMode);
+      btnDebug.textContent = debugMode ? "Отладка: ВКЛ" : "Режим отладки";
+    };
 
     function setView(isFront){
       front.hidden = !isFront;
@@ -130,7 +155,6 @@
       obj.addEventListener("load", () => {
         const svgDoc = obj.contentDocument;
 
-        // Стили для svg
         const style = svgDoc.createElement("style");
         style.textContent = `
           .muscle { cursor: pointer; transition: fill .3s, stroke .3s; }
@@ -139,21 +163,28 @@
         `;
         svgDoc.querySelector("svg").appendChild(style);
 
-        svgDoc.querySelectorAll(".muscle").forEach(el=>{
+        svgDoc.querySelectorAll("path").forEach(el=>{
           el.addEventListener("click", ()=>{
-            svgDoc.querySelectorAll(".muscle").forEach(m=>m.classList.remove("active","muscle-test"));
-            el.classList.add("active");
+            svgDoc.querySelectorAll("path").forEach(m=>m.classList.remove("active","muscle-test"));
 
-            const list = DB[el.id] && DB[el.id].length ? DB[el.id] : ['Нет упражнений'];
-            info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
-
-            // 🔧 Режим отладки: координаты
             const d = el.getAttribute("d") || "";
             const match = d.match(/M\s*([0-9\.\-]+),\s*([0-9\.\-]+)/i);
             let coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
-            console.log(`Мышца: ${el.id || "(без id)"}, координаты: ${coords}`);
-            alert(`Мышца: ${el.id || "(без id)"}\nКоординаты: ${coords}`);
-            el.classList.add("muscle-test"); // временно красим для проверки
+            const id = el.id ? el.id : "(без id)";
+
+            if (debugMode) {
+              // 🔴 Отладка
+              el.classList.add("muscle-test");
+              alert(`Мышца: ${id}\nКоординаты: ${coords}`);
+              console.log(`Мышца: ${id}, координаты: ${coords}`);
+            } else {
+              // 🟣 Обычный режим
+              if(el.classList.contains("muscle")){
+                el.classList.add("active");
+                const list = DB[el.id] && DB[el.id].length ? DB[el.id] : ['Нет упражнений'];
+                info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+              }
+            }
           });
         });
       });
