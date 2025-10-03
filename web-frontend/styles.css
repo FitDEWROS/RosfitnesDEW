@@ -329,3 +329,17 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   transform: scale(0.95);
   box-shadow: 0 0 8px var(--accent);
 }
+.canvas {
+  width: 100%;
+  max-width: 600px;   /* ширина ограничена */
+  margin: 0 auto;     /* центрируем */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.svg-host {
+  width: 100%;
+  height: auto;
+  display: block;
+}
