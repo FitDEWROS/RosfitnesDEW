@@ -19,7 +19,7 @@
     /* Адаптивный контейнер */
     .canvas {
       width: 100%;
-      height: 80vh;              /* контейнер по высоте экрана */
+      height: 80vh;
       max-width: 640px;
       display: flex;
       justify-content: center;
@@ -27,12 +27,10 @@
     }
 
     .svg-host {
-      height: 100%;              /* тянем по высоте контейнера */
-      width: auto;               /* пропорции сохраняются */
+      height: 100%;
+      width: auto;
       display: block;
     }
-
-
 
     /* Подсветка при наведении */
     .muscle:hover { fill: rgba(139,92,246,0.25); stroke:#8b5cf6; stroke-width:2; }
@@ -91,7 +89,6 @@
       <div id="backView" class="canvas" style="display:none">
         <object id="svgBack" class="svg-host" type="image/svg+xml" data="back.svg"></object>
       </div>
-
 
       <section id="info" class="info" aria-live="polite">
         <h3>Выбери мышцу</h3>
@@ -164,68 +161,70 @@
       'calves-back-right':['Подъёмы на носки стоя','Ослиные подъёмы'],
     };
 
+    // ===== Группы мышц =====
+    const GROUPS = {
+      abs: ["abs"],
+      chest: ["chest"],
+      biceps: ["biceps-left","biceps-right"],
+      delts: ["delts-left","delts-right"],
+      forearm: ["forearm-left","forearm-right"],
+      obliques: ["obliques-left","obliques-right"],
+      quads: ["quads-left","quads-right"],
+      calves: ["calves-left","calves-right","calves-back-left","calves-back-right"],
+      triceps: ["triceps-left","triceps-right"],
+      rearDelts: ["rear-delts-left","rear-delts-right"],
+      lats: ["lats-left","lats-right"],
+      glutes: ["glutes-left","glutes-right"],
+      hams: ["hams-left","hams-right"],
+      traps: ["traps"],
+      erectors: ["erectors"]
+    };
+
+    function findGroup(id){
+      for (let key in GROUPS){
+        if (GROUPS[key].includes(id)) return GROUPS[key];
+      }
+      return [id];
+    }
+
     function attachHandlers(obj){
       obj.addEventListener("load", () => {
         const svgDoc = obj.contentDocument || obj.getSVGDocument();
         if (!svgDoc) return;
 
-        // вставляем стили внутрь svg
         const style = svgDoc.createElement("style");
         style.textContent = `
-          .muscle { 
-            cursor: pointer;
-            fill: rgba(139,92,246,0.35) !important;
-            stroke: transparent !important;
-            stroke-width: 15px !important;
-            pointer-events:auto;
-            transition: fill 0.25s, stroke 0.25s;
-          }
-
-          .muscle:hover {
-            fill: rgba(139,92,246,0.45) !important;
-            stroke: #8b5cf6 !important;
-            stroke-width: 2px !important;
-          }
-
-          .muscle.active {
-            fill: rgba(139,92,246,0.25) !important;
-            stroke: #8b5cf6 !important;
-            stroke-width: 3px !important;
-          }
+          .muscle { cursor: pointer; transition: fill .3s, stroke .3s; }
+          .muscle.active { fill: rgba(139,92,246,0.55); stroke:#8b5cf6; stroke-width:2; }
+          .muscle-test { fill:red !important; opacity:0.5; }
         `;
-
         const svgRoot = svgDoc.querySelector("svg");
         if (svgRoot) svgRoot.appendChild(style);
 
-        // навешиваем класс muscle только тем path, у кого есть id из базы
         Object.keys(DB).forEach(id => {
           const el = svgDoc.getElementById(id);
           if (el) el.classList.add('muscle');
         });
 
-        // клики по мышцам
         svgDoc.querySelectorAll("path").forEach(el => {
           el.addEventListener("pointerdown", () => {
             svgDoc.querySelectorAll(".muscle.active").forEach(m => m.classList.remove("active","muscle-test"));
 
-            const id = el.id || "(без id)";
-            const d = el.getAttribute("d") || "";
-            const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
-            const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
-
-            if (DB[el.id]) el.classList.add('muscle');
-
             if (debugMode) {
               el.classList.add("muscle-test");
-              alert(`Мышца: ${id}\nКоординаты: ${coords}`);
-              console.log(`Мышца: ${id}, координаты: ${coords}`);
+              console.log(`Мышца: ${el.id}`);
               return;
             }
 
-            if (el.classList.contains("muscle")) {
-              el.classList.add("active");
-              const list = (DB[el.id] && DB[el.id].length) ? DB[el.id] : ['Нет упражнений'];
-              info.innerHTML = `<h3>${humanName(el.id)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+            if (el.id && DB[el.id]) {
+              const groupIds = findGroup(el.id);
+              groupIds.forEach(gid => {
+                const g = svgDoc.getElementById(gid);
+                if (g) g.classList.add("active");
+              });
+
+              const list = (DB[groupIds[0]] && DB[groupIds[0]].length) ? DB[groupIds[0]] : ['Нет упражнений'];
+              info.innerHTML = `<h3>${humanName(groupIds[0])}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
             }
           });
         });
@@ -238,20 +237,20 @@
     function humanName(id){
       const map = {
         chest:"Грудь", abs:"Пресс",
-        "biceps-left":"Бицепс (лево)", "biceps-right":"Бицепс (право)",
-        "delts-left":"Плечо (дельта, лево)", "delts-right":"Плечо (дельта, право)",
-        "forearm-left":"Предплечье (лево)", "forearm-right":"Предплечье (право)",
-        "obliques-left":"Косые (лево)", "obliques-right":"Косые (право)",
-        "quads-left":"Квадрицепс (лево)", "quads-right":"Квадрицепс (право)",
-        "calves-left":"Икры (лево)", "calves-right":"Икры (право)",
+        "biceps-left":"Бицепс", "biceps-right":"Бицепс",
+        "delts-left":"Дельта", "delts-right":"Дельта",
+        "forearm-left":"Предплечье", "forearm-right":"Предплечье",
+        "obliques-left":"Косые", "obliques-right":"Косые",
+        "quads-left":"Квадрицепс", "quads-right":"Квадрицепс",
+        "calves-left":"Икры", "calves-right":"Икры",
         traps:"Трапеции",
-        "rear-delts-left":"Задняя дельта (лево)", "rear-delts-right":"Задняя дельта (право)",
-        "lats-left":"Широчайшая (лево)", "lats-right":"Широчайшая (право)",
-        "triceps-left":"Трицепс (лево)", "triceps-right":"Трицепс (право)",
+        "rear-delts-left":"Задняя дельта", "rear-delts-right":"Задняя дельта",
+        "lats-left":"Широчайшие", "lats-right":"Широчайшие",
+        "triceps-left":"Трицепс", "triceps-right":"Трицепс",
         erectors:"Разгибатели спины",
-        "glutes-left":"Ягодицы (лево)", "glutes-right":"Ягодицы (право)",
-        "hams-left":"Бицепс бедра (лево)", "hams-right":"Бицепс бедра (право)",
-        "calves-back-left":"Икры (лево, сзади)", "calves-back-right":"Икры (право, сзади)"
+        "glutes-left":"Ягодицы", "glutes-right":"Ягодицы",
+        "hams-left":"Бицепс бедра", "hams-right":"Бицепс бедра",
+        "calves-back-left":"Икры", "calves-back-right":"Икры"
       };
       return map[id] || id || "Без id";
     }
