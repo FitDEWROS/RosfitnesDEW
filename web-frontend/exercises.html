@@ -4,6 +4,30 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Раздел: Упражнения</title>
+
+  <!-- 🔧 Перекрытие системных переменных Telegram -->
+  <style>
+    :root {
+      --tg-theme-bg-color: #111113 !important;
+      --tg-theme-text-color: #ffffff !important;
+      --tg-theme-hint-color: #aaaaaa !important;
+      --tg-theme-link-color: #8b5cf6 !important;
+      --tg-theme-button-color: #8b5cf6 !important;
+      --tg-theme-button-text-color: #ffffff !important;
+    }
+    html.light {
+      --tg-theme-bg-color: #f5f7fa !important;
+      --tg-theme-text-color: #111113 !important;
+      --tg-theme-hint-color: #666666 !important;
+      --tg-theme-link-color: #3b82f6 !important;
+      --tg-theme-button-color: #3b82f6 !important;
+      --tg-theme-button-text-color: #ffffff !important;
+    }
+    body {
+      background: var(--bg, #111113);
+    }
+  </style>
+
   <link rel="stylesheet" href="styles.css" />
   <style>
     .page-title { margin: 12px 16px 0; font-size: clamp(22px, 5vw, 36px); }
@@ -210,9 +234,7 @@
         });
 
         svgDoc.querySelectorAll("path").forEach((el, idx) => {
-          if (!el.id) {
-            el.id = "auto-path-" + idx;
-          }
+          if (!el.id) el.id = "auto-path-" + idx;
 
           el.addEventListener("pointerdown", () => {
             svgDoc.querySelectorAll(".muscle.active, .muscle-test").forEach(m => m.classList.remove("active","muscle-test"));
