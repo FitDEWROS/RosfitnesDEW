@@ -5,6 +5,8 @@
 <style type="text/css">
 	.st0{fill:#BE9B8B;}
 	.st1{fill:#6F6F6F;}
+	.st2 { transition: fill .3s, stroke .3s; }
+	.muscle.active { fill:rgba(139,92,246,0.55) !important; stroke:#8b5cf6; stroke-width:3; }
 </style>
 <g id="Background">
 </g>
