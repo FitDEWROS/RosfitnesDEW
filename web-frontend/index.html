@@ -5,34 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RosApp — Telegram WebApp</title>
 
-  <!-- 🔧 Сбиваем телеграмовский фон и сразу применяем свою тему -->
+  <!-- 🔧 Сразу сбиваем телеграмовскую тему и применяем свою -->
   <script>
     (function() {
       const savedTheme = localStorage.getItem("theme") || "dark";
-      if (savedTheme === "light") {
+      const isLight = savedTheme === "light";
+      if (isLight) {
         document.documentElement.classList.add("light");
       } else {
         document.documentElement.classList.remove("light");
       }
+
+      // ⚡ моментально задаём свои CSS-переменные
+      const root = document.documentElement.style;
+      if (isLight) {
+        root.setProperty("--bg", "#f5f7fa");
+        root.setProperty("--text", "#111113");
+        root.setProperty("--card", "#ffffff");
+        root.setProperty("--card-border", "rgba(0,0,0,0.1)");
+        root.setProperty("--accent", "#3b82f6");
+      } else {
+        root.setProperty("--bg", "#111113");
+        root.setProperty("--text", "#ffffff");
+        root.setProperty("--card", "rgba(255,255,255,0.05)");
+        root.setProperty("--card-border", "rgba(255,255,255,0.1)");
+        root.setProperty("--accent", "#8b5cf6");
+      }
+
+      // сразу выставляем иконку для переключателя
+      document.addEventListener("DOMContentLoaded", () => {
+        const themeToggle = document.getElementById("themeToggle");
+        if (themeToggle) {
+          themeToggle.textContent = isLight ? "🌙" : "☀️";
+        }
+      });
     })();
   </script>
+
   <style>
-    html, body {
-      background-color: #111113 !important;
-      color: #ffffff !important;
-    }
-    html.light, html.light body {
-      background-color: #f5f7fa !important;
-      color: #111113 !important;
-    }
     /* отключаем переменные Telegram */
     :root {
-      --tg-theme-bg-color: initial !important;
-      --tg-theme-text-color: initial !important;
-      --tg-theme-hint-color: initial !important;
-      --tg-theme-link-color: initial !important;
-      --tg-theme-button-color: initial !important;
-      --tg-theme-button-text-color: initial !important;
+      --tg-theme-bg-color: unset !important;
+      --tg-theme-text-color: unset !important;
+      --tg-theme-hint-color: unset !important;
+      --tg-theme-link-color: unset !important;
+      --tg-theme-button-color: unset !important;
+      --tg-theme-button-text-color: unset !important;
+    }
+
+    html, body {
+      background-color: var(--bg) !important;
+      color: var(--text) !important;
     }
   </style>
 
@@ -54,7 +77,6 @@
     <header class="header">
       <div class="brand">
         <h1 class="app-title">RosApp</h1>
-
         <div class="brand-row">
           <div class="logo" aria-hidden="true">
             <lottie-player
@@ -122,16 +144,10 @@
     const profileTariffEl = document.getElementById("profileTariff");
     const profilePhotoEl = document.getElementById("profilePhoto");
 
-    profileBtn.addEventListener("click", () => {
-      profileModal.classList.remove("hidden");
-    });
-    closeProfile.addEventListener("click", () => {
-      profileModal.classList.add("hidden");
-    });
+    profileBtn.addEventListener("click", () => profileModal.classList.remove("hidden"));
+    closeProfile.addEventListener("click", () => profileModal.classList.add("hidden"));
     window.addEventListener("click", (e) => {
-      if (e.target === profileModal) {
-        profileModal.classList.add("hidden");
-      }
+      if (e.target === profileModal) profileModal.classList.add("hidden");
     });
 
     // === Заполняем профиль данными из Telegram ===
@@ -145,7 +161,7 @@
       }
     });
 
-    // === Темы ===
+    // === Переключение тем ===
     function applyTheme(theme) {
       if (theme === "light") {
         document.documentElement.classList.add("light");
@@ -154,12 +170,8 @@
       }
     }
 
-    const savedTheme = localStorage.getItem("theme") || "dark";
-    applyTheme(savedTheme);
-
     const themeToggle = document.getElementById("themeToggle");
     if (themeToggle) {
-      themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
       themeToggle.addEventListener("click", () => {
         const newTheme = document.documentElement.classList.contains("light") ? "dark" : "light";
         localStorage.setItem("theme", newTheme);
