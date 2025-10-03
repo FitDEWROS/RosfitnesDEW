@@ -129,7 +129,7 @@
     btnFront.onclick = () => setView(true);
     btnBack.onclick  = () => setView(false);
 
-    // ===== Упражнения по мышцам =====
+    // ===== Упражнения =====
     const DB = {
       abs:['Скручивания','Подъём ног в висе','Планка'],
       chest:['Жим лёжа','Отжимания','Сведение рук в тренажёре'],
@@ -148,7 +148,7 @@
       hams:['Сгибания ног лёжа','Тяга румынская']
     };
 
-    // ===== Группы мышц (список реальных id в SVG) =====
+    // ===== Группы (реальные id из SVG) =====
     const GROUPS = {
       abs: ["abs-1","abs-2","abs-3","abs-4","abs-5","abs-6","abs-7","abs-8"],
       chest: ["chest-1","chest-2"],
@@ -179,16 +179,10 @@
         const svgDoc = obj.contentDocument || obj.getSVGDocument();
         if (!svgDoc) return;
 
-        const style = svgDoc.createElement("style");
-        style.textContent = `
-          .muscle { cursor: pointer; transition: fill .3s, stroke .3s; }
-          .muscle.active { fill: rgba(139,92,246,0.55); stroke:#8b5cf6; stroke-width:2; }
-          .muscle-test { fill:red !important; opacity:0.5; }
-        `;
         const svgRoot = svgDoc.querySelector("svg");
-        if (svgRoot) svgRoot.appendChild(style);
+        if (!svgRoot) return;
 
-        // Добавляем класс muscle ко всем id из GROUPS
+        // добавляем класс muscle ко всем path из GROUPS
         Object.values(GROUPS).flat().forEach(id => {
           const el = svgDoc.getElementById(id);
           if (el) el.classList.add('muscle');
@@ -196,25 +190,36 @@
 
         svgDoc.querySelectorAll("path").forEach(el => {
           el.addEventListener("pointerdown", () => {
-            svgDoc.querySelectorAll(".muscle.active").forEach(m => m.classList.remove("active","muscle-test"));
-
-            if (debugMode) {
-              el.classList.add("muscle-test");
-              console.log(`Мышца: ${el.id}`);
-              return;
-            }
+            // убираем предыдущее выделение
+            svgDoc.querySelectorAll(".muscle.active, .muscle-test").forEach(m => m.classList.remove("active","muscle-test"));
 
             if (el.id) {
               const groupKey = findGroup(el.id);
-              if (groupKey) {
+              if (!groupKey) return;
+
+              if (debugMode) {
+                // в отладке подсветить красным всю группу и показать координаты
                 GROUPS[groupKey].forEach(gid => {
                   const g = svgDoc.getElementById(gid);
-                  if (g) g.classList.add("active");
+                  if (g) {
+                    g.classList.add("muscle-test");
+                    const d = g.getAttribute("d") || "";
+                    const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
+                    const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
+                    console.log(`Мышца: ${gid}, координаты: ${coords}`);
+                  }
                 });
-
-                const list = (DB[groupKey] && DB[groupKey].length) ? DB[groupKey] : ['Нет упражнений'];
-                info.innerHTML = `<h3>${humanName(groupKey)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+                return;
               }
+
+              // обычный режим
+              GROUPS[groupKey].forEach(gid => {
+                const g = svgDoc.getElementById(gid);
+                if (g) g.classList.add("active");
+              });
+
+              const list = DB[groupKey] && DB[groupKey].length ? DB[groupKey] : ['Нет упражнений'];
+              info.innerHTML = `<h3>${humanName(groupKey)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
             }
           });
         });
