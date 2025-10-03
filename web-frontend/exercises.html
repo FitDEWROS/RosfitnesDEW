@@ -16,7 +16,6 @@
     }
     .view-switch button.active{ outline:2px solid var(--accent); }
 
-    /* Адаптивный контейнер */
     .canvas {
       width: 100%;
       height: 80vh;
@@ -32,16 +31,10 @@
       display: block;
     }
 
-    /* Подсветка при наведении */
     .muscle:hover { fill: rgba(139,92,246,0.25); stroke:#8b5cf6; stroke-width:2; }
-
-    /* Подсветка выбранной мышцы */
     .muscle.active { fill: rgba(139,92,246,0.55); stroke:#8b5cf6; stroke-width:2; cursor: pointer; }
-
-    /* Невидимая «подушка» клика */
     .muscle { transition: fill .3s, stroke .3s; stroke: transparent; stroke-width: 20px; pointer-events: auto; }
 
-    /* 🔧 Отладка */
     .muscle-test { fill: red !important; opacity: 0.5; }
 
     .info {
@@ -80,12 +73,10 @@
         <button id="btnDebug" class="debug-toggle">Режим отладки</button>
       </div>
 
-      <!-- ====== ВИД СПЕРЕДИ ====== -->
       <div id="frontView" class="canvas" style="display:block">
         <object id="svgFront" class="svg-host" type="image/svg+xml" data="front.svg"></object>
       </div>
 
-      <!-- ====== ВИД СЗАДИ ====== -->
       <div id="backView" class="canvas" style="display:none">
         <object id="svgBack" class="svg-host" type="image/svg+xml" data="back.svg"></object>
       </div>
@@ -129,7 +120,6 @@
     btnFront.onclick = () => setView(true);
     btnBack.onclick  = () => setView(false);
 
-    // ===== Упражнения =====
     const DB = {
       abs:['Скручивания','Подъём ног в висе','Планка'],
       chest:['Жим лёжа','Отжимания','Сведение рук в тренажёре'],
@@ -151,11 +141,10 @@
       tibialis:['Подъёмы носков сидя']
     };
 
-    // ===== Группы (реальные id из SVG + заготовки) =====
     const GROUPS = {
       abs: ["abs-1","abs-2","abs-3","abs-4","abs-5","abs-6","abs-7","abs-8"],
       chest: ["chest-1","chest-2"],
-      biceps: ["biceps-left-1","biceps-left-2","biceps-right-1","biceps-righ-2"],
+      biceps: ["biceps-left-1","biceps-left-2","biceps-right-1","biceps-right-2"],
       delts: ["delts-left","delts-right"],
       forearm: ["forearm-left-1","forearm-left-2","forearm-right-1","forearm-right-2"],
       obliques: ["obliques-left-1","obliques-left-2","obliques-left-3","obliques-left-4",
@@ -189,21 +178,23 @@
         const svgRoot = svgDoc.querySelector("svg");
         if (!svgRoot) return;
 
-        // добавляем класс muscle ко всем path из GROUPS
         Object.values(GROUPS).flat().forEach(id => {
           const el = svgDoc.getElementById(id);
           if (el) el.classList.add('muscle');
         });
 
-        svgDoc.querySelectorAll("path").forEach(el => {
+        svgDoc.querySelectorAll("path").forEach((el, idx) => {
+          if (!el.id) {
+            el.id = "auto-path-" + idx;
+          }
+
           el.addEventListener("pointerdown", () => {
             svgDoc.querySelectorAll(".muscle.active, .muscle-test").forEach(m => m.classList.remove("active","muscle-test"));
 
-            if (el.id) {
-              const groupKey = findGroup(el.id);
-              if (!groupKey) return;
+            const groupKey = findGroup(el.id);
 
-              if (debugMode) {
+            if (debugMode) {
+              if (groupKey) {
                 GROUPS[groupKey].forEach(gid => {
                   const g = svgDoc.getElementById(gid);
                   if (g) {
@@ -215,14 +206,22 @@
                     alert(`Мышца: ${gid}\n${coords}`);
                   }
                 });
-                return;
+              } else {
+                el.classList.add("muscle-test");
+                const d = el.getAttribute("d") || "";
+                const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
+                const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
+                console.log(`Путь: ${el.id}, координаты: ${coords}`);
+                alert(`Путь: ${el.id}\n${coords}`);
               }
+              return;
+            }
 
+            if (groupKey) {
               GROUPS[groupKey].forEach(gid => {
                 const g = svgDoc.getElementById(gid);
                 if (g) g.classList.add("active");
               });
-
               const list = DB[groupKey] && DB[groupKey].length ? DB[groupKey] : ['Нет упражнений'];
               info.innerHTML = `<h3>${humanName(groupKey)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
             }
