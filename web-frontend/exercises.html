@@ -172,10 +172,27 @@
         // вставляем стили внутрь svg
         const style = svgDoc.createElement("style");
         style.textContent = `
-          .muscle { transition: fill .3s, stroke .3s; stroke: transparent; stroke-width: 20px; pointer-events:auto; cursor: pointer; }
-          .muscle:hover { fill: rgba(139,92,246,0.25); stroke:#8b5cf6; stroke-width:2px; }
-          .muscle.active { fill: rgba(139,92,246,0.55); stroke:#8b5cf6; stroke-width:2px; }
-          .muscle-test { fill:red !important; opacity:0.5; }
+          .muscle { 
+            cursor: pointer; 
+            transition: fill .3s, stroke .3s; 
+            stroke: transparent; 
+            stroke-width: 20px; 
+            pointer-events:auto;
+          }
+          .muscle:hover { 
+            fill: rgba(139,92,246,0.25) !important; 
+            stroke:#8b5cf6 !important; 
+            stroke-width:2px !important; 
+          }
+          .muscle.active { 
+            fill: rgba(139,92,246,0.55) !important; 
+            stroke:#8b5cf6 !important; 
+            stroke-width:2px !important; 
+          }
+          .muscle-test { 
+            fill:red !important; 
+            opacity:0.5; 
+          }
         `;
         const svgRoot = svgDoc.querySelector("svg");
         if (svgRoot) svgRoot.appendChild(style);
