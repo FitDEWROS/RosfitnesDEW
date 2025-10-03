@@ -131,41 +131,28 @@
 
     // ===== Упражнения по мышцам =====
     const DB = {
-      chest:['Жим лёжа','Отжимания','Сведение рук в тренажёре'],
       abs:['Скручивания','Подъём ног в висе','Планка'],
-      'biceps-left':['Подъём штанги на бицепс','Гантели сидя'],
-      'biceps-right':['Подъём штанги на бицепс','Гантели сидя'],
-      'delts-left':['Жим гантелей сидя','Разводка гантелей стоя'],
-      'delts-right':['Жим гантелей сидя','Разводка гантелей стоя'],
-      'forearm-left':['Сгибания кистей со штангой','Обратные сгибания'],
-      'forearm-right':['Сгибания кистей со штангой','Обратные сгибания'],
-      'obliques-left':['Русские скручивания','Боковая планка'],
-      'obliques-right':['Русские скручивания','Боковая планка'],
-      'quads-left':['Приседания','Выпады','Жим ногами'],
-      'quads-right':['Приседания','Выпады','Жим ногами'],
-      'calves-left':['Подъёмы на носки стоя','Подъёмы сидя'],
-      'calves-right':['Подъёмы на носки стоя','Подъёмы сидя'],
+      chest:['Жим лёжа','Отжимания','Сведение рук в тренажёре'],
+      biceps:['Подъём штанги на бицепс','Гантели сидя'],
+      delts:['Жим гантелей сидя','Разводка гантелей стоя'],
+      forearm:['Сгибания кистей со штангой','Обратные сгибания'],
+      obliques:['Русские скручивания','Боковая планка'],
+      quads:['Приседания','Выпады','Жим ногами'],
+      calves:['Подъёмы на носки стоя','Подъёмы сидя'],
       traps:['Шраги','Тяга к подбородку'],
-      'rear-delts-left':['Обратная разводка','Тяга к лицу'],
-      'rear-delts-right':['Обратная разводка','Тяга к лицу'],
-      'lats-left':['Тяга блока','Тяга в наклоне'],
-      'lats-right':['Тяга блока','Тяга в наклоне'],
-      'triceps-left':['Французский жим','Разгибания на блоке'],
-      'triceps-right':['Французский жим','Разгибания на блоке'],
+      rearDelts:['Обратная разводка','Тяга к лицу'],
+      lats:['Тяга блока','Тяга в наклоне'],
+      triceps:['Французский жим','Разгибания на блоке'],
       erectors:['Гиперэкстензия','Тяга с пола'],
-      'glutes-left':['Ягодичный мост','Румынская тяга'],
-      'glutes-right':['Ягодичный мост','Румынская тяга'],
-      'hams-left':['Сгибания ног лёжа','Тяга румынская'],
-      'hams-right':['Сгибания ног лёжа','Тяга румынская'],
-      'calves-back-left':['Подъёмы на носки стоя','Ослиные подъёмы'],
-      'calves-back-right':['Подъёмы на носки стоя','Ослиные подъёмы'],
+      glutes:['Ягодичный мост','Румынская тяга'],
+      hams:['Сгибания ног лёжа','Тяга румынская']
     };
 
-    // ===== Группы мышц =====
+    // ===== Группы мышц (список реальных id в SVG) =====
     const GROUPS = {
-      abs: ["abs"],
-      chest: ["chest"],
-      biceps: ["biceps-left","biceps-right"],
+      abs: ["abs-1","abs-2","abs-3","abs-4","abs-5","abs-6","abs-7","abs-8"],
+      chest: ["chest-1","chest-2"],
+      biceps: ["biceps-left-1","biceps-left-2","biceps-right-1","biceps-right-2"],
       delts: ["delts-left","delts-right"],
       forearm: ["forearm-left","forearm-right"],
       obliques: ["obliques-left","obliques-right"],
@@ -182,9 +169,9 @@
 
     function findGroup(id){
       for (let key in GROUPS){
-        if (GROUPS[key].includes(id)) return GROUPS[key];
+        if (GROUPS[key].includes(id)) return key;
       }
-      return [id];
+      return null;
     }
 
     function attachHandlers(obj){
@@ -201,7 +188,8 @@
         const svgRoot = svgDoc.querySelector("svg");
         if (svgRoot) svgRoot.appendChild(style);
 
-        Object.keys(DB).forEach(id => {
+        // Добавляем класс muscle ко всем id из GROUPS
+        Object.values(GROUPS).flat().forEach(id => {
           const el = svgDoc.getElementById(id);
           if (el) el.classList.add('muscle');
         });
@@ -216,15 +204,17 @@
               return;
             }
 
-            if (el.id && DB[el.id]) {
-              const groupIds = findGroup(el.id);
-              groupIds.forEach(gid => {
-                const g = svgDoc.getElementById(gid);
-                if (g) g.classList.add("active");
-              });
+            if (el.id) {
+              const groupKey = findGroup(el.id);
+              if (groupKey) {
+                GROUPS[groupKey].forEach(gid => {
+                  const g = svgDoc.getElementById(gid);
+                  if (g) g.classList.add("active");
+                });
 
-              const list = (DB[groupIds[0]] && DB[groupIds[0]].length) ? DB[groupIds[0]] : ['Нет упражнений'];
-              info.innerHTML = `<h3>${humanName(groupIds[0])}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+                const list = (DB[groupKey] && DB[groupKey].length) ? DB[groupKey] : ['Нет упражнений'];
+                info.innerHTML = `<h3>${humanName(groupKey)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+              }
             }
           });
         });
@@ -234,25 +224,18 @@
     attachHandlers(document.getElementById("svgFront"));
     attachHandlers(document.getElementById("svgBack"));
 
-    function humanName(id){
+    function humanName(key){
       const map = {
         chest:"Грудь", abs:"Пресс",
-        "biceps-left":"Бицепс", "biceps-right":"Бицепс",
-        "delts-left":"Дельта", "delts-right":"Дельта",
-        "forearm-left":"Предплечье", "forearm-right":"Предплечье",
-        "obliques-left":"Косые", "obliques-right":"Косые",
-        "quads-left":"Квадрицепс", "quads-right":"Квадрицепс",
-        "calves-left":"Икры", "calves-right":"Икры",
-        traps:"Трапеции",
-        "rear-delts-left":"Задняя дельта", "rear-delts-right":"Задняя дельта",
-        "lats-left":"Широчайшие", "lats-right":"Широчайшие",
-        "triceps-left":"Трицепс", "triceps-right":"Трицепс",
+        biceps:"Бицепсы", delts:"Дельты",
+        forearm:"Предплечья", obliques:"Косые",
+        quads:"Квадрицепсы", calves:"Икры",
+        traps:"Трапеции", rearDelts:"Задние дельты",
+        lats:"Широчайшие", triceps:"Трицепсы",
         erectors:"Разгибатели спины",
-        "glutes-left":"Ягодицы", "glutes-right":"Ягодицы",
-        "hams-left":"Бицепс бедра", "hams-right":"Бицепс бедра",
-        "calves-back-left":"Икры", "calves-back-right":"Икры"
+        glutes:"Ягодицы", hams:"Бицепсы бедра"
       };
-      return map[id] || id || "Без id";
+      return map[key] || key;
     }
   </script>
 </body>
