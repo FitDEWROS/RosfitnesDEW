@@ -9,7 +9,7 @@
 <style type="text/css">
 	.st0{fill:#BE9B8B;}
 	.st1{fill:#6F6F6F;}
-	.st2{fill:#3F3F3F;}
+	.st2 { fill:#3F3F3F; transition: fill .3s, stroke .3s; }
 </style>
 <g id="Background">
 </g>
