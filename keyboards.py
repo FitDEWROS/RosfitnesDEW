@@ -26,7 +26,6 @@ def client_kb(has_tariff: bool = False) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=rows,
         resize_keyboard=True,
-        is_persistent=False,
         one_time_keyboard=False,
     )
 
@@ -37,7 +36,6 @@ def client_main_kb() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="Профиль"), KeyboardButton(text="Тариф")],
         ],
         resize_keyboard=True,
-        is_persistent=False,
         one_time_keyboard=False,
     )
 
@@ -51,7 +49,6 @@ def tariffs_kb() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="⬅️ Назад")],
         ],
         resize_keyboard=True,
-        is_persistent=False,
         one_time_keyboard=False,
     )
 
@@ -63,7 +60,6 @@ def tariff_detail_kb() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="⬅️ Назад")],
         ],
         resize_keyboard=True,
-        is_persistent=False,
         one_time_keyboard=False,
     )
 
@@ -73,7 +69,6 @@ def empty_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[],
         resize_keyboard=True,
-        is_persistent=False
     )
 
 
