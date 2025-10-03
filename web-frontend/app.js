@@ -6,6 +6,7 @@
   const greetingEl  = document.getElementById('greeting');
   const tariffEl    = document.getElementById('tariff');
   const themeToggleBtn = document.getElementById("themeToggle");
+  const USE_TG_THEME = false; // ← запрещаем любые цвета из Telegram
 
   // 🔹 Элементы профиля
   const profileBtn = document.getElementById("profileBtn");
@@ -126,17 +127,21 @@
   // -------------------------------
   // Стили Telegram темы
   // -------------------------------
+  // Стили Telegram темы — отключены
   const setCSSFromTheme = (p = {}) => {
-    const map = {
-      '--bg':     p.bg_color,
-      '--text':   p.text_color,
-      '--card':   p.secondary_bg_color,
-      '--card-2': p.section_bg_color,
-    };
-    for (const [k, v] of Object.entries(map)) {
-      if (v) document.documentElement.style.setProperty(k, v);
-    }
+    if (!USE_TG_THEME) return; // ничего не делаем
+    // Если когда-нибудь захочешь — убери return и раскоммить код ниже
+    /*
+    const r = document.documentElement;
+    if (p.bg_color)            r.style.setProperty('--bg', p.bg_color);
+    if (p.text_color)          r.style.setProperty('--text', p.text_color);
+    if (p.secondary_bg_color)  r.style.setProperty('--card', p.secondary_bg_color);
+    if (p.section_bg_color)    r.style.setProperty('--card-border', p.section_bg_color);
+    // под свой акцент — по желанию:
+    // if (p.link_color)       r.style.setProperty('--accent', p.link_color);
+    */
   };
+
 
   const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
   const waitReady = () => { try { tg?.ready?.(); } catch (_) {} };
@@ -167,10 +172,10 @@
   const savedTheme = localStorage.getItem("theme");
   if (savedTheme) {
     isDark = savedTheme === "dark";
-  } else if (tg) {
-    setCSSFromTheme(tg.themeParams || {});
   }
+  // никаких цветов из Telegram
   applyTheme();
+
 
   if (themeToggleBtn) {
     themeToggleBtn.addEventListener("click", () => {
@@ -201,7 +206,7 @@
       if (tg) {
         waitReady();
         tg.expand?.();
-        setCSSFromTheme(tg.themeParams || {});
+        
         const u = tg.initDataUnsafe?.user;
         if (u?.first_name) greetingEl.textContent = `Привет, ${u.first_name}!`;
       }
