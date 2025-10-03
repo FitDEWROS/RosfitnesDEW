@@ -242,16 +242,20 @@
             const groupKey = findGroup(el.id);
 
             if (debugMode) {
-              if (groupKey) {
-                GROUPS[groupKey].forEach(gid => {
-                  const g = svgDoc.getElementById(gid);
-                  if (g) g.classList.add("muscle-test");
-                });
-              } else {
-                el.classList.add("muscle-test");
-              }
+              GROUPS[groupKey].forEach(gid => {
+                const g = svgDoc.getElementById(gid);
+                if (g) {
+                  g.classList.add("muscle-test");
+                  const d = g.getAttribute("d") || "";
+                  const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
+                  const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
+                  console.log(`Мышца: ${gid}, координаты: ${coords}`);
+                  alert(`Мышца: ${gid}\n${coords}`);
+                }
+              });
               return;
             }
+
 
             if (groupKey) {
               GROUPS[groupKey].forEach(gid => {
