@@ -226,12 +226,13 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 }
 
 .svg-host {
-  width: auto;
-  height: clamp(560px, 85vh, 1200px);
+  width: 100%;
+  max-width: 640px;
+  height: auto;
   display: block;
   margin: 0 auto;
-  transform: translateX(-100px); /* подгон сдвига */
 }
+
 
 /* 🔹 Общие стили мышц */
 /* 🔹 Общие стили мышц */

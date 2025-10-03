@@ -43,6 +43,7 @@
       background: var(--card); border:1px solid var(--card-border);
       border-radius:16px; padding:14px 16px; color:var(--text);
       box-shadow: 0 6px 26px rgba(0,0,0,.35);
+      animation: fadeUp 0.3s ease;
     }
     .info h3{ margin:0 0 6px; color: var(--accent); font-size: 18px; }
     .info ul{ margin:0; padding-left:18px; }
@@ -58,6 +59,11 @@
       color: var(--text);
     }
     .debug-toggle.active { outline:2px solid crimson; color: crimson; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -65,7 +71,6 @@
     <header class="header">
       <button id="btnBackNav" class="nav-btn">← Назад</button>
       <h1 class="page-title">Раздел: Упражнения</h1>
-      <button id="btnTheme" class="theme-btn">🌓</button>
     </header>
 
     <main class="muscle-wrap" aria-live="polite">
@@ -91,6 +96,28 @@
   </div>
 
   <script>
+    // === Подтягиваем тему из localStorage ===
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      if (savedTheme === "light") {
+        document.documentElement.classList.add("light");
+      } else {
+        document.documentElement.classList.remove("light");
+      }
+    })();
+
+    // === Кнопка Назад ===
+    document.getElementById("btnBackNav").addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+
+    // === Системная кнопка Назад (браузер/телефон) ===
+    window.addEventListener("popstate", function () {
+      window.location.href = "index.html";
+    });
+    history.pushState({ page: "exercises" }, "", window.location.href);
+
+    // === Основная логика ===
     const btnFront = document.getElementById('btnFront');
     const btnBack  = document.getElementById('btnBack');
     const btnDebug = document.getElementById('btnDebug');
@@ -177,9 +204,6 @@
         const svgDoc = obj.contentDocument || obj.getSVGDocument();
         if (!svgDoc) return;
 
-        const svgRoot = svgDoc.querySelector("svg");
-        if (!svgRoot) return;
-
         Object.values(GROUPS).flat().forEach(id => {
           const el = svgDoc.getElementById(id);
           if (el) el.classList.add('muscle');
@@ -199,22 +223,10 @@
               if (groupKey) {
                 GROUPS[groupKey].forEach(gid => {
                   const g = svgDoc.getElementById(gid);
-                  if (g) {
-                    g.classList.add("muscle-test");
-                    const d = g.getAttribute("d") || "";
-                    const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
-                    const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
-                    console.log(`Мышца: ${gid}, координаты: ${coords}`);
-                    alert(`Мышца: ${gid}\n${coords}`);
-                  }
+                  if (g) g.classList.add("muscle-test");
                 });
               } else {
                 el.classList.add("muscle-test");
-                const d = el.getAttribute("d") || "";
-                const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
-                const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
-                console.log(`Путь: ${el.id}, координаты: ${coords}`);
-                alert(`Путь: ${el.id}\n${coords}`);
               }
               return;
             }

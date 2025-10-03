@@ -41,7 +41,6 @@
         </div>
       </div>
 
-
       <div class="user" id="userbox">
         <div id="greeting" class="greeting">Привет!</div>
         <div class="user-row">
@@ -64,7 +63,6 @@
         <!-- Плитки добавляются из app.js -->
       </section>
     </main>
-
   </div>
 
   <!-- 🔹 Модальное окно профиля -->
@@ -120,6 +118,35 @@
         if (u.photo_url) profilePhotoEl.src = u.photo_url;
       }
     });
+  </script>
+
+  <script>
+    // === Функция применения темы ===
+    function applyTheme(theme) {
+      if (theme === "light") {
+        document.documentElement.classList.add("light");
+      } else {
+        document.documentElement.classList.remove("light");
+      }
+    }
+
+    // === Читаем тему из localStorage при загрузке ===
+    const savedTheme = localStorage.getItem("theme") || "dark"; // по умолчанию тёмная
+    applyTheme(savedTheme);
+
+    // === Кнопка переключения темы ===
+    const themeToggle = document.getElementById("themeToggle");
+    if (themeToggle) {
+      // выставляем иконку при загрузке
+      themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
+
+      themeToggle.addEventListener("click", () => {
+        const newTheme = document.documentElement.classList.contains("light") ? "dark" : "light";
+        localStorage.setItem("theme", newTheme);
+        applyTheme(newTheme);
+        themeToggle.textContent = newTheme === "light" ? "🌙" : "☀️";
+      });
+    }
   </script>
 </body>
 </html>
