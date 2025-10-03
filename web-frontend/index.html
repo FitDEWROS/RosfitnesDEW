@@ -6,23 +6,15 @@
   <meta name="color-scheme" content="dark light" />
   <title>RosApp — Telegram WebApp</title>
 
-  <!-- 🔧 Сразу перекрываем системные переменные Telegram -->
+  <!-- 🔧 Жёстко отключаем тему Telegram -->
   <style>
     :root {
-      --tg-theme-bg-color: #111113 !important;
-      --tg-theme-text-color: #ffffff !important;
-      --tg-theme-hint-color: #aaaaaa !important;
-      --tg-theme-link-color: #8b5cf6 !important;
-      --tg-theme-button-color: #8b5cf6 !important;
-      --tg-theme-button-text-color: #ffffff !important;
-    }
-    html.light {
-      --tg-theme-bg-color: #f5f7fa !important;
-      --tg-theme-text-color: #111113 !important;
-      --tg-theme-hint-color: #666666 !important;
-      --tg-theme-link-color: #3b82f6 !important;
-      --tg-theme-button-color: #3b82f6 !important;
-      --tg-theme-button-text-color: #ffffff !important;
+      --tg-theme-bg-color: initial !important;
+      --tg-theme-text-color: initial !important;
+      --tg-theme-hint-color: initial !important;
+      --tg-theme-link-color: initial !important;
+      --tg-theme-button-color: initial !important;
+      --tg-theme-button-text-color: initial !important;
     }
     body {
       background: var(--bg, #111113);
@@ -146,9 +138,12 @@
         document.documentElement.classList.remove("light");
       }
     }
+
+    // Читаем сохранённую тему
     const savedTheme = localStorage.getItem("theme") || "dark";
     applyTheme(savedTheme);
 
+    // Кнопка переключения
     const themeToggle = document.getElementById("themeToggle");
     if (themeToggle) {
       themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
