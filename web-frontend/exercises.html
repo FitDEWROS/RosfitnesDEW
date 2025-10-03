@@ -209,7 +209,12 @@
                     console.log(`Мышца: ${gid}, координаты: ${coords}`);
                   }
                 });
-                alert(msg);   //
+                const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
+                console.log(`Мышца: ${gid}, координаты: ${coords}`);
+                if (debugMode) {
+                  alert(`Мышца: ${gid}\n${coords}`);
+                }
+
                 return;
               }
 
