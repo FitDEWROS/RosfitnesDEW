@@ -1,23 +1,15 @@
 from aiogram import Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton
-from keyboards import tariffs_kb, client_main_kb, client_kb, empty_kb
+from keyboards import tariffs_kb, client_kb
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from helpers import send_temp, send_ephemeral, send_keep
+from helpers import send_temp
 from reg import profile_open
-from reg import db as reg_db  # импорт клиента БД (вверху файла)
+from reg import db as reg_db  # импорт клиента БД
 
 router = Router()
 
 INVISIBLE = "\u2063"  # невидимый символ
-
-
-async def show_with_reply_kb(message: Message, text: str, kb: ReplyKeyboardMarkup, *, md: bool = True):
-    # меню должны оставаться и заменять предыдущее
-    if md:
-        await send_keep(message, text, parse_mode="Markdown", reply_markup=kb)
-    else:
-        await send_keep(message, text, reply_markup=kb)
 
 
 # ---------- временное состояние ----------
@@ -104,7 +96,7 @@ async def forced_exit_from_fsm(message: Message, state: FSMContext):
     else:
         u = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
         has_app = bool(u and u.tariffName)
-        await show_with_reply_kb(message, "🏠 Главное меню клиента", client_kb(has_app), md=False)
+        await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app))
 
 
 @router.message(StateFilter(None), F.text == "Тариф")
@@ -112,19 +104,20 @@ async def show_tariffs(message: Message, state: FSMContext):
     await state.clear()
     u = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     if u and u.tariffName:
-        await show_with_reply_kb(
+        await send_temp(
             message,
             f"У вас куплен тариф: *{u.tariffName}*",
-            tariff_status_kb()
+            parse_mode="Markdown",
+            reply_markup=tariff_status_kb()
         )
         return
-    await show_with_reply_kb(message, "Выберите подходящий тариф:", tariffs_kb())
+    await send_temp(message, "Выберите подходящий тариф:", reply_markup=tariffs_kb())
 
 
 @router.message(StateFilter(None), F.text == "✏️ Изменить")
 async def tariff_change(message: Message, state: FSMContext):
     await state.clear()
-    await show_with_reply_kb(message, "Выберите новый тариф:", tariffs_kb())
+    await send_temp(message, "Выберите новый тариф:", reply_markup=tariffs_kb())
 
 
 @router.message(StateFilter(None), F.text == "🏠 На главную")
@@ -132,17 +125,18 @@ async def tariff_to_home(message: Message, state: FSMContext):
     await state.clear()
     u = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     has_app = bool(u and u.tariffName)
-    await show_with_reply_kb(message, "🏠 Главное меню клиента", client_kb(has_app), md=False)
+    await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app))
 
 
 # ---------- Базовый ----------
 @router.message(StateFilter(None), F.text == "💼 Базовый")
 async def show_base_tariff(message: Message, state: FSMContext):
     await state.set_data({TempState.TARIFF: "Базовый"})
-    await show_with_reply_kb(
+    await send_temp(
         message,
         "🧾 *Базовый тариф*\n\nТут будет ваше описание.",
-        base_tariff_menu_kb()
+        parse_mode="Markdown",
+        reply_markup=base_tariff_menu_kb()
     )
 
 
@@ -150,10 +144,11 @@ async def show_base_tariff(message: Message, state: FSMContext):
 @router.message(StateFilter(None), F.text == "🤑 Выгодный")
 async def show_value_tariff(message: Message, state: FSMContext):
     await state.set_data({TempState.TARIFF: "Выгодный"})
-    await show_with_reply_kb(
+    await send_temp(
         message,
         "🧾 *Выгодный тариф*\n\nЗдесь будет описание тарифа.",
-        buy_kb()
+        parse_mode="Markdown",
+        reply_markup=buy_kb()
     )
 
 
@@ -161,10 +156,11 @@ async def show_value_tariff(message: Message, state: FSMContext):
 @router.message(StateFilter(None), F.text == "💎 Максимум")
 async def show_maximum_tariff(message: Message, state: FSMContext):
     await state.set_data({TempState.TARIFF: "Максимум"})
-    await show_with_reply_kb(
+    await send_temp(
         message,
         "🧾 *Максимум*\n\nЗдесь будет описание тарифа.",
-        buy_kb()
+        parse_mode="Markdown",
+        reply_markup=buy_kb()
     )
 
 
@@ -192,7 +188,7 @@ async def handle_tariff_purchase(message: Message, state: FSMContext):
 
     u = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     has_app = bool(u and u.tariffName)
-    await show_with_reply_kb(message, "🏠 Главное меню клиента", client_kb(has_app), md=False)
+    await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app))
     await state.clear()
 
 
@@ -202,4 +198,4 @@ async def back_to_main_menu(message: Message, state: FSMContext):
     await state.clear()
     u = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     has_app = bool(u and u.tariffName)
-    await show_with_reply_kb(message, "🏠 Главное меню клиента", client_kb(has_app), md=False)
+    await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app))
