@@ -1,4 +1,25 @@
 /* ================================
+   🔧 Перекрываем тему Telegram WebApp
+================================ */
+:root {
+  --tg-theme-bg-color: #111113;       /* фон по умолчанию (тёмный) */
+  --tg-theme-text-color: #ffffff;     /* основной текст */
+  --tg-theme-hint-color: #aaaaaa;     /* второстепенный текст */
+  --tg-theme-link-color: #8b5cf6;     /* ссылки/акценты */
+  --tg-theme-button-color: #8b5cf6;   /* фон кнопки */
+  --tg-theme-button-text-color: #ffffff; /* текст кнопки */
+}
+
+html.light {
+  --tg-theme-bg-color: #f5f7fa;
+  --tg-theme-text-color: #111113;
+  --tg-theme-hint-color: #666666;
+  --tg-theme-link-color: #3b82f6;
+  --tg-theme-button-color: #3b82f6;
+  --tg-theme-button-text-color: #ffffff;
+}
+
+/* ================================
    🎨 Тема (переменные)
 ================================ */
 html {
@@ -157,7 +178,6 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   .info { font-size: 0.9rem; padding: 10px; }
 }
 
-
 /* ================================
    🔹 Модальное окно профиля
 ================================ */
@@ -233,8 +253,6 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   margin: 0 auto;
 }
 
-
-/* 🔹 Общие стили мышц */
 /* 🔹 Общие стили мышц */
 .muscle {
   cursor: pointer;
@@ -248,21 +266,20 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   fill: rgba(139, 92, 246, 0.5);
   stroke: #8b5cf6;
   stroke-width: 2px;
-  transform: scale(1.02); /* лёгкий зум при наведении */
+  transform: scale(1.02);
 }
 
 .muscle.active {
   fill: rgba(139, 92, 246, 0.7);
   stroke: #8b5cf6;
   stroke-width: 3px;
-  transform: scale(1.05); /* выделение при клике */
+  transform: scale(1.05);
 }
 
 .muscle-test {
   fill: red !important;
   opacity: 0.6 !important;
 }
-
 
 /* ================================
    Инфоблок
@@ -280,6 +297,7 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 .exercise-info h3 { margin: 0 0 10px; color: var(--accent); }
 .exercise-info ul, .exercise-list ul { margin: 0; padding-left: 20px; }
 .exercise-info li, .exercise-list li { margin: 4px 0; }
+
 .nav-btn {
   background: var(--card);
   border: 1px solid var(--card-border);
@@ -290,18 +308,15 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   transition: background var(--transition), color var(--transition);
 }
 .nav-btn:hover { background: var(--accent); color: #fff; }
-.info {
-  animation: fadeUp 0.3s ease;
-}
+
+.info { animation: fadeUp 0.3s ease; }
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
 button {
   transition: transform 0.2s ease, background 0.3s ease, color 0.3s ease;
 }
-
-button:active {
-  transform: scale(0.95);
-}
+button:active { transform: scale(0.95); }
