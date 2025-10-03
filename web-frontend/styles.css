@@ -204,7 +204,6 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   box-shadow: 0 8px 25px rgba(0,0,0,0.5);
   position: relative;
   backdrop-filter: none;
-  background-color: var(--card);
 }
 
 .modal-content h2 { margin: 10px 0; font-size: 1.2rem; }
@@ -238,11 +237,13 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   padding: 20px;
 }
 
-/* Контейнер с телом */
-.body-map {
+.canvas {
   width: 100%;
-  max-width: 640px;
-  height: auto;
+  max-width: 600px;   /* ограничиваем ширину */
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .svg-host {
@@ -261,21 +262,18 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   stroke-width: 20px;
   transition: fill 0.25s ease, stroke 0.25s ease, transform 0.25s ease;
 }
-
 .muscle:hover {
   fill: rgba(139, 92, 246, 0.5);
   stroke: #8b5cf6;
   stroke-width: 2px;
   transform: scale(1.02);
 }
-
 .muscle.active {
   fill: rgba(139, 92, 246, 0.7);
   stroke: #8b5cf6;
   stroke-width: 3px;
   transform: scale(1.05);
 }
-
 .muscle-test {
   fill: red !important;
   opacity: 0.6 !important;
@@ -316,30 +314,13 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-button {
-  transition: transform 0.2s ease, background 0.3s ease, color 0.3s ease;
-}
-button:active { transform: scale(0.95); }
-/* 🔹 Единая анимация для кнопок и плиток */
+/* ================================
+   🔹 Единая анимация для кнопок и плиток
+================================ */
 button, .tile, .nav-btn, .theme-btn {
   transition: transform 0.2s ease, background 0.3s ease, box-shadow 0.3s ease;
 }
-
 button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   transform: scale(0.95);
   box-shadow: 0 0 8px var(--accent);
-}
-.canvas {
-  width: 100%;
-  max-width: 600px;   /* ширина ограничена */
-  margin: 0 auto;     /* центрируем */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.svg-host {
-  width: 100%;
-  height: auto;
-  display: block;
 }
