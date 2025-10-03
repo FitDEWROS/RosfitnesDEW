@@ -5,8 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RosApp — Telegram WebApp</title>
 
-  <!-- 🔧 Жёстко отключаем тему Telegram -->
+  <!-- 🔧 Сбиваем телеграмовский фон и сразу применяем свою тему -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      if (savedTheme === "light") {
+        document.documentElement.classList.add("light");
+      } else {
+        document.documentElement.classList.remove("light");
+      }
+    })();
+  </script>
   <style>
+    html, body {
+      background-color: #111113 !important;
+      color: #ffffff !important;
+    }
+    html.light, html.light body {
+      background-color: #f5f7fa !important;
+      color: #111113 !important;
+    }
+    /* отключаем переменные Telegram */
     :root {
       --tg-theme-bg-color: initial !important;
       --tg-theme-text-color: initial !important;
@@ -14,9 +33,6 @@
       --tg-theme-link-color: initial !important;
       --tg-theme-button-color: initial !important;
       --tg-theme-button-text-color: initial !important;
-    }
-    body {
-      background: var(--bg, #111113);
     }
   </style>
 
@@ -138,11 +154,9 @@
       }
     }
 
-    // Читаем сохранённую тему
     const savedTheme = localStorage.getItem("theme") || "dark";
     applyTheme(savedTheme);
 
-    // Кнопка переключения
     const themeToggle = document.getElementById("themeToggle");
     if (themeToggle) {
       themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
