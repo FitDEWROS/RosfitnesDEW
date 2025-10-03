@@ -145,26 +145,33 @@
       triceps:['Французский жим','Разгибания на блоке'],
       erectors:['Гиперэкстензия','Тяга с пола'],
       glutes:['Ягодичный мост','Румынская тяга'],
-      hams:['Сгибания ног лёжа','Тяга румынская']
+      hams:['Сгибания ног лёжа','Тяга румынская'],
+      adductors:['Сведение ног в тренажёре'],
+      hipFlexors:['Подъём прямых ног лёжа'],
+      tibialis:['Подъёмы носков сидя']
     };
 
-    // ===== Группы (реальные id из SVG) =====
+    // ===== Группы (реальные id из SVG + заготовки) =====
     const GROUPS = {
       abs: ["abs-1","abs-2","abs-3","abs-4","abs-5","abs-6","abs-7","abs-8"],
       chest: ["chest-1","chest-2"],
-      biceps: ["biceps-left-1","biceps-left-2","biceps-right-1","biceps-right-2"],
+      biceps: ["biceps-left-1","biceps-left-2","biceps-right-1","biceps-righ-2"],
       delts: ["delts-left","delts-right"],
-      forearm: ["forearm-left","forearm-right"],
-      obliques: ["obliques-left","obliques-right"],
+      forearm: ["forearm-left-1","forearm-left-2","forearm-right-1","forearm-right-2"],
+      obliques: ["obliques-left-1","obliques-left-2","obliques-left-3","obliques-left-4",
+                 "obliques-right-1","obliques-right-2","obliques-right-3","obliques-right-4"],
       quads: ["quads-left","quads-right"],
-      calves: ["calves-left","calves-right","calves-back-left","calves-back-right"],
+      calves: ["calves-left","calves-right"],
       triceps: ["triceps-left","triceps-right"],
       rearDelts: ["rear-delts-left","rear-delts-right"],
       lats: ["lats-left","lats-right"],
       glutes: ["glutes-left","glutes-right"],
       hams: ["hams-left","hams-right"],
       traps: ["traps"],
-      erectors: ["erectors"]
+      erectors: ["erectors"],
+      adductors: ["adductors-left","adductors-right"],
+      hipFlexors: ["hip-flexors-left","hip-flexors-right"],
+      tibialis: ["tibialis-left","tibialis-right"]
     };
 
     function findGroup(id){
@@ -190,7 +197,6 @@
 
         svgDoc.querySelectorAll("path").forEach(el => {
           el.addEventListener("pointerdown", () => {
-            // убираем предыдущее выделение
             svgDoc.querySelectorAll(".muscle.active, .muscle-test").forEach(m => m.classList.remove("active","muscle-test"));
 
             if (el.id) {
@@ -198,7 +204,6 @@
               if (!groupKey) return;
 
               if (debugMode) {
-                // в отладке подсветить красным всю группу и показать координаты
                 GROUPS[groupKey].forEach(gid => {
                   const g = svgDoc.getElementById(gid);
                   if (g) {
@@ -207,18 +212,12 @@
                     const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
                     const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
                     console.log(`Мышца: ${gid}, координаты: ${coords}`);
+                    alert(`Мышца: ${gid}\n${coords}`);
                   }
                 });
-                const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
-                console.log(`Мышца: ${gid}, координаты: ${coords}`);
-                if (debugMode) {
-                  alert(`Мышца: ${gid}\n${coords}`);
-                }
-
                 return;
               }
 
-              // обычный режим
               GROUPS[groupKey].forEach(gid => {
                 const g = svgDoc.getElementById(gid);
                 if (g) g.classList.add("active");
@@ -244,7 +243,9 @@
         traps:"Трапеции", rearDelts:"Задние дельты",
         lats:"Широчайшие", triceps:"Трицепсы",
         erectors:"Разгибатели спины",
-        glutes:"Ягодицы", hams:"Бицепсы бедра"
+        glutes:"Ягодицы", hams:"Бицепсы бедра",
+        adductors:"Приводящие", hipFlexors:"Сгибатели бедра",
+        tibialis:"Большеберцовые"
       };
       return map[key] || key;
     }
