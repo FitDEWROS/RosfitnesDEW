@@ -150,9 +150,13 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 /* ================================
    📱 Mobile
 ================================ */
-@media (max-width: 420px) {
-  #greeting { white-space: normal; }
+@media (max-width: 480px) {
+  .page-title { font-size: 1.2rem; text-align: center; }
+  .header { flex-direction: row; justify-content: space-between; }
+  .view-switch { justify-content: center; }
+  .info { font-size: 0.9rem; padding: 10px; }
 }
+
 
 /* ================================
    🔹 Модальное окно профиля
@@ -236,18 +240,23 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   fill: rgba(139, 92, 246, 0.35);
   stroke: transparent;
   stroke-width: 20px;
-  transition: fill 0.2s, stroke 0.2s;
+  transition: fill 0.25s ease, stroke 0.25s ease, transform 0.25s ease;
 }
+
 .muscle:hover {
   fill: rgba(139, 92, 246, 0.5);
   stroke: #8b5cf6;
   stroke-width: 2px;
+  transform: scale(1.02); /* лёгкий зум при наведении */
 }
+
 .muscle.active {
   fill: rgba(139, 92, 246, 0.7);
   stroke: #8b5cf6;
   stroke-width: 3px;
+  transform: scale(1.05); /* выделение при клике */
 }
+
 .muscle-test {
   fill: red !important;
   opacity: 0.6 !important;
@@ -270,3 +279,28 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 .exercise-info h3 { margin: 0 0 10px; color: var(--accent); }
 .exercise-info ul, .exercise-list ul { margin: 0; padding-left: 20px; }
 .exercise-info li, .exercise-list li { margin: 4px 0; }
+.nav-btn {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.nav-btn:hover { background: var(--accent); color: #fff; }
+.info {
+  animation: fadeUp 0.3s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+button {
+  transition: transform 0.2s ease, background 0.3s ease, color 0.3s ease;
+}
+
+button:active {
+  transform: scale(0.95);
+}
