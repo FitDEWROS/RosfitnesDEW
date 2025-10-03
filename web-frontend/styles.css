@@ -320,3 +320,12 @@ button {
   transition: transform 0.2s ease, background 0.3s ease, color 0.3s ease;
 }
 button:active { transform: scale(0.95); }
+/* 🔹 Единая анимация для кнопок и плиток */
+button, .tile, .nav-btn, .theme-btn {
+  transition: transform 0.2s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+button:active, .tile:active, .nav-btn:active, .theme-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 8px var(--accent);
+}
