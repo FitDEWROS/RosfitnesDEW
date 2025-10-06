@@ -5,18 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RosApp — Telegram WebApp</title>
 
-  <!-- 🔧 Сразу сбиваем телеграмовскую тему и применяем свою -->
+  <!-- ⚙️ Сбрасываем телеграмовскую тему -->
   <script>
     (function() {
       const savedTheme = localStorage.getItem("theme") || "dark";
       const isLight = savedTheme === "light";
-      if (isLight) {
-        document.documentElement.classList.add("light");
-      } else {
-        document.documentElement.classList.remove("light");
-      }
+      if (isLight) document.documentElement.classList.add("light");
+      else document.documentElement.classList.remove("light");
 
-      // ⚡ моментально задаём свои CSS-переменные
       const root = document.documentElement.style;
       if (isLight) {
         root.setProperty("--bg", "#f5f7fa");
@@ -32,18 +28,14 @@
         root.setProperty("--accent", "#8b5cf6");
       }
 
-      // сразу выставляем иконку для переключателя
       document.addEventListener("DOMContentLoaded", () => {
         const themeToggle = document.getElementById("themeToggle");
-        if (themeToggle) {
-          themeToggle.textContent = isLight ? "🌙" : "☀️";
-        }
+        if (themeToggle) themeToggle.textContent = isLight ? "🌙" : "☀️";
       });
     })();
   </script>
 
   <style>
-    /* отключаем переменные Telegram */
     :root {
       --tg-theme-bg-color: unset !important;
       --tg-theme-text-color: unset !important;
@@ -59,19 +51,16 @@
     }
   </style>
 
-  <!-- Fonts & Styles -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Telegram SDK + env + app -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="env.js"></script>
   <script defer src="app.js"></script>
-
-  <!-- Lottie Player -->
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 </head>
+
 <body>
   <div class="wrap">
     <header class="header">
@@ -84,8 +73,7 @@
               background="transparent"
               speed="1"
               style="width: 64px; height: 64px;"
-              loop
-              autoplay>
+              loop autoplay>
             </lottie-player>
           </div>
           <p class="muted slogan">Твой путь к форме начинается здесь</p>
@@ -96,6 +84,7 @@
         <div id="greeting" class="greeting">Привет!</div>
         <div class="user-row">
           <div class="badge" id="tariff">Тариф: неизвестно</div>
+
           <!-- Кнопка профиль -->
           <button id="profileBtn" class="theme-btn" title="Мой профиль" aria-label="Мой профиль">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
@@ -103,7 +92,11 @@
               <path d="M12 14c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/>
             </svg>
           </button>
-          <!-- Кнопка тема -->
+
+          <!-- Тумблер режима -->
+          <button id="modeToggle" class="theme-btn" title="Режим тренировки" aria-label="Режим тренировки">🏋️</button>
+
+          <!-- Кнопка темы -->
           <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
         </div>
       </div>
@@ -141,7 +134,6 @@
     const profileNameEl = document.getElementById("profileName");
     const profileUsernameEl = document.getElementById("profileUsername");
     const profileIdEl = document.getElementById("profileId");
-    const profileTariffEl = document.getElementById("profileTariff");
     const profilePhotoEl = document.getElementById("profilePhoto");
 
     profileBtn.addEventListener("click", () => profileModal.classList.remove("hidden"));
@@ -150,24 +142,10 @@
       if (e.target === profileModal) profileModal.classList.add("hidden");
     });
 
-    // === Заполняем профиль данными из Telegram ===
-    document.addEventListener("DOMContentLoaded", () => {
-      if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-        const u = window.Telegram.WebApp.initDataUnsafe.user;
-        if (u.first_name) profileNameEl.textContent = u.first_name + (u.last_name ? " " + u.last_name : "");
-        if (u.username) profileUsernameEl.textContent = "@" + u.username;
-        if (u.id) profileIdEl.textContent = u.id;
-        if (u.photo_url) profilePhotoEl.src = u.photo_url;
-      }
-    });
-
-    // === Переключение тем ===
+    // === Переключение темы ===
     function applyTheme(theme) {
-      if (theme === "light") {
-        document.documentElement.classList.add("light");
-      } else {
-        document.documentElement.classList.remove("light");
-      }
+      if (theme === "light") document.documentElement.classList.add("light");
+      else document.documentElement.classList.remove("light");
     }
 
     const themeToggle = document.getElementById("themeToggle");
@@ -179,6 +157,68 @@
         themeToggle.textContent = newTheme === "light" ? "🌙" : "☀️";
       });
     }
+
+    // === Тумблер режима (зал / кроссфит) ===
+    const modeToggle = document.getElementById("modeToggle");
+
+    async function loadUserMode() {
+      const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      if (!tg?.id) return localStorage.getItem("training_mode") || "gym";
+
+      try {
+        const res = await fetch(`/api/mode?tg_id=${tg.id}`);
+        const data = await res.json();
+        if (data.ok && data.trainingMode) {
+          localStorage.setItem("training_mode", data.trainingMode);
+          return data.trainingMode;
+        }
+      } catch (err) {
+        console.warn("⚠ Не удалось получить режим:", err);
+      }
+      return localStorage.getItem("training_mode") || "gym";
+    }
+
+    function updateModeIcon(mode) {
+      modeToggle.textContent = mode === "crossfit" ? "🔥" : "🏋️";
+      modeToggle.title = mode === "crossfit" ? "Режим: Кроссфит" : "Режим: Зал";
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const currentMode = await loadUserMode();
+      updateModeIcon(currentMode);
+
+      // если у пользователя crossfit — сразу переходим
+      if (currentMode === "crossfit") {
+        window.location.href = "crossfit.html";
+      }
+    });
+
+    modeToggle.addEventListener("click", async () => {
+      const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      let currentMode = localStorage.getItem("training_mode") || "gym";
+      const newMode = currentMode === "gym" ? "crossfit" : "gym";
+
+      localStorage.setItem("training_mode", newMode);
+      updateModeIcon(newMode);
+
+      // 💾 сохраняем в БД
+      if (tg?.id) {
+        try {
+          await fetch("/api/mode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tg_id: tg.id, mode: newMode })
+          });
+        } catch (err) {
+          console.warn("⚠ Ошибка при обновлении режима:", err);
+        }
+      }
+
+      // 🔀 Переход
+      if (newMode === "crossfit") {
+        window.location.href = "crossfit.html";
+      }
+    });
   </script>
 </body>
 </html>

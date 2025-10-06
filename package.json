@@ -3,5 +3,11 @@
   "version": "1.0.0",
   "scripts": {
     "build": "mkdir -p build && cp -r web-frontend/* build/"
+  },
+  "devDependencies": {
+    "prisma": "^6.16.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.3"
   }
 }
