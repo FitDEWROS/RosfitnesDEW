@@ -12,20 +12,19 @@ datasource db {
 }
 
 model User {
-  id              Int      @id @default(autoincrement())
-  tg_id           BigInt   @unique
-  username        String?
-  first_name      String?
-  last_name       String?
-  heightCm        Int?      @db.Integer
-  weightKg        Float?    @db.DoublePrecision
-  age             Int?      @db.SmallInt
-  email           String?
-  phone           String?
-  agreed_offer    Boolean   @default(false)
-  tariffName      String?   // "Базовый" | "Выгодный" | "Максимум"
-  trainingMode    String    @default("gym") // "gym" или "crossfit"
-  
+  id             Int      @id @default(autoincrement())
+  tg_id          BigInt   @unique
+  username       String?
+  first_name     String?
+  last_name      String?
+  heightCm       Int?      @db.Integer
+  weightKg       Float?    @db.DoublePrecision
+  age            Int?      @db.SmallInt
+  email          String?
+  phone          String?
+  agreed_offer   Boolean   @default(false)
+  tariffName     String?   // "Базовый" | "Выгодный" | "Максимум"
+
   fatsecret_token FatSecretToken?
 }
 
