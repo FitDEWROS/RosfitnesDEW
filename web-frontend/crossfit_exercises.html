@@ -5,56 +5,121 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RosApp — Кроссфит упражнения</title>
 
-  <!-- 🧩 Шрифты и общий стиль -->
+  <!-- 🧩 Шрифты и базовые стили -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
 
   <style>
     /* ===============================
-       🏋️ Специфические стили для CrossFit страницы
+       ⚙️ Тема и базовые переменные
     =============================== */
+    :root {
+      --bg: #111113;
+      --text: #ffffff;
+      --card: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.1);
+      --accent: #8b5cf6;
+    }
+    html.light {
+      --bg: #f5f7fa;
+      --text: #111113;
+      --card: #ffffff;
+      --card-border: rgba(0,0,0,0.1);
+      --accent: #3b82f6;
+    }
 
     body.page-crossfit {
       background: var(--bg);
       color: var(--text);
-      transition: background 0.3s ease, color 0.3s ease;
       font-family: 'Inter', sans-serif;
+      transition: background 0.3s ease, color 0.3s ease;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
+    /* ===============================
+       🌈 Градиентная шапка
+    =============================== */
     .cf-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--card-border);
-      background: var(--card);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: linear-gradient(120deg, #8b5cf6, #3b82f6, #6366f1);
+      background-size: 200% 200%;
+      animation: gradientShift 6s ease-in-out infinite alternate;
+      color: #fff;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+      backdrop-filter: blur(10px);
+    }
+    @keyframes gradientShift {
+      from { background-position: 0% 50%; }
+      to { background-position: 100% 50%; }
     }
 
     .brand-mini {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
     }
-
     .brand-mini lottie-player {
-      width: 48px;
-      height: 48px;
+      width: 38px;
+      height: 38px;
+    }
+    .app-title {
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: 0.3px;
     }
 
+    /* Кнопка Назад */
+    .nav-btn {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 10px rgba(255,255,255,0.15);
+    }
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(-1px);
+      box-shadow: 0 0 12px rgba(255,255,255,0.25);
+    }
+    .nav-btn:active { transform: scale(0.97); }
+
+    html.light .cf-header {
+      background: linear-gradient(120deg, #93c5fd, #a78bfa, #60a5fa);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      color: #111;
+    }
+    html.light .nav-btn {
+      color: #111;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(0,0,0,0.1);
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+    }
+
+    /* ===============================
+       🏋️ Сетка упражнений
+    =============================== */
     .cf-main {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 18px;
-      padding: 24px 16px 100px;
+      padding: 24px 16px 40px;
       justify-items: center;
       flex-grow: 1;
     }
@@ -74,33 +139,28 @@
       opacity: 0;
       transform: translateY(15px);
     }
-
     .exercise-card:hover {
       transform: translateY(-6px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 6px 22px var(--accent);
     }
 
     .thumb {
       position: relative;
-      overflow: hidden;
       height: 160px;
       background: #000;
     }
-
     .thumb img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      filter: brightness(0.8);
       transition: transform 0.3s ease, filter 0.3s ease;
-      filter: brightness(0.85);
     }
-
     .exercise-card:hover img {
       transform: scale(1.05);
       filter: brightness(1);
     }
-
-    .thumb .overlay {
+    .overlay {
       position: absolute;
       inset: 0;
       display: flex;
@@ -109,6 +169,7 @@
       color: white;
       font-size: 2.2rem;
       text-shadow: 0 0 10px rgba(0,0,0,0.6);
+      pointer-events: none;
     }
 
     .exercise-card h3 {
@@ -116,25 +177,15 @@
       font-weight: 600;
       margin: 12px 0 6px;
     }
-
     .exercise-card p {
       font-size: 0.9rem;
       opacity: 0.85;
       padding: 0 10px 12px;
     }
 
-    .cf-footer {
-      text-align: center;
-      font-size: 0.85rem;
-      padding: 14px;
-      color: var(--text);
-      opacity: 0.6;
-      border-top: 1px solid var(--card-border);
-      background: var(--card);
-      backdrop-filter: blur(8px);
-    }
-
-    /* 🎥 Видео-модалка */
+    /* ===============================
+       🎥 Видео-модалка
+    =============================== */
     .modal {
       display: none;
       position: fixed;
@@ -144,15 +195,15 @@
       backdrop-filter: blur(10px);
       justify-content: center;
       align-items: center;
-      animation: fadeIn 0.25s ease;
     }
     .modal.show { display: flex; }
 
-    .modal-content.video-modal {
+    .video-modal {
+      position: relative;
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 20px;
-      padding: 16px 20px 24px;
+      padding: 20px 24px 28px;
       max-width: 420px;
       width: 90%;
       color: var(--text);
@@ -160,11 +211,11 @@
       box-shadow: 0 8px 30px rgba(0,0,0,0.4);
       animation: modalAppear 0.3s ease forwards;
     }
-
     video {
       width: 100%;
       border-radius: 12px;
       margin-bottom: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
     }
 
     @keyframes modalAppear {
@@ -192,7 +243,7 @@
 <body class="page-crossfit">
   <div class="wrap">
 
-    <!-- 🔙 Шапка -->
+    <!-- 🔹 Градиентная шапка -->
     <header class="cf-header">
       <button id="backBtn" class="nav-btn">← Назад</button>
       <div class="brand-mini">
@@ -203,19 +254,12 @@
     </header>
 
     <!-- 🏋️ Основной контент -->
-    <main class="cf-main" id="exerciseList" aria-live="polite">
-      <!-- Карточки упражнений появятся через JS -->
-    </main>
-
-    <!-- ⚙️ Футер -->
-    <footer class="cf-footer">
-      RosApp — Кроссфит: упражнения
-    </footer>
+    <main class="cf-main" id="exerciseList" aria-live="polite"></main>
   </div>
 
   <!-- 🎥 Модалка видео -->
   <div id="videoModal" class="modal">
-    <div class="modal-content video-modal">
+    <div class="video-modal">
       <span class="close" id="closeVideo">&times;</span>
       <video id="exerciseVideo" controls playsinline></video>
       <h3 id="videoTitle"></h3>
@@ -224,73 +268,27 @@
   </div>
 
   <script>
-    /* === 🌗 Применяем тему === */
+    // 🌗 Применяем тему
     (function() {
       const theme = localStorage.getItem("theme") || "dark";
       document.documentElement.classList.toggle("light", theme === "light");
     })();
 
-    /* === 🏋️ Данные упражнений === */
+    // 🏋️ Данные упражнений
     const exercises = [
-      {
-        name: "Бёрпи",
-        desc: "Полное упражнение на всё тело: прыжок, планка, отжимание.",
-        thumb: "thumbs/burpee.jpg",
-        video: "videos/burpee.mp4"
-      },
-      {
-        name: "Трастеры",
-        desc: "Комбинация приседания и жима штанги вверх.",
-        thumb: "thumbs/thruster.jpg",
-        video: "videos/thruster.mp4"
-      },
-      {
-        name: "Гребля",
-        desc: "Кардио-нагрузка на всё тело с акцентом на ноги и спину.",
-        thumb: "thumbs/row.jpg",
-        video: "videos/row.mp4"
-      },
-      {
-        name: "Прыжки на тумбу",
-        desc: "Развивают силу ног и взрывную мощь.",
-        thumb: "thumbs/boxjump.jpg",
-        video: "videos/boxjump.mp4"
-      },
-      {
-        name: "Подтягивания",
-        desc: "Классическое упражнение для спины и рук.",
-        thumb: "thumbs/pullup.jpg",
-        video: "videos/pullup.mp4"
-      },
-      {
-        name: "Отжимания в стойке на руках",
-        desc: "Развитие плечевого пояса и равновесия.",
-        thumb: "thumbs/hspu.jpg",
-        video: "videos/hspu.mp4"
-      },
-      {
-        name: "Становая тяга",
-        desc: "Базовое упражнение для спины, ног и хвата.",
-        thumb: "thumbs/deadlift.jpg",
-        video: "videos/deadlift.mp4"
-      },
-      {
-        name: "Спринт",
-        desc: "Высокоинтенсивное упражнение на выносливость.",
-        thumb: "thumbs/sprint.jpg",
-        video: "videos/sprint.mp4"
-      },
-      {
-        name: "Русские скручивания",
-        desc: "Развитие мышц кора и косых мышц живота.",
-        thumb: "thumbs/russian_twist.jpg",
-        video: "videos/russian_twist.mp4"
-      }
+      { name: "Бёрпи", desc: "Полное упражнение на всё тело: прыжок, планка, отжимание.", thumb: "thumbs/burpee.jpg", video: "videos/burpee.mp4" },
+      { name: "Трастеры", desc: "Комбинация приседания и жима штанги вверх.", thumb: "thumbs/thruster.jpg", video: "videos/thruster.mp4" },
+      { name: "Гребля", desc: "Кардио-нагрузка на всё тело с акцентом на ноги и спину.", thumb: "thumbs/row.jpg", video: "videos/row.mp4" },
+      { name: "Прыжки на тумбу", desc: "Развивают силу ног и взрывную мощь.", thumb: "thumbs/boxjump.jpg", video: "videos/boxjump.mp4" },
+      { name: "Подтягивания", desc: "Классическое упражнение для спины и рук.", thumb: "thumbs/pullup.jpg", video: "videos/pullup.mp4" },
+      { name: "Отжимания в стойке на руках", desc: "Развитие плечевого пояса и равновесия.", thumb: "thumbs/hspu.jpg", video: "videos/hspu.mp4" },
+      { name: "Становая тяга", desc: "Базовое упражнение для спины, ног и хвата.", thumb: "thumbs/deadlift.jpg", video: "videos/deadlift.mp4" },
+      { name: "Спринт", desc: "Высокоинтенсивное упражнение на выносливость.", thumb: "thumbs/sprint.jpg", video: "videos/sprint.mp4" },
+      { name: "Русские скручивания", desc: "Развитие мышц кора и косых мышц живота.", thumb: "thumbs/russian_twist.jpg", video: "videos/russian_twist.mp4" }
     ];
 
-    /* === 🧱 Отрисовка карточек === */
+    // 🧱 Отрисовка карточек
     const list = document.getElementById("exerciseList");
-
     exercises.forEach((ex, i) => {
       const card = document.createElement("div");
       card.className = "exercise-card";
@@ -304,20 +302,16 @@
       `;
       card.addEventListener("click", () => openVideoModal(ex));
       list.appendChild(card);
-
-      // Плавное появление
-      setTimeout(() => {
-        card.style.opacity = 1;
-        card.style.transform = "translateY(0)";
-      }, 100 * i);
+      // плавное появление
+      setTimeout(() => { card.style.opacity = 1; card.style.transform = "translateY(0)"; }, 100 * i);
     });
 
-    /* === 🔙 Кнопка Назад === */
+    // 🔙 Назад
     document.getElementById("backBtn").addEventListener("click", () => {
       window.location.href = "index.html";
     });
 
-    /* === 🎥 Модалка видео === */
+    // 🎥 Модалка видео
     function openVideoModal(ex) {
       const modal = document.getElementById("videoModal");
       const video = document.getElementById("exerciseVideo");
@@ -327,23 +321,19 @@
       modal.classList.add("show");
     }
 
-    document.getElementById("closeVideo").addEventListener("click", () => {
+    document.getElementById("closeVideo").addEventListener("click", closeModal);
+    window.addEventListener("click", (e) => {
+      const modal = document.getElementById("videoModal");
+      if (e.target === modal) closeModal();
+    });
+
+    function closeModal() {
       const modal = document.getElementById("videoModal");
       const video = document.getElementById("exerciseVideo");
       modal.classList.remove("show");
       video.pause();
       video.src = "";
-    });
-
-    window.addEventListener("click", (e) => {
-      const modal = document.getElementById("videoModal");
-      if (e.target === modal) {
-        modal.classList.remove("show");
-        const video = document.getElementById("exerciseVideo");
-        video.pause();
-        video.src = "";
-      }
-    });
+    }
   </script>
 </body>
 </html>
