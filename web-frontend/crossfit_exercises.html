@@ -247,46 +247,58 @@
       transition: opacity 0.2s;
     }
     .close:hover { opacity: 1; }
-    /* 📱 Адаптация под мобильные устройства */
-@media (max-width: 600px) {
+    /* 📱 Адаптация под мобильные устройства и Telegram WebApp */
+@media (max-width: 800px) {
   .video-modal {
-    width: 100vw;
-    height: 100vh;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh; /* ✅ учитывает динамическую высоту браузера */
     max-width: none;
     max-height: none;
     border-radius: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     background: var(--bg);
+    animation: slideUp 0.35s ease forwards;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 
   .video-modal video {
     width: 100%;
     height: auto;
+    max-height: 60dvh; /* 🔹 видео не уходит за край */
+    object-fit: contain;
     border-radius: 0;
-    margin: 0;
+    margin: env(safe-area-inset-top) 0 0;
   }
 
   .video-modal h3,
   .video-modal p {
-    padding: 12px 20px 20px;
+    padding: 14px 20px 24px;
     text-align: center;
     color: var(--text);
   }
 
   .close {
     position: absolute;
-    top: 14px;
-    right: 18px;
+    top: calc(env(safe-area-inset-top) + 14px);
+    right: calc(env(safe-area-inset-right) + 18px);
     font-size: 32px;
     color: var(--text);
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.35);
     border-radius: 50%;
     padding: 4px 10px;
+    z-index: 500;
   }
 }
+
 
   </style>
 
