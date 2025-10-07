@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RosApp — Telegram WebApp</title>
 
+  <!-- ⚙️ Инициализация темы -->
   <script>
     (function() {
       const savedTheme = localStorage.getItem("theme") || "dark";
-      document.documentElement.classList.toggle("light", savedTheme === "light");
+      const isLight = savedTheme === "light";
+      document.documentElement.classList.toggle("light", isLight);
     })();
   </script>
 
@@ -22,6 +24,7 @@
       --radius: 16px;
       --transition: 0.3s ease;
     }
+
     html.light {
       --bg: #f5f7fa;
       --text: #111113;
@@ -29,25 +32,31 @@
       --card-border: rgba(0,0,0,0.1);
       --accent: #3b82f6;
     }
+
     body {
       background-color: var(--bg);
       color: var(--text);
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
+      transition: background-color var(--transition), color var(--transition);
     }
 
     /* ================================ */
     /* 🌟 Верхняя часть                 */
     /* ================================ */
     .header {
+      position: relative;
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 16px 16px 12px;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px 16px;
+      text-align: center;
     }
-
     .brand-left {
+      position: absolute;
+      top: 16px;
+      left: 16px;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
@@ -57,20 +66,30 @@
     .app-title {
       font-size: 1.8rem;
       font-weight: 700;
-      margin: 0;
+      margin-bottom: 8px;
     }
 
     .logo {
-      width: 60px;
-      height: 60px;
-      margin-top: 4px;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 6px;
     }
 
+    .slogan {
+      font-size: 0.95rem;
+      opacity: 0.75;
+      margin-top: 0;
+    }
+
+    /* Правая часть (профиль) */
     .user {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      text-align: right;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      text-align: right;
       gap: 6px;
     }
 
@@ -85,6 +104,14 @@
       gap: 8px;
     }
 
+    .badge {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+    }
+
     .theme-btn {
       background: var(--card);
       border: 1px solid var(--card-border);
@@ -94,16 +121,10 @@
       color: var(--text);
       transition: background 0.25s ease, color 0.25s ease;
     }
+
     .theme-btn:hover {
       background: var(--accent);
       color: #fff;
-    }
-
-    .slogan {
-      font-size: 0.95rem;
-      opacity: 0.75;
-      margin: 8px auto 0;
-      text-align: center;
     }
 
     /* ================================ */
@@ -114,8 +135,9 @@
       flex-direction: column;
       align-items: center;
       gap: 14px;
-      padding: 24px 16px 120px;
+      padding: 24px 16px 100px; /* отступ под тумблер */
     }
+
     .tile {
       display: block;
       width: 260px;
@@ -127,28 +149,22 @@
       color: var(--text);
       transition: transform 0.2s, background 0.2s;
     }
+
     .tile:hover {
       transform: translateY(-4px);
       background: rgba(255,255,255,0.08);
     }
 
     /* ================================ */
-    /* ⚙️ Тумблер + тариф               */
+    /* ⚙️ Плавающий тумблер             */
     /* ================================ */
-    .bottom-block {
+    .toggle-wrapper {
       position: fixed;
-      bottom: 24px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .toggle-wrapper {
-      width: 200px;
-      height: 42px;
+      width: 180px;
+      height: 40px;
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 12px;
@@ -156,8 +172,10 @@
       justify-content: space-between;
       align-items: center;
       padding: 4px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+      z-index: 100;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       backdrop-filter: blur(10px);
+      transition: background 0.3s ease;
     }
 
     .toggle-option {
@@ -169,6 +187,7 @@
       z-index: 2;
       user-select: none;
       cursor: pointer;
+      transition: color 0.3s ease;
     }
 
     .toggle-slider {
@@ -179,7 +198,7 @@
       height: calc(100% - 6px);
       background: var(--accent);
       border-radius: 8px;
-      transition: left 0.3s ease;
+      transition: left 0.3s ease, background 0.3s ease;
       z-index: 1;
     }
 
@@ -196,19 +215,6 @@
       color: #fff;
     }
 
-    .tariff-under-toggle {
-      width: 200px;
-      text-align: center;
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      font-size: 0.85rem;
-      padding: 6px 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-      backdrop-filter: blur(8px);
-    }
-
     /* ================================ */
     /* 📱 Модалка профиля               */
     /* ================================ */
@@ -222,6 +228,7 @@
       align-items: center;
       justify-content: center;
     }
+
     .modal.hidden { display: none; }
 
     .modal-content {
@@ -235,6 +242,7 @@
       box-shadow: 0 8px 25px rgba(0,0,0,0.5);
       position: relative;
     }
+
     .close {
       position: absolute;
       top: 10px; right: 15px;
@@ -255,7 +263,6 @@
 <body>
   <div class="wrap">
     <header class="header">
-      <!-- Левая часть -->
       <div class="brand-left">
         <h1 class="app-title">RosApp</h1>
         <div class="logo">
@@ -263,10 +270,10 @@
         </div>
       </div>
 
-      <!-- Правая часть -->
       <div class="user" id="userbox">
         <div id="greeting" class="greeting">Привет, Максим!</div>
         <div class="user-row">
+          <div class="badge" id="tariff">Тариф: Максимум</div>
           <button id="profileBtn" class="theme-btn" title="Мой профиль" aria-label="Мой профиль">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="8" r="4"/>
@@ -276,43 +283,92 @@
           <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
         </div>
       </div>
+
+      <p class="slogan">Твой путь к форме начинается здесь</p>
     </header>
 
-    <p class="slogan">Твой путь к форме начинается здесь</p>
 
     <main>
       <section class="grid" id="tiles" aria-live="polite"></section>
     </main>
   </div>
 
-  <!-- 🔀 Тумблер + тариф -->
-  <div class="bottom-block">
-    <div id="modeToggle" class="toggle-wrapper">
-      <div class="toggle-slider" id="toggleSlider"></div>
-      <span class="toggle-option" data-mode="gym">Зал</span>
-      <span class="toggle-option" data-mode="crossfit">Кроссфит</span>
-    </div>
-    <div class="tariff-under-toggle" id="tariff">Тариф: Максимум</div>
+  <!-- 🔀 Тумблер внизу -->
+  <div id="modeToggle" class="toggle-wrapper">
+    <div class="toggle-slider" id="toggleSlider"></div>
+    <span class="toggle-option" data-mode="gym">Зал</span>
+    <span class="toggle-option" data-mode="crossfit">Кроссфит</span>
   </div>
 
-  <!-- Модалка -->
+  <!-- 🔹 Модалка профиля -->
   <div id="profileModal" class="modal hidden">
     <div class="modal-content">
       <span class="close" id="closeProfile">&times;</span>
       <div class="profile-card">
+        <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Аватар">
         <h2 id="profileName">Имя Фамилия</h2>
         <p id="profileUsername">@username</p>
+        <p>ID Telegram: <span id="profileId"></span></p>
+        <p>Тариф: <span id="profileTariff"></span></p>
       </div>
     </div>
   </div>
 
+  <noscript>Для работы приложения нужен включённый JavaScript.</noscript>
+
   <script>
+    // === Модалка профиля ===
+    const profileBtn = document.getElementById("profileBtn");
+    const profileModal = document.getElementById("profileModal");
+    const closeProfile = document.getElementById("closeProfile");
+
+    profileBtn.addEventListener("click", () => profileModal.classList.remove("hidden"));
+    closeProfile.addEventListener("click", () => profileModal.classList.add("hidden"));
+    window.addEventListener("click", (e) => {
+      if (e.target === profileModal) profileModal.classList.add("hidden");
+    });
+
+    // === Переключение темы ===
     const themeToggle = document.getElementById("themeToggle");
-    themeToggle.addEventListener("click", () => {
-      const newTheme = document.documentElement.classList.contains("light") ? "dark" : "light";
-      document.documentElement.classList.toggle("light", newTheme === "light");
-      localStorage.setItem("theme", newTheme);
-      themeToggle.textContent = newTheme === "light" ? "🌙" : "☀️";
+    if (themeToggle) {
+      themeToggle.addEventListener("click", () => {
+        const newTheme = document.documentElement.classList.contains("light") ? "dark" : "light";
+        localStorage.setItem("theme", newTheme);
+        document.documentElement.classList.toggle("light", newTheme === "light");
+        themeToggle.textContent = newTheme === "light" ? "🌙" : "☀️";
+      });
+    }
+
+    // === Плавающий тумблер ===
+    document.addEventListener("DOMContentLoaded", async () => {
+      const toggle = document.getElementById("modeToggle");
+      if (!toggle) return;
+      const savedMode = localStorage.getItem("training_mode") || "gym";
+      toggle.dataset.mode = savedMode;
+
+      toggle.querySelectorAll(".toggle-option").forEach(opt => {
+        opt.addEventListener("click", async (e) => {
+          const newMode = e.target.dataset.mode;
+          toggle.dataset.mode = newMode;
+          localStorage.setItem("training_mode", newMode);
+
+          const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+          if (tg?.id) {
+            try {
+              await fetch("/api/mode", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tg_id: tg.id, mode: newMode })
+              });
+            } catch (err) {
+              console.warn("⚠ Ошибка при обновлении режима:", err);
+            }
+          }
+
+          const tariff = document.getElementById("tariff").textContent.replace("Тариф: ", "") || "Базовый";
+          if (window.renderTilesByTariff) window.renderTilesByTariff(tariff);
+        });
+      });
     });
   </script>
 </body>
