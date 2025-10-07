@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "prisma generate --schema=../prisma/schema.prisma --generator client_js",
+    "build": "prisma generate --schema=../prisma/schema.prisma",
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
