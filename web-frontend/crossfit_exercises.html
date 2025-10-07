@@ -14,29 +14,36 @@
 
 <body class="page-crossfit">
   <header class="cf-header">
-    <div class="header-left">
-      <button class="back-btn" id="backBtn" title="Назад">⬅️ Назад</button>
+    <!-- Левая часть -->
+    <button class="nav-btn" id="backBtn" title="Назад">
+      ⬅ Назад
+    </button>
+
+    <!-- Центр -->
+    <div class="brand-mini">
+      <lottie-player
+        src="dumbell animation.json"
+        background="transparent"
+        speed="1"
+        loop autoplay>
+      </lottie-player>
+      <h1 class="page-title">Кроссфит: упражнения</h1>
     </div>
 
-    <div class="header-title">
-      <div class="brand-mini">
-        <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
-        <h1>RosApp</h1>
-      </div>
-    </div>
-
-    <div style="width: 35px;"></div>
+    <!-- Пустышка для симметрии -->
+    <div style="width: 60px;"></div>
   </header>
 
   <main id="exerciseList" class="cf-main">
-    <!-- Карточки подгрузятся -->
+    <!-- Карточки упражнений -->
   </main>
 
   <footer class="cf-footer">
-    RosApp — Кроссфит: упражнения
+    RosApp — версия для Кроссфита
   </footer>
 
   <script>
+    // === Список упражнений ===
     const exercises = [
       { name: "Бёрпи", desc: "Полное упражнение на всё тело: прыжок, планка, отжимание." },
       { name: "Трастеры", desc: "Комбинация приседания и жима штанги вверх." },
@@ -44,7 +51,7 @@
       { name: "Прыжки на тумбу", desc: "Развивают силу ног и взрывную мощь." },
       { name: "Подтягивания", desc: "Классическое упражнение для спины и рук." },
       { name: "Отжимания в стойке на руках", desc: "Развитие плечевого пояса и равновесия." },
-      { name: "Становая тяга", desc: "Базовое упражнение для спины, ног и хвата." },
+      { name: "Становая тяга", desc: "Базовое упражнение для спины, ног и хвата." }
     ];
 
     const list = document.getElementById("exerciseList");
@@ -55,6 +62,7 @@
       list.appendChild(card);
     });
 
+    // Кнопка назад
     document.getElementById("backBtn").addEventListener("click", () => {
       window.location.href = "index.html";
     });
