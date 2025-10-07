@@ -92,21 +92,29 @@
 <body>
   <div class="wrap">
     <header class="header">
-      <div class="brand">
-        <h1 class="app-title">RosApp</h1>
-        <div class="brand-row">
-          <div class="logo" aria-hidden="true">
-            <lottie-player
-              src="dumbell animation.json"
-              background="transparent"
-              speed="1"
-              style="width: 64px; height: 64px;"
-              loop autoplay>
-            </lottie-player>
-          </div>
-          <p class="muted slogan">Твой путь к форме начинается здесь</p>
-        </div>
+  <div class="brand">
+    <h1 class="app-title">RosApp</h1>
+
+    <!-- 🔹 Тумблер зал / кроссфит -->
+    <div id="modeToggle" class="mode-toggle">
+      <button data-mode="gym" class="mode-btn active">Зал</button>
+      <button data-mode="crossfit" class="mode-btn">Кроссфит</button>
+    </div>
+
+    <div class="brand-row">
+      <div class="logo" aria-hidden="true">
+        <lottie-player
+          src="dumbell animation.json"
+          background="transparent"
+          speed="1"
+          style="width: 64px; height: 64px;"
+          loop autoplay>
+        </lottie-player>
       </div>
+      <p class="muted slogan">Твой путь к форме начинается здесь</p>
+    </div>
+  </div>
+
 
       <div class="user" id="userbox">
         <div id="greeting" class="greeting">Привет!</div>
