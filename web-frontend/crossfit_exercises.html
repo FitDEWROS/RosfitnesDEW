@@ -35,8 +35,10 @@
       transition: background 0.3s ease, color 0.3s ease;
     }
 
-    /* 🌈 Градиент-аура */
+    /* 🌈 Градиент-аура (тёмная тема — как было) */
     .cf-header {
+      width: 100vw;
+      margin-left: calc(-50vw + 50%);
       position: sticky;
       top: 0;
       display: flex;
@@ -51,7 +53,6 @@
       overflow: hidden;
       z-index: 20;
     }
-
     .cf-header::after {
       content: "";
       position: absolute;
@@ -59,6 +60,18 @@
       background: radial-gradient(circle at 50% 100%, rgba(139,92,246,0.45), transparent 70%);
       z-index: -1;
       pointer-events: none;
+    }
+
+    /* ☀️ Светлая тема (в стиле index.html, но мягче) */
+    html.light .cf-header {
+      background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(59,130,246,0.18));
+      backdrop-filter: blur(16px);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      color: #111;
+    }
+    html.light .cf-header::after {
+      background: radial-gradient(circle at 60% 100%, rgba(59,130,246,0.25), transparent 70%);
     }
 
     .nav-btn {
@@ -75,6 +88,17 @@
     .nav-btn:hover {
       background: rgba(139,92,246,0.3);
       box-shadow: 0 0 10px rgba(139,92,246,0.5);
+    }
+
+    /* Кнопка в светлой теме */
+    html.light .nav-btn {
+      border: 1px solid rgba(0,0,0,0.15);
+      color: #111;
+      background: rgba(255,255,255,0.6);
+    }
+    html.light .nav-btn:hover {
+      background: rgba(59,130,246,0.15);
+      box-shadow: 0 0 10px rgba(59,130,246,0.25);
     }
 
     .brand-mini {
@@ -224,22 +248,19 @@
 </head>
 
 <body class="page-crossfit">
+  <!-- Шапка вынесена наружу, чтобы убрать белые края -->
+  <header class="cf-header">
+    <button id="backBtn" class="nav-btn">← Назад</button>
+    <div class="brand-mini">
+      <lottie-player src="Avocado.json" background="transparent" speed="1" loop autoplay></lottie-player>
+      <span class="app-title">RosApp</span>
+    </div>
+  </header>
+
   <div class="wrap">
-    <!-- 🔹 Градиентная аура-шапка -->
-    <header class="cf-header">
-      <button id="backBtn" class="nav-btn">← Назад</button>
-
-      <div class="brand-mini">
-        <lottie-player src="Avocado.json" background="transparent" speed="1" loop autoplay></lottie-player>
-        <span class="app-title">RosApp</span>
-      </div>
-    </header>
-
-    <!-- 🏋️ Основной контент -->
     <main class="cf-main" id="exerciseList" aria-live="polite"></main>
   </div>
 
-  <!-- 🎥 Модалка видео -->
   <div id="videoModal" class="modal">
     <div class="video-modal">
       <span class="close" id="closeVideo">&times;</span>
