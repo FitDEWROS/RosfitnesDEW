@@ -46,42 +46,46 @@
     /* 🌟 Верхняя часть                 */
     /* ================================ */
     .header {
-      position: relative;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding: 24px 12px 16px;
+      gap: 8px;
+      padding: 20px 16px 12px;
       text-align: center;
     }
 
-    .app-title {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 8px;
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .logo {
-      width: 72px;
-      height: 72px;
-      margin: 0 auto 6px;
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .slogan {
-      font-size: 0.95rem;
-      opacity: 0.75;
-      margin-top: 0;
+    .app-title {
+      font-size: 1.7rem;
+      font-weight: 700;
     }
 
     /* Правая часть (профиль) */
     .user {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      text-align: right;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 6px;
+      text-align: right;
+      gap: 4px;
     }
 
     .greeting {
@@ -98,7 +102,7 @@
     .badge {
       background: var(--accent);
       color: #fff;
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 4px 10px;
       font-size: 0.85rem;
     }
@@ -112,10 +116,17 @@
       color: var(--text);
       transition: background 0.25s ease, color 0.25s ease;
     }
-
     .theme-btn:hover {
       background: var(--accent);
       color: #fff;
+    }
+
+    /* Слоган */
+    .slogan {
+      font-size: 0.95rem;
+      opacity: 0.75;
+      margin: 10px 0 0;
+      text-align: center;
     }
 
     /* ================================ */
@@ -126,7 +137,7 @@
       flex-direction: column;
       align-items: center;
       gap: 14px;
-      padding: 24px 16px 100px; /* отступ под тумблер */
+      padding: 24px 16px 120px;
     }
 
     .tile {
@@ -147,13 +158,21 @@
     }
 
     /* ================================ */
-    /* ⚙️ Плавающий тумблер             */
+    /* ⚙️ Тумблер + Тариф внизу         */
     /* ================================ */
-    .toggle-wrapper {
+    .bottom-block {
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 999;
+    }
+
+    .toggle-wrapper {
       width: 180px;
       height: 40px;
       background: var(--card);
@@ -163,7 +182,6 @@
       justify-content: space-between;
       align-items: center;
       padding: 4px;
-      z-index: 100;
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       backdrop-filter: blur(10px);
       transition: background 0.3s ease;
@@ -178,7 +196,6 @@
       z-index: 2;
       user-select: none;
       cursor: pointer;
-      transition: color 0.3s ease;
     }
 
     .toggle-slider {
@@ -193,17 +210,25 @@
       z-index: 1;
     }
 
-    .toggle-wrapper[data-mode="crossfit"] .toggle-slider {
-      left: 50%;
-    }
-
-    .toggle-wrapper[data-mode="gym"] .toggle-slider {
-      left: 3px;
-    }
+    .toggle-wrapper[data-mode="crossfit"] .toggle-slider { left: 50%; }
+    .toggle-wrapper[data-mode="gym"] .toggle-slider { left: 3px; }
 
     .toggle-wrapper[data-mode="gym"] [data-mode="gym"],
     .toggle-wrapper[data-mode="crossfit"] [data-mode="crossfit"] {
       color: #fff;
+    }
+
+    .tariff-under-toggle {
+      width: 180px;
+      text-align: center;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      padding: 5px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      backdrop-filter: blur(8px);
     }
 
     /* ================================ */
@@ -219,7 +244,6 @@
       align-items: center;
       justify-content: center;
     }
-
     .modal.hidden { display: none; }
 
     .modal-content {
@@ -254,27 +278,29 @@
 <body>
   <div class="wrap">
     <header class="header">
-      <h1 class="app-title">RosApp</h1>
+      <div class="header-row">
+        <div class="brand">
+          <div class="logo">
+            <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
+          </div>
+          <h1 class="app-title">RosApp</h1>
+        </div>
 
-      <div class="logo">
-        <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
+        <div class="user" id="userbox">
+          <div id="greeting" class="greeting">Привет, Максим!</div>
+          <div class="user-row">
+            <button id="profileBtn" class="theme-btn" title="Мой профиль" aria-label="Мой профиль">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M12 14c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/>
+              </svg>
+            </button>
+            <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
+          </div>
+        </div>
       </div>
 
       <p class="slogan">Твой путь к форме начинается здесь</p>
-
-      <div class="user" id="userbox">
-        <div id="greeting" class="greeting">Привет, Максим!</div>
-        <div class="user-row">
-          <div class="badge" id="tariff">Тариф: Максимум</div>
-          <button id="profileBtn" class="theme-btn" title="Мой профиль" aria-label="Мой профиль">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M12 14c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/>
-            </svg>
-          </button>
-          <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
-        </div>
-      </div>
     </header>
 
     <main>
@@ -282,11 +308,14 @@
     </main>
   </div>
 
-  <!-- 🔀 Тумблер внизу -->
-  <div id="modeToggle" class="toggle-wrapper">
-    <div class="toggle-slider" id="toggleSlider"></div>
-    <span class="toggle-option" data-mode="gym">Зал</span>
-    <span class="toggle-option" data-mode="crossfit">Кроссфит</span>
+  <!-- 🔀 Тумблер + тариф -->
+  <div class="bottom-block">
+    <div id="modeToggle" class="toggle-wrapper">
+      <div class="toggle-slider" id="toggleSlider"></div>
+      <span class="toggle-option" data-mode="gym">Зал</span>
+      <span class="toggle-option" data-mode="crossfit">Кроссфит</span>
+    </div>
+    <div class="tariff-under-toggle" id="tariffUnder">Тариф: Максимум</div>
   </div>
 
   <!-- 🔹 Модалка профиля -->
@@ -303,14 +332,11 @@
     </div>
   </div>
 
-  <noscript>Для работы приложения нужен включённый JavaScript.</noscript>
-
   <script>
     // === Модалка профиля ===
     const profileBtn = document.getElementById("profileBtn");
     const profileModal = document.getElementById("profileModal");
     const closeProfile = document.getElementById("closeProfile");
-
     profileBtn.addEventListener("click", () => profileModal.classList.remove("hidden"));
     closeProfile.addEventListener("click", () => profileModal.classList.add("hidden"));
     window.addEventListener("click", (e) => {
@@ -328,7 +354,7 @@
       });
     }
 
-    // === Плавающий тумблер ===
+    // === Тумблер ===
     document.addEventListener("DOMContentLoaded", async () => {
       const toggle = document.getElementById("modeToggle");
       if (!toggle) return;
@@ -354,7 +380,7 @@
             }
           }
 
-          const tariff = document.getElementById("tariff").textContent.replace("Тариф: ", "") || "Базовый";
+          const tariff = document.getElementById("tariffUnder").textContent.replace("Тариф: ", "") || "Базовый";
           if (window.renderTilesByTariff) window.renderTilesByTariff(tariff);
         });
       });
