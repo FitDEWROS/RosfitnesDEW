@@ -10,6 +10,181 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 
+  <style>
+    /* ===============================
+       🏋️ Специфические стили для CrossFit страницы
+    =============================== */
+
+    body.page-crossfit {
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s ease, color 0.3s ease;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cf-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--card-border);
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand-mini {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-mini lottie-player {
+      width: 48px;
+      height: 48px;
+    }
+
+    .cf-main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 18px;
+      padding: 24px 16px 100px;
+      justify-items: center;
+      flex-grow: 1;
+    }
+
+    .exercise-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 260px;
+      overflow: hidden;
+      text-align: center;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      opacity: 0;
+      transform: translateY(15px);
+    }
+
+    .exercise-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+
+    .thumb {
+      position: relative;
+      overflow: hidden;
+      height: 160px;
+      background: #000;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease, filter 0.3s ease;
+      filter: brightness(0.85);
+    }
+
+    .exercise-card:hover img {
+      transform: scale(1.05);
+      filter: brightness(1);
+    }
+
+    .thumb .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 2.2rem;
+      text-shadow: 0 0 10px rgba(0,0,0,0.6);
+    }
+
+    .exercise-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 12px 0 6px;
+    }
+
+    .exercise-card p {
+      font-size: 0.9rem;
+      opacity: 0.85;
+      padding: 0 10px 12px;
+    }
+
+    .cf-footer {
+      text-align: center;
+      font-size: 0.85rem;
+      padding: 14px;
+      color: var(--text);
+      opacity: 0.6;
+      border-top: 1px solid var(--card-border);
+      background: var(--card);
+      backdrop-filter: blur(8px);
+    }
+
+    /* 🎥 Видео-модалка */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.25s ease;
+    }
+    .modal.show { display: flex; }
+
+    .modal-content.video-modal {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px 20px 24px;
+      max-width: 420px;
+      width: 90%;
+      color: var(--text);
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      animation: modalAppear 0.3s ease forwards;
+    }
+
+    video {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    @keyframes modalAppear {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .close {
+      position: absolute;
+      right: 16px;
+      top: 8px;
+      font-size: 28px;
+      cursor: pointer;
+      color: var(--text);
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .close:hover { opacity: 1; }
+  </style>
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 </head>
@@ -21,7 +196,8 @@
     <header class="cf-header">
       <button id="backBtn" class="nav-btn">← Назад</button>
       <div class="brand-mini">
-        <lottie-player src="https://assets4.lottiefiles.com/packages/lf20_q5pk6p1k.json" background="transparent" speed="1" loop autoplay></lottie-player>
+        <lottie-player src="https://assets4.lottiefiles.com/packages/lf20_q5pk6p1k.json"
+          background="transparent" speed="1" loop autoplay></lottie-player>
         <span class="app-title">RosApp</span>
       </div>
     </header>
@@ -37,6 +213,16 @@
     </footer>
   </div>
 
+  <!-- 🎥 Модалка видео -->
+  <div id="videoModal" class="modal">
+    <div class="modal-content video-modal">
+      <span class="close" id="closeVideo">&times;</span>
+      <video id="exerciseVideo" controls playsinline></video>
+      <h3 id="videoTitle"></h3>
+      <p id="videoDesc"></p>
+    </div>
+  </div>
+
   <script>
     /* === 🌗 Применяем тему === */
     (function() {
@@ -46,27 +232,84 @@
 
     /* === 🏋️ Данные упражнений === */
     const exercises = [
-      { name: "Бёрпи", desc: "Полное упражнение на всё тело: прыжок, планка, отжимание." },
-      { name: "Трастеры", desc: "Комбинация приседания и жима штанги вверх." },
-      { name: "Гребля", desc: "Кардио-нагрузка на всё тело с акцентом на ноги и спину." },
-      { name: "Прыжки на тумбу", desc: "Развивают силу ног и взрывную мощь." },
-      { name: "Подтягивания", desc: "Классическое упражнение для спины и рук." },
-      { name: "Отжимания в стойке на руках", desc: "Развитие плечевого пояса и равновесия." },
-      { name: "Становая тяга", desc: "Базовое упражнение для спины, ног и хвата." },
-      { name: "Спринт", desc: "Высокоинтенсивное упражнение на выносливость." },
-      { name: "Русские скручивания", desc: "Развитие мышц кора и косых мышц живота." }
+      {
+        name: "Бёрпи",
+        desc: "Полное упражнение на всё тело: прыжок, планка, отжимание.",
+        thumb: "thumbs/burpee.jpg",
+        video: "videos/burpee.mp4"
+      },
+      {
+        name: "Трастеры",
+        desc: "Комбинация приседания и жима штанги вверх.",
+        thumb: "thumbs/thruster.jpg",
+        video: "videos/thruster.mp4"
+      },
+      {
+        name: "Гребля",
+        desc: "Кардио-нагрузка на всё тело с акцентом на ноги и спину.",
+        thumb: "thumbs/row.jpg",
+        video: "videos/row.mp4"
+      },
+      {
+        name: "Прыжки на тумбу",
+        desc: "Развивают силу ног и взрывную мощь.",
+        thumb: "thumbs/boxjump.jpg",
+        video: "videos/boxjump.mp4"
+      },
+      {
+        name: "Подтягивания",
+        desc: "Классическое упражнение для спины и рук.",
+        thumb: "thumbs/pullup.jpg",
+        video: "videos/pullup.mp4"
+      },
+      {
+        name: "Отжимания в стойке на руках",
+        desc: "Развитие плечевого пояса и равновесия.",
+        thumb: "thumbs/hspu.jpg",
+        video: "videos/hspu.mp4"
+      },
+      {
+        name: "Становая тяга",
+        desc: "Базовое упражнение для спины, ног и хвата.",
+        thumb: "thumbs/deadlift.jpg",
+        video: "videos/deadlift.mp4"
+      },
+      {
+        name: "Спринт",
+        desc: "Высокоинтенсивное упражнение на выносливость.",
+        thumb: "thumbs/sprint.jpg",
+        video: "videos/sprint.mp4"
+      },
+      {
+        name: "Русские скручивания",
+        desc: "Развитие мышц кора и косых мышц живота.",
+        thumb: "thumbs/russian_twist.jpg",
+        video: "videos/russian_twist.mp4"
+      }
     ];
 
     /* === 🧱 Отрисовка карточек === */
     const list = document.getElementById("exerciseList");
-    exercises.forEach(ex => {
+
+    exercises.forEach((ex, i) => {
       const card = document.createElement("div");
       card.className = "exercise-card";
       card.innerHTML = `
+        <div class="thumb">
+          <img src="${ex.thumb}" alt="${ex.name}">
+          <div class="overlay">▶</div>
+        </div>
         <h3>${ex.name}</h3>
         <p>${ex.desc}</p>
       `;
+      card.addEventListener("click", () => openVideoModal(ex));
       list.appendChild(card);
+
+      // Плавное появление
+      setTimeout(() => {
+        card.style.opacity = 1;
+        card.style.transform = "translateY(0)";
+      }, 100 * i);
     });
 
     /* === 🔙 Кнопка Назад === */
@@ -74,14 +317,32 @@
       window.location.href = "index.html";
     });
 
-    /* === 📱 Анимация появления === */
-    document.querySelectorAll(".exercise-card").forEach((card, i) => {
-      card.style.opacity = 0;
-      setTimeout(() => {
-        card.style.transition = "opacity 0.4s ease, transform 0.4s ease";
-        card.style.opacity = 1;
-        card.style.transform = "translateY(0)";
-      }, 80 * i);
+    /* === 🎥 Модалка видео === */
+    function openVideoModal(ex) {
+      const modal = document.getElementById("videoModal");
+      const video = document.getElementById("exerciseVideo");
+      document.getElementById("videoTitle").textContent = ex.name;
+      document.getElementById("videoDesc").textContent = ex.desc;
+      video.src = ex.video;
+      modal.classList.add("show");
+    }
+
+    document.getElementById("closeVideo").addEventListener("click", () => {
+      const modal = document.getElementById("videoModal");
+      const video = document.getElementById("exerciseVideo");
+      modal.classList.remove("show");
+      video.pause();
+      video.src = "";
+    });
+
+    window.addEventListener("click", (e) => {
+      const modal = document.getElementById("videoModal");
+      if (e.target === modal) {
+        modal.classList.remove("show");
+        const video = document.getElementById("exerciseVideo");
+        video.pause();
+        video.src = "";
+      }
     });
   </script>
 </body>
