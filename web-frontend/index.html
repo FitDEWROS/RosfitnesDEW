@@ -216,23 +216,27 @@
     /* 💳 Тариф — под тумблером         */
     /* ================================ */
     #tariff {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(20px + env(safe-area-inset-bottom));
-      z-index: 101;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      width: 180px;
-      padding: 10px 14px;
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.18);
-    }
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    z-index: 101;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 120px;
+    max-width: 160px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    backdrop-filter: blur(10px);
+  }
+
 
     html.light #tariff,
     html.light .toggle-wrapper {
