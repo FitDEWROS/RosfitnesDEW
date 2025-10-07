@@ -47,44 +47,53 @@
     /* 🌟 Верхняя часть                 */
     /* ================================ */
     .header {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start; /* прижимаем всё влево */
-      gap: 8px;
-      padding: 18px 16px;
-      text-align: left;
       position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 16px 36px;
+      border-bottom: 1px solid var(--card-border);
+      background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(0,0,0,0.4));
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+
+    .header-bg {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 25% 25%, rgba(139,92,246,0.25), transparent 70%);
+      z-index: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 1;
     }
 
     .app-title {
-      font-size: 1.8rem;
+      font-size: 2rem;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin: 0;
+      z-index: 1;
     }
 
     .logo {
-      width: 72px;
-      height: 72px;
-      margin-top: 6px;
+      width: 84px;
+      height: 84px;
+      z-index: 1;
     }
 
-    .slogan {
-      font-size: 0.95rem;
-      opacity: 0.75;
-      margin-top: 4px;
-    }
-
-    /* Правая часть с профилем */
     .user {
-      position: absolute;
-      top: 14px;
-      right: 16px;
+      position: relative;
       text-align: right;
-
       display: flex;
       flex-direction: column;
       align-items: flex-end;
       gap: 6px;
+      z-index: 2;
     }
 
     .greeting {
@@ -241,30 +250,30 @@
     .modal {
       display: none;
       position: fixed;
+      inset: 0;
       z-index: 200;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease;
     }
 
     .modal-content {
-      background: var(--card);
-      color: var(--text);
-      margin: 10% auto;
-      padding: 24px;
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
+      background: rgba(25, 25, 28, 0.85);
+      border: none;
+      border-radius: 20px;
+      padding: 32px 24px;
       width: 90%;
-      max-width: 400px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      max-width: 380px;
+      color: var(--text);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       text-align: center;
-      animation: fadeIn 0.3s ease;
-      position: relative;
+      backdrop-filter: blur(12px);
+      animation: tilePop 0.4s ease;
     }
+
+
 
     .profile-card img {
       width: 120px;
@@ -346,20 +355,6 @@
   box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
 
-/* Модалка — центр экрана, плавное появление */
-.modal {
-  display: none;
-  justify-content: center;
-  align-items: center;
-}
-.modal-content {
-  margin: 0;
-  animation: fadeUp 0.3s ease;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  border: 1px solid var(--card-border);
-}
-
   </style>
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -373,13 +368,13 @@
 <body>
   <div class="wrap">
     <header class="header">
-      <h1 class="app-title">RosApp</h1>
-
-      <div class="logo">
-        <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
+      <div class="header-bg"></div>
+      <div class="header-left">
+        <div class="logo">
+          <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
+        </div>
+        <h1 class="app-title">RosApp</h1>
       </div>
-
-      <p class="slogan">Твой путь к форме начинается здесь</p>
 
       <div class="user" id="userbox">
         <div id="greeting" class="greeting">Привет, Максим!</div>
@@ -395,6 +390,7 @@
         </div>
       </div>
     </header>
+
 
     <main>
       <section class="grid" id="tiles" aria-live="polite"></section>
