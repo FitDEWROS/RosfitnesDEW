@@ -190,43 +190,41 @@
   // -------------------------------
   // 🔀 Тумблер режима
   // -------------------------------
-  document.addEventListener("DOMContentLoaded", async () => {
-    const modeBtns = document.querySelectorAll(".mode-btn");
-    const savedMode = localStorage.getItem("training_mode") || "gym";
+  // === Новый плавный тумблер ===
+document.addEventListener("DOMContentLoaded", async () => {
+  const toggle = document.getElementById("modeToggle");
+  if (!toggle) return;
 
-    // активируем нужную кнопку
-    modeBtns.forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.mode === savedMode);
-    });
+  const slider = document.getElementById("toggleSlider");
+  const savedMode = localStorage.getItem("training_mode") || "gym";
+  toggle.dataset.mode = savedMode;
 
-    // обработчик переключения
-    modeBtns.forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const newMode = btn.dataset.mode;
-        localStorage.setItem("training_mode", newMode);
+  toggle.querySelectorAll(".toggle-option").forEach(opt => {
+    opt.addEventListener("click", async (e) => {
+      const newMode = e.target.dataset.mode;
+      toggle.dataset.mode = newMode;
+      localStorage.setItem("training_mode", newMode);
 
-        modeBtns.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        if (tgUser?.id) {
-          try {
-            await fetch("/api/mode", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ tg_id: tgUser.id, mode: newMode })
-            });
-          } catch (err) {
-            console.warn("⚠ Ошибка при обновлении режима:", err);
-          }
+      const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      if (tg?.id) {
+        try {
+          await fetch("/api/mode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tg_id: tg.id, mode: newMode })
+          });
+        } catch (err) {
+          console.warn("⚠ Ошибка при обновлении режима:", err);
         }
+      }
 
-        // 🔁 перерисовка плиток под выбранный режим
-        const tariff = document.getElementById("tariff").textContent.replace("Тариф: ", "") || "Базовый";
-        renderTilesByTariff(tariff);
-      });
+      // Можно сразу обновить плитки
+      const tariff = document.getElementById("tariff").textContent.replace("Тариф: ", "") || "Базовый";
+      if (window.renderTilesByTariff) window.renderTilesByTariff(tariff);
     });
   });
+});
+
 
   // -------------------------------
   // Инициализация
