@@ -54,29 +54,28 @@
        🔀 Тумблер режима (Зал / Кроссфит)
     ===================================*/
     .mode-toggle {
-      display: flex;
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      overflow: hidden;
-      width: fit-content;
-    }
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: 6px 0 12px 0;
+  }
 
-    .mode-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      padding: 6px 10px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      color: var(--text);
-      transition: background 0.3s, color 0.3s;
-    }
+  .mode-btn {
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
 
-    .mode-btn.active {
-      background: var(--accent);
-      color: #fff;
-    }
+  .mode-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
   </style>
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

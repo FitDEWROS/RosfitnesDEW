@@ -350,4 +350,90 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   color: #fff;
   border-color: var(--accent);
 }
+/* === CrossFit Exercises Page === */
+
+.page-crossfit {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.cf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--card-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-mini lottie-player {
+  width: 34px;
+  height: 34px;
+}
+
+.cf-main {
+  flex: 1;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.exercise-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: transform 0.15s ease, background 0.2s ease;
+  cursor: pointer;
+}
+
+.exercise-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255,255,255,0.05);
+}
+
+.exercise-card h3 {
+  margin: 0 0 6px 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.exercise-card p {
+  margin: 0;
+  font-size: 0.88rem;
+  opacity: 0.85;
+}
+
+.cf-footer {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #999;
+}
 
