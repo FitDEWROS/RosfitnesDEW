@@ -2,12 +2,12 @@
    🔧 Перекрываем тему Telegram WebApp
 ================================ */
 :root {
-  --tg-theme-bg-color: #111113;       /* фон по умолчанию (тёмный) */
-  --tg-theme-text-color: #ffffff;     /* основной текст */
-  --tg-theme-hint-color: #aaaaaa;     /* второстепенный текст */
-  --tg-theme-link-color: #8b5cf6;     /* ссылки/акценты */
-  --tg-theme-button-color: #8b5cf6;   /* фон кнопки */
-  --tg-theme-button-text-color: #ffffff; /* текст кнопки */
+  --tg-theme-bg-color: #111113;
+  --tg-theme-text-color: #ffffff;
+  --tg-theme-hint-color: #aaaaaa;
+  --tg-theme-link-color: #8b5cf6;
+  --tg-theme-button-color: #8b5cf6;
+  --tg-theme-button-text-color: #ffffff;
 }
 
 html.light {
@@ -18,9 +18,9 @@ html.light {
   --tg-theme-button-color: #3b82f6;
   --tg-theme-button-text-color: #ffffff;
 }
+
 /* ================================
    📱 Адаптация для мобильных экранов
-   (тумблер выше системной панели Telegram)
 ================================ */
 @media (max-height: 600px) {
   .toggle-wrapper.fixed-toggle {
@@ -30,7 +30,6 @@ html.light {
 
 /* ================================
    🌞 Улучшение для светлой темы
-   (уменьшаем контраст и тень)
 ================================ */
 html.light .toggle-wrapper.fixed-toggle {
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -38,7 +37,6 @@ html.light .toggle-wrapper.fixed-toggle {
 
 /* ================================
    ✨ Эффект "пульса" при фокусе
-   (живой отклик на касание)
 ================================ */
 @keyframes pulseAccent {
   0%, 100% { box-shadow: 0 0 6px var(--accent); }
@@ -50,7 +48,7 @@ html.light .toggle-wrapper.fixed-toggle {
 }
 
 /* ================================
-   🎨 Тема (переменные)
+   🎨 Тема
 ================================ */
 html {
   --bg: #111113;
@@ -86,78 +84,6 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 .muted { opacity: 0.7; font-size: 0.9rem; }
 
 /* ================================
-   📐 Layout
-================================ */
-.wrap { max-width: 900px; margin: 0 auto; }
-
-.header {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  padding: 12px 16px;
-  margin-bottom: 8px;
-}
-
-.brand {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-.header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.mode-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-.brand-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.brand-text { text-align: center; }
-
-.logo { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
-.app-title { font-size: 1.8rem; }
-.slogan { max-width: 320px; }
-
-/* ================================
-   Правый блок
-================================ */
-.user {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  text-align: right;
-}
-
-#greeting { font-size: 1rem; font-weight: 600; white-space: nowrap; }
-
-.user-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.badge {
-  background: var(--accent);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* ================================
    🟦 Карточки
 ================================ */
 .grid {
@@ -177,15 +103,14 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   background: var(--card);
   border: 1px solid var(--card-border);
   backdrop-filter: blur(12px);
-  transition: transform 0.2s ease, box-shadow var(--transition), border-color var(--transition), background-color var(--transition), color var(--transition);
+  transition: transform 0.2s ease, box-shadow var(--transition), border-color var(--transition);
   color: var(--text);
 }
+
 .tile:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 15px var(--accent);
 }
-.tile .title { font-weight: 600; margin-bottom: 4px; font-size: 1rem; }
-.tile .desc { font-size: 0.85rem; opacity: 0.75; }
 
 /* ================================
    🌙 Кнопки
@@ -195,77 +120,89 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   cursor: pointer;
   background: var(--card);
   border: 1px solid var(--card-border);
-  border-radius: 10px;
-  width: 32px; height: 32px;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
   display: flex;
-  align-items: center; justify-content: center;
-  transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition), border-color var(--transition);
+  align-items: center;
+  justify-content: center;
   color: var(--text);
+  box-shadow: 0 0 6px rgba(0,0,0,0.2);
+  transition: all 0.25s ease;
 }
-.theme-btn:hover { transform: scale(1.1); box-shadow: 0 0 8px var(--accent); }
 
-/* ================================
-   🦶 Футер
-================================ */
-.footer { font-size: 0.85rem; opacity: 0.7; text-align: center; padding: 12px; }
-
-/* ================================
-   📱 Mobile
-================================ */
-@media (max-width: 480px) {
-  .page-title { font-size: 1.2rem; text-align: center; }
-  .header { flex-direction: row; justify-content: space-between; }
-  .view-switch { justify-content: center; }
-  .info { font-size: 0.9rem; padding: 10px; }
+.theme-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 12px var(--accent);
+  transform: scale(1.05);
 }
 
 /* ================================
    🔹 Модальное окно профиля
 ================================ */
 .modal {
+  display: none;
   position: fixed;
-  z-index: 1000;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.75);
-  display: flex;
-  align-items: center;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
   justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.25s ease;
 }
-.modal.hidden { display: none; }
+
+.modal.show {
+  display: flex;
+}
 
 .modal-content {
-  background: var(--card);
-  color: var(--text);
-  border-radius: var(--radius);
-  padding: 20px;
-  width: 340px;
-  text-align: center;
-  border: 1px solid var(--card-border);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.5);
   position: relative;
-  backdrop-filter: none;
+  background: rgba(25, 25, 28, 0.85);
+  border-radius: 20px;
+  padding: 32px 24px;
+  width: 90%;
+  max-width: 380px;
+  color: var(--text);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  text-align: center;
+  backdrop-filter: blur(12px);
+  transform: translateY(20px);
+  opacity: 0;
+  animation: modalAppear 0.3s forwards ease;
 }
 
-.modal-content h2 { margin: 10px 0; font-size: 1.2rem; }
-.modal-content p { margin: 6px 0; opacity: 0.9; font-size: 0.95rem; }
+@keyframes modalAppear {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .close {
-  position: absolute;
-  top: 10px; right: 15px;
-  font-size: 20px;
-  cursor: pointer;
   color: var(--text);
+  position: absolute;
+  right: 16px;
+  top: 10px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.close:hover { opacity: 1; }
+
+.profile-card img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 12px;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 14px rgba(139,92,246,0.3);
 }
 
-/* ================================
-   🧑‍💻 Профиль внутри модалки
-================================ */
-.profile-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.profile-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); }
-.profile-info { text-align: left; }
-.profile-info h2 { margin: 0; font-size: 1.1rem; }
-.profile-info p { margin: 3px 0; font-size: 0.9rem; opacity: 0.85; }
+.profile-card h2 { margin: 8px 0 4px; }
+.profile-card p { margin: 4px 0; font-size: 0.95rem; opacity: 0.85; }
 
 /* ================================
    🏋️ Упражнения (карта тела)
@@ -280,7 +217,7 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 
 .canvas {
   width: 100%;
-  max-width: 600px;   /* ограничиваем ширину */
+  max-width: 600px;
   margin: 0 auto;
   display: flex;
   justify-content: center;
@@ -321,24 +258,7 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 }
 
 /* ================================
-   Инфоблок
-================================ */
-.exercise-info, .exercise-list {
-  background: var(--card);
-  color: var(--text);
-  padding: 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--card-border);
-  max-width: 400px;
-  text-align: left;
-  margin: 20px auto 0 auto;
-}
-.exercise-info h3 { margin: 0 0 10px; color: var(--accent); }
-.exercise-info ul, .exercise-list ul { margin: 0; padding-left: 20px; }
-.exercise-info li, .exercise-list li { margin: 4px 0; }
-
-/* ================================
-   🔙 Кнопка "Назад" — фикс
+   🔙 Кнопка "Назад"
 ================================ */
 .nav-btn {
   display: inline-flex !important;
@@ -366,113 +286,8 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
   transform: scale(0.97);
 }
 
-
-.info { animation: fadeUp 0.3s ease; }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* ================================
-   🔹 Единая анимация для кнопок и плиток
-================================ */
-button, .tile, .nav-btn, .theme-btn {
-  transition: transform 0.2s ease, background 0.3s ease, box-shadow 0.3s ease;
-}
-button:active, .tile:active, .nav-btn:active, .theme-btn:active {
-  transform: scale(0.95);
-  box-shadow: 0 0 8px var(--accent);
-}
-/* ================================
-   🔀 Тумблер режима (Зал / Кроссфит)
-================================ */
-.page-crossfit {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', sans-serif;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.cf-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  background: var(--card);
-  border-bottom: 1px solid var(--card-border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.back-btn {
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.brand-mini {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.brand-mini lottie-player {
-  width: 34px;
-  height: 34px;
-}
-
-.cf-main {
-  flex: 1;
-  padding: 20px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.exercise-card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  transition: transform 0.15s ease, background 0.2s ease;
-  cursor: pointer;
-}
-
-.exercise-card:hover {
-  transform: translateY(-3px);
-  background: rgba(255,255,255,0.05);
-}
-
-.exercise-card h3 {
-  margin: 0 0 6px 0;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.exercise-card p {
-  margin: 0;
-  font-size: 0.88rem;
-  opacity: 0.85;
-}
-
-.cf-footer {
-  padding: 12px;
-  text-align: center;
-  font-size: 0.8rem;
-  color: #999;
-}
-/* ================================
-   ⚙️ Новый единый тумблер (Зал / Кроссфит)
+   🔀 Тумблер режима
 ================================ */
 .toggle-wrapper {
   position: relative;
@@ -488,7 +303,7 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   cursor: pointer;
   transition: background var(--transition);
 }
-/* Плавающий тумблер внизу экрана */
+
 .toggle-wrapper.fixed-toggle {
   position: fixed;
   bottom: 20px;
@@ -498,16 +313,11 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   box-shadow: 0 4px 14px rgba(0,0,0,0.25);
   backdrop-filter: blur(10px);
 }
+
 .toggle-wrapper:hover {
   box-shadow: 0 0 10px var(--accent);
   background: rgba(139, 92, 246, 0.08);
 }
-
-.toggle-option:active {
-  transform: scale(0.96);
-  transition: transform 0.15s ease;
-}
-
 
 .toggle-option {
   flex: 1;
@@ -518,6 +328,10 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   z-index: 2;
   user-select: none;
   transition: color 0.25s ease;
+}
+
+.toggle-option:active {
+  transform: scale(0.96);
 }
 
 .toggle-slider {
@@ -532,20 +346,7 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   z-index: 1;
 }
 
-.toggle-wrapper.light .toggle-slider {
-  background: var(--accent);
-}
-
-.toggle-wrapper[data-mode="crossfit"] .toggle-slider {
-  left: 50%;
-}
-
-.toggle-wrapper[data-mode="gym"] .toggle-slider {
-  left: 3px;
-}
-
+.toggle-wrapper[data-mode="crossfit"] .toggle-slider { left: 50%; }
+.toggle-wrapper[data-mode="gym"] .toggle-slider { left: 3px; }
 .toggle-wrapper[data-mode="gym"] [data-mode="gym"],
-.toggle-wrapper[data-mode="crossfit"] [data-mode="crossfit"] {
-  color: #fff;
-}
-
+.toggle-wrapper[data-mode="crossfit"] [data-mode="crossfit"] { color: #fff; }

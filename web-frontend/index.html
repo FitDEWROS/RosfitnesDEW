@@ -245,7 +245,7 @@
     }
 
     /* ================================ */
-    /* 🧩 Модалка профиля               */
+    /* 🧩 Модалка профиля (фикс)        */
     /* ================================ */
     .modal {
       display: none;
@@ -256,10 +256,15 @@
       backdrop-filter: blur(10px);
       justify-content: center;
       align-items: center;
-      animation: fadeIn 0.3s ease;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .modal.show {
+      display: flex;
     }
 
     .modal-content {
+      position: relative;
       background: rgba(25, 25, 28, 0.85);
       border: none;
       border-radius: 20px;
@@ -270,10 +275,28 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       text-align: center;
       backdrop-filter: blur(12px);
-      animation: tilePop 0.4s ease;
+      transform: translateY(20px);
+      opacity: 0;
+      animation: modalAppear 0.3s forwards ease;
     }
 
+    @keyframes modalAppear {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
 
+    .close {
+      color: var(--text);
+      position: absolute;
+      right: 16px;
+      top: 10px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .close:hover { opacity: 1; }
 
     .profile-card img {
       width: 120px;
@@ -281,26 +304,21 @@
       border-radius: 50%;
       object-fit: cover;
       margin-bottom: 12px;
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 14px rgba(139,92,246,0.3);
     }
 
-    .close {
-      color: var(--text);
-      position: absolute;
-      right: 20px;
-      top: 10px;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
+    .profile-card h2 {
+      margin: 8px 0 4px;
     }
 
-    .hidden {
-      display: none !important;
-    }
+    .profile-card p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+      opacity: 0.85;
+}
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
+    
   /* ================================ */
 /* 💎 Улучшения визуала             */
 /* ================================ */
@@ -422,15 +440,16 @@
 
   <script>
     // === Модалка профиля ===
-    const profileBtn = document.getElementById("profileBtn");
-    const profileModal = document.getElementById("profileModal");
-    const closeProfile = document.getElementById("closeProfile");
+const profileBtn = document.getElementById("profileBtn");
+const profileModal = document.getElementById("profileModal");
+const closeProfile = document.getElementById("closeProfile");
 
-    profileBtn.addEventListener("click", () => profileModal.classList.remove("hidden"));
-    closeProfile.addEventListener("click", () => profileModal.classList.add("hidden"));
-    window.addEventListener("click", (e) => {
-      if (e.target === profileModal) profileModal.classList.add("hidden");
-    });
+profileBtn.addEventListener("click", () => profileModal.classList.add("show"));
+closeProfile.addEventListener("click", () => profileModal.classList.remove("show"));
+window.addEventListener("click", (e) => {
+  if (e.target === profileModal) profileModal.classList.remove("show");
+});
+
 
     // === Переключение темы ===
     const themeToggle = document.getElementById("themeToggle");
