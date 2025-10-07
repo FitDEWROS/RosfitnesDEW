@@ -115,7 +115,6 @@
       color: #fff;
     }
 
-    /* Слоган */
     .slogan {
       font-size: 0.95rem;
       opacity: 0.75;
@@ -231,40 +230,6 @@
       color: var(--accent);
     }
 
-    /* ================================ */
-    /* 📱 Модалка профиля               */
-    /* ================================ */
-    .modal {
-      position: fixed;
-      z-index: 1000;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal.hidden { display: none; }
-
-    .modal-content {
-      background: var(--card);
-      color: var(--text);
-      border-radius: 16px;
-      padding: 20px;
-      width: 340px;
-      text-align: center;
-      border: 1px solid var(--card-border);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-      position: relative;
-    }
-
-    .close {
-      position: absolute;
-      top: 10px; right: 15px;
-      font-size: 20px;
-      cursor: pointer;
-      color: var(--text);
-    }
   </style>
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -316,61 +281,38 @@
     <div class="tariff-under-toggle" id="tariffUnder">Тариф: Максимум</div>
   </div>
 
-  <!-- 🔹 Модалка профиля -->
-  <div id="profileModal" class="modal hidden">
-    <div class="modal-content">
-      <span class="close" id="closeProfile">&times;</span>
-      <div class="profile-card">
-        <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Аватар">
-        <h2 id="profileName">Имя Фамилия</h2>
-        <p id="profileUsername">@username</p>
-        <p>ID Telegram: <span id="profileId"></span></p>
-        <p>Тариф: <span id="profileTariff"></span></p>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // === Безопасная инициализация Telegram WebApp ===
     window.addEventListener("DOMContentLoaded", () => {
       if (window.Telegram?.WebApp) {
         try {
-          const tg = window.Telegram.WebApp;
-          tg.ready();
+          window.Telegram.WebApp.ready();
           console.log("✅ Telegram WebApp инициализирован");
         } catch (err) {
           console.warn("⚠ Ошибка Telegram WebApp init:", err);
         }
-      } else {
-        console.warn("⚠ Telegram WebApp не найден — страница открыта не из Telegram");
       }
-    });
 
-    // === Переключение темы ===
-    const themeToggle = document.getElementById("themeToggle");
-    if (themeToggle) {
-      themeToggle.addEventListener("click", () => {
+      const themeToggle = document.getElementById("themeToggle");
+      themeToggle?.addEventListener("click", () => {
         const newTheme = document.documentElement.classList.contains("light") ? "dark" : "light";
         localStorage.setItem("theme", newTheme);
         document.documentElement.classList.toggle("light", newTheme === "light");
         themeToggle.textContent = newTheme === "light" ? "🌙" : "☀️";
       });
-    }
 
-    // === Тумблер ===
-    document.addEventListener("DOMContentLoaded", () => {
       const toggle = document.getElementById("modeToggle");
-      if (!toggle) return;
-      const savedMode = localStorage.getItem("training_mode") || "gym";
-      toggle.dataset.mode = savedMode;
+      if (toggle) {
+        const savedMode = localStorage.getItem("training_mode") || "gym";
+        toggle.dataset.mode = savedMode;
 
-      toggle.querySelectorAll(".toggle-option").forEach(opt => {
-        opt.addEventListener("click", async (e) => {
-          const newMode = e.target.dataset.mode;
-          toggle.dataset.mode = newMode;
-          localStorage.setItem("training_mode", newMode);
+        toggle.querySelectorAll(".toggle-option").forEach(opt => {
+          opt.addEventListener("click", e => {
+            const newMode = e.target.dataset.mode;
+            toggle.dataset.mode = newMode;
+            localStorage.setItem("training_mode", newMode);
+          });
         });
-      });
+      }
     });
   </script>
 </body>
