@@ -49,6 +49,34 @@
       background-color: var(--bg) !important;
       color: var(--text) !important;
     }
+
+    /* ================================
+       🔀 Тумблер режима (Зал / Кроссфит)
+    ===================================*/
+    .mode-toggle {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      overflow: hidden;
+      width: fit-content;
+    }
+
+    .mode-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
   </style>
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,8 +121,11 @@
             </svg>
           </button>
 
-          <!-- Тумблер режима -->
-          <button id="modeToggle" class="theme-btn" title="Режим тренировки" aria-label="Режим тренировки">🏋️</button>
+          <!-- 🔀 Новый тумблер режима -->
+          <div id="modeToggle" class="mode-toggle">
+            <button data-mode="gym" class="mode-btn active">Зал</button>
+            <button data-mode="crossfit" class="mode-btn">Кроссфит</button>
+          </div>
 
           <!-- Кнопка темы -->
           <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
@@ -131,11 +162,6 @@
     const profileModal = document.getElementById("profileModal");
     const closeProfile = document.getElementById("closeProfile");
 
-    const profileNameEl = document.getElementById("profileName");
-    const profileUsernameEl = document.getElementById("profileUsername");
-    const profileIdEl = document.getElementById("profileId");
-    const profilePhotoEl = document.getElementById("profilePhoto");
-
     profileBtn.addEventListener("click", () => profileModal.classList.remove("hidden"));
     closeProfile.addEventListener("click", () => profileModal.classList.add("hidden"));
     window.addEventListener("click", (e) => {
@@ -158,66 +184,45 @@
       });
     }
 
-    // === Тумблер режима (зал / кроссфит) ===
-    const modeToggle = document.getElementById("modeToggle");
-
-    async function loadUserMode() {
-      const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
-      if (!tg?.id) return localStorage.getItem("training_mode") || "gym";
-
-      try {
-        const res = await fetch(`/api/mode?tg_id=${tg.id}`);
-        const data = await res.json();
-        if (data.ok && data.trainingMode) {
-          localStorage.setItem("training_mode", data.trainingMode);
-          return data.trainingMode;
-        }
-      } catch (err) {
-        console.warn("⚠ Не удалось получить режим:", err);
-      }
-      return localStorage.getItem("training_mode") || "gym";
-    }
-
-    function updateModeIcon(mode) {
-      modeToggle.textContent = mode === "crossfit" ? "🔥" : "🏋️";
-      modeToggle.title = mode === "crossfit" ? "Режим: Кроссфит" : "Режим: Зал";
-    }
-
+    // === 🔀 Новый тумблер режима ===
     document.addEventListener("DOMContentLoaded", async () => {
-      const currentMode = await loadUserMode();
-      updateModeIcon(currentMode);
+      const modeBtns = document.querySelectorAll(".mode-btn");
+      const savedMode = localStorage.getItem("training_mode") || "gym";
 
-      // если у пользователя crossfit — сразу переходим
-      if (currentMode === "crossfit") {
-        window.location.href = "crossfit.html";
-      }
-    });
+      // Активируем кнопку режима
+      modeBtns.forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === savedMode);
+      });
 
-    modeToggle.addEventListener("click", async () => {
-      const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
-      let currentMode = localStorage.getItem("training_mode") || "gym";
-      const newMode = currentMode === "gym" ? "crossfit" : "gym";
+      // Обработчик переключения
+      modeBtns.forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const newMode = btn.dataset.mode;
+          localStorage.setItem("training_mode", newMode);
 
-      localStorage.setItem("training_mode", newMode);
-      updateModeIcon(newMode);
+          modeBtns.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
 
-      // 💾 сохраняем в БД
-      if (tg?.id) {
-        try {
-          await fetch("/api/mode", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ tg_id: tg.id, mode: newMode })
-          });
-        } catch (err) {
-          console.warn("⚠ Ошибка при обновлении режима:", err);
-        }
-      }
+          const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+          if (tg?.id) {
+            try {
+              await fetch("/api/mode", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tg_id: tg.id, mode: newMode })
+              });
+            } catch (err) {
+              console.warn("⚠ Ошибка при обновлении режима:", err);
+            }
+          }
 
-      // 🔀 Переход
-      if (newMode === "crossfit") {
-        window.location.href = "crossfit.html";
-      }
+          // Перерисовываем плитки под выбранный режим
+          const tariff = document.getElementById("tariff").textContent.replace("Тариф: ", "") || "Базовый";
+          if (window.renderTilesByTariff) {
+            window.renderTilesByTariff(tariff);
+          }
+        });
+      });
     });
   </script>
 </body>

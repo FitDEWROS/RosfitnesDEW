@@ -3,8 +3,8 @@
   const qs = new URLSearchParams(location.search);
   const API_BASE = window.ENV?.API_BASE || "";
 
-  const greetingEl  = document.getElementById('greeting');
-  const tariffEl    = document.getElementById('tariff');
+  const greetingEl = document.getElementById('greeting');
+  const tariffEl = document.getElementById('tariff');
   const themeToggleBtn = document.getElementById("themeToggle");
   const USE_TG_THEME = false; // ← запрещаем любые цвета из Telegram
 
@@ -29,11 +29,11 @@
     if (!u || !u.hash) return '';
 
     const p = new URLSearchParams();
-    if (u.query_id)      p.set('query_id', u.query_id);
-    if (u.user)          p.set('user', JSON.stringify(u.user));
-    if (u.auth_date)     p.set('auth_date', String(u.auth_date));
-    if (u.start_param)   p.set('start_param', u.start_param);
-    if (u.chat_type)     p.set('chat_type', u.chat_type);
+    if (u.query_id) p.set('query_id', u.query_id);
+    if (u.user) p.set('user', JSON.stringify(u.user));
+    if (u.auth_date) p.set('auth_date', String(u.auth_date));
+    if (u.start_param) p.set('start_param', u.start_param);
+    if (u.chat_type) p.set('chat_type', u.chat_type);
     if (u.chat_instance) p.set('chat_instance', u.chat_instance);
     p.set('hash', u.hash);
 
@@ -103,45 +103,37 @@
     }
 
     actions.forEach(label => {
-  const tile = document.createElement("button");
-  tile.className = "tile";
-  tile.dataset.action = label;
-  tile.innerHTML = `
-    <div class="title">${label}</div>
-    <div class="desc">${label === "Упражнения" ? "Выбор мышц и упражнений" : "Раздел в разработке"}</div>
-  `;
+      const tile = document.createElement("button");
+      tile.className = "tile";
+      tile.dataset.action = label;
+      tile.innerHTML = `
+        <div class="title">${label}</div>
+        <div class="desc">${label === "Упражнения" ? "Выбор мышц и упражнений" : "Раздел в разработке"}</div>
+      `;
 
-  tile.addEventListener("click", () => {
-    if (label === "Упражнения") {
-      window.location.href = "exercises.html"; // 🔹 переход на страницу упражнений
-    } else {
-      showAlert(`«${label}» — раздел в разработке`);
-    }
-  });
+      tile.addEventListener("click", () => {
+        if (label === "Упражнения") {
+          const mode = localStorage.getItem("training_mode") || "gym";
+          if (mode === "crossfit") {
+            window.location.href = "crossfit_exercises.html";
+          } else {
+            window.location.href = "exercises.html";
+          }
+        } else {
+          showAlert(`«${label}» — раздел в разработке`);
+        }
+      });
 
-  tiles.appendChild(tile);
-});
-
+      tiles.appendChild(tile);
+    });
   }
 
   // -------------------------------
   // Стили Telegram темы
   // -------------------------------
-  // Стили Telegram темы — отключены
   const setCSSFromTheme = (p = {}) => {
-    if (!USE_TG_THEME) return; // ничего не делаем
-    // Если когда-нибудь захочешь — убери return и раскоммить код ниже
-    /*
-    const r = document.documentElement;
-    if (p.bg_color)            r.style.setProperty('--bg', p.bg_color);
-    if (p.text_color)          r.style.setProperty('--text', p.text_color);
-    if (p.secondary_bg_color)  r.style.setProperty('--card', p.secondary_bg_color);
-    if (p.section_bg_color)    r.style.setProperty('--card-border', p.section_bg_color);
-    // под свой акцент — по желанию:
-    // if (p.link_color)       r.style.setProperty('--accent', p.link_color);
-    */
+    if (!USE_TG_THEME) return;
   };
-
 
   const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
   const waitReady = () => { try { tg?.ready?.(); } catch (_) {} };
@@ -166,16 +158,14 @@
 
   function clearInlineVars() {
     const r = document.documentElement;
-    ['--bg','--text','--card','--card-border','--accent'].forEach(k => r.style.removeProperty(k));
+    ['--bg', '--text', '--card', '--card-border', '--accent'].forEach(k => r.style.removeProperty(k));
   }
 
   const savedTheme = localStorage.getItem("theme");
   if (savedTheme) {
     isDark = savedTheme === "dark";
   }
-  // никаких цветов из Telegram
   applyTheme();
-
 
   if (themeToggleBtn) {
     themeToggleBtn.addEventListener("click", () => {
@@ -198,6 +188,47 @@
   });
 
   // -------------------------------
+  // 🔀 Тумблер режима
+  // -------------------------------
+  document.addEventListener("DOMContentLoaded", async () => {
+    const modeBtns = document.querySelectorAll(".mode-btn");
+    const savedMode = localStorage.getItem("training_mode") || "gym";
+
+    // активируем нужную кнопку
+    modeBtns.forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.mode === savedMode);
+    });
+
+    // обработчик переключения
+    modeBtns.forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const newMode = btn.dataset.mode;
+        localStorage.setItem("training_mode", newMode);
+
+        modeBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        if (tgUser?.id) {
+          try {
+            await fetch("/api/mode", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tg_id: tgUser.id, mode: newMode })
+            });
+          } catch (err) {
+            console.warn("⚠ Ошибка при обновлении режима:", err);
+          }
+        }
+
+        // 🔁 перерисовка плиток под выбранный режим
+        const tariff = document.getElementById("tariff").textContent.replace("Тариф: ", "") || "Базовый";
+        renderTilesByTariff(tariff);
+      });
+    });
+  });
+
+  // -------------------------------
   // Инициализация
   // -------------------------------
   async function init() {
@@ -206,7 +237,7 @@
       if (tg) {
         waitReady();
         tg.expand?.();
-        
+
         const u = tg.initDataUnsafe?.user;
         if (u?.first_name) greetingEl.textContent = `Привет, ${u.first_name}!`;
       }

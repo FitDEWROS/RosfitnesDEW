@@ -218,6 +218,7 @@ app.get('/api/user', async (req, res) => {
     const profile = {
       first_name: dbUser?.first_name || user?.first_name || 'друг',
       tariffName: dbUser?.tariffName || 'Базовый',
+      trainingMode: dbUser?.trainingMode || 'gym'
     };
 
     console.log(`[api/user] profile for ${tg_id}:`, profile);
@@ -225,6 +226,47 @@ app.get('/api/user', async (req, res) => {
     return res.json({ ok: true, user, profile });
   } catch (e) {
     console.error('[api/user] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+// === Получить текущий режим пользователя ===
+app.get('/api/mode', async (req, res) => {
+  try {
+    const tg_id = Number(req.query.tg_id);
+    if (!tg_id) return res.status(400).json({ ok: false, error: 'no_tg_id' });
+
+    const user = await prisma.user.findUnique({
+      where: { tg_id },
+      select: { trainingMode: true }
+    });
+
+    if (!user) return res.status(404).json({ ok: false, error: 'user_not_found' });
+
+    res.json({ ok: true, trainingMode: user.trainingMode });
+  } catch (e) {
+    console.error('[api/mode:get] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Установить новый режим (gym / crossfit) ===
+app.post('/api/mode', async (req, res) => {
+  try {
+    const { tg_id, mode } = req.body;
+    if (!tg_id || !mode) return res.status(400).json({ ok: false, error: 'missing_params' });
+
+    if (!['gym', 'crossfit'].includes(mode)) {
+      return res.status(400).json({ ok: false, error: 'invalid_mode' });
+    }
+
+    await prisma.user.update({
+      where: { tg_id: Number(tg_id) },
+      data: { trainingMode: mode }
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[api/mode:post] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });

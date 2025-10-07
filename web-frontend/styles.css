@@ -324,3 +324,30 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   transform: scale(0.95);
   box-shadow: 0 0 8px var(--accent);
 }
+/* ================================
+   🔀 Тумблер режима (Зал / Кроссфит)
+================================ */
+.mode-toggle {
+  display: flex;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.mode-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text);
+  transition: background var(--transition), color var(--transition);
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  color: #fff;
+}

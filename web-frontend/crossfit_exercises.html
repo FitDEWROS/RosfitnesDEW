@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RosApp — Кроссфит упражнения</title>
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--card-border);
+      background: var(--card);
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    main {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .exercise-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+
+    .exercise-card:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .exercise-card h3 {
+      margin: 0 0 6px 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .exercise-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-secondary, #aaa);
+    }
+
+    footer {
+      padding: 10px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #999;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <button class="back-btn" id="backBtn" title="Назад">
+      ⬅️ Назад
+    </button>
+    <h1>Кроссфит упражнения</h1>
+    <div style="width: 30px;"></div> <!-- выравнивание -->
+  </header>
+
+  <main id="exerciseList">
+    <!-- Упражнения подгружаются скриптом -->
+  </main>
+
+  <footer>
+    RosApp — версия для Кроссфита
+  </footer>
+
+  <script>
+    const exercises = [
+      { name: "Бёрпи", desc: "Полное упражнение на всё тело: прыжок, планка, отжимание." },
+      { name: "Трастеры", desc: "Комбинация приседания и жима штанги вверх." },
+      { name: "Гребля", desc: "Работа на кардио-тренажёре с высокой интенсивностью." },
+      { name: "Турецкий подъём", desc: "Упражнение на координацию и стабильность корпуса." },
+      { name: "Подтягивания на перекладине", desc: "Работа спины и рук." },
+      { name: "Прыжки на тумбу", desc: "Укрепление ног и развитие взрывной силы." },
+      { name: "Отжимания в стойке на руках", desc: "Развитие плечевого пояса и равновесия." },
+      { name: "Становая тяга", desc: "Базовое силовое упражнение для спины и ног." }
+    ];
+
+    const list = document.getElementById("exerciseList");
+
+    exercises.forEach(ex => {
+      const card = document.createElement("div");
+      card.className = "exercise-card";
+      card.innerHTML = `
+        <h3>${ex.name}</h3>
+        <p>${ex.desc}</p>
+      `;
+      list.appendChild(card);
+    });
+
+    document.getElementById("backBtn").addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
