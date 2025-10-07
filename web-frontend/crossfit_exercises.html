@@ -36,53 +36,53 @@
     }
 
     /* 🌈 Градиент-аура */
-  .cf-header {
-    position: sticky;
-    top: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 18px;
-    color: #fff;
-    background: rgba(17,17,19,0.55);
-    backdrop-filter: blur(14px);
-    box-shadow: 0 2px 20px rgba(139,92,246,0.25);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    overflow: hidden;
-    z-index: 20;
-  }
+.cf-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  color: #fff;
+  background: rgba(17,17,19,0.55);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 2px 20px rgba(139,92,246,0.25);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+  z-index: 20;
+}
 
-  /* 💡 Светлая тема — в стиле index.html */
-  html.light .cf-header {
-    background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.25));
-    backdrop-filter: blur(16px);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-    color: #111;
-  }
+/* 💡 Светлая тема — в стиле index.html */
+html.light .cf-header {
+  background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.25));
+  backdrop-filter: blur(16px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  color: #111;
+}
 
-  html.light .cf-header::after {
-    content: "";
-    position: absolute;
-    inset: -80px;
-    background: radial-gradient(circle at 60% 100%, rgba(59,130,246,0.35), transparent 70%);
-    z-index: -1;
-    pointer-events: none;
-  }
+html.light .cf-header::after {
+  content: "";
+  position: absolute;
+  inset: -80px;
+  background: radial-gradient(circle at 60% 100%, rgba(59,130,246,0.35), transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
 
-  /* 🎨 Кнопка назад в светлой теме */
-  html.light .nav-btn {
-    border: 1px solid rgba(0,0,0,0.15);
-    color: #111;
-    background: rgba(255,255,255,0.6);
-    backdrop-filter: blur(8px);
-    transition: all 0.25s ease;
-  }
+/* 🎨 Кнопка назад в светлой теме */
+html.light .nav-btn {
+  border: 1px solid rgba(0,0,0,0.15);
+  color: #111;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
 
-  html.light .nav-btn:hover {
-    background: rgba(59,130,246,0.15);
-    box-shadow: 0 0 10px rgba(59,130,246,0.25);
-  }
+html.light .nav-btn:hover {
+  background: rgba(59,130,246,0.15);
+  box-shadow: 0 0 10px rgba(59,130,246,0.25);
+}
 
 
     .nav-btn {
