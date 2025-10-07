@@ -18,6 +18,36 @@ html.light {
   --tg-theme-button-color: #3b82f6;
   --tg-theme-button-text-color: #ffffff;
 }
+/* ================================
+   📱 Адаптация для мобильных экранов
+   (тумблер выше системной панели Telegram)
+================================ */
+@media (max-height: 600px) {
+  .toggle-wrapper.fixed-toggle {
+    bottom: 10px;
+  }
+}
+
+/* ================================
+   🌞 Улучшение для светлой темы
+   (уменьшаем контраст и тень)
+================================ */
+html.light .toggle-wrapper.fixed-toggle {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* ================================
+   ✨ Эффект "пульса" при фокусе
+   (живой отклик на касание)
+================================ */
+@keyframes pulseAccent {
+  0%, 100% { box-shadow: 0 0 6px var(--accent); }
+  50% { box-shadow: 0 0 14px var(--accent); }
+}
+
+.toggle-wrapper:focus-within {
+  animation: pulseAccent 1.5s infinite;
+}
 
 /* ================================
    🎨 Тема (переменные)
@@ -458,6 +488,26 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   cursor: pointer;
   transition: background var(--transition);
 }
+/* Плавающий тумблер внизу экрана */
+.toggle-wrapper.fixed-toggle {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  backdrop-filter: blur(10px);
+}
+.toggle-wrapper:hover {
+  box-shadow: 0 0 10px var(--accent);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.toggle-option:active {
+  transform: scale(0.96);
+  transition: transform 0.15s ease;
+}
+
 
 .toggle-option {
   flex: 1;
