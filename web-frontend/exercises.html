@@ -3,99 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Раздел: Упражнения</title>
+  <title>RosApp — Упражнения</title>
 
-  <!-- 🔧 Перекрытие системных переменных Telegram -->
-  <style>
-    :root {
-      --tg-theme-bg-color: initial !important;
-      --tg-theme-text-color: initial !important;
-      --tg-theme-hint-color: initial !important;
-      --tg-theme-link-color: initial !important;
-      --tg-theme-button-color: initial !important;
-      --tg-theme-button-text-color: initial !important;
-    }
-    html.light {
-      --tg-theme-bg-color: #f5f7fa !important;
-      --tg-theme-text-color: #111113 !important;
-      --tg-theme-hint-color: #666666 !important;
-      --tg-theme-link-color: #3b82f6 !important;
-      --tg-theme-button-color: #3b82f6 !important;
-      --tg-theme-button-text-color: #ffffff !important;
-    }
-    body {
-      background: var(--bg, #111113);
-    }
-  </style>
-
+  <!-- ✅ Единое подключение общей темы -->
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .page-title { margin: 12px 16px 0; font-size: clamp(22px, 5vw, 36px); }
-    .muscle-wrap { display:flex; flex-direction:column; align-items:center; gap:18px; padding:10px 16px 80px; }
-    .view-switch { display:flex; gap:8px; flex-wrap:wrap; }
-    .view-switch button{
-      background: var(--card); color: var(--text);
-      border:1px solid var(--card-border); border-radius: 10px;
-      padding:8px 12px; cursor:pointer;
-    }
-    .view-switch button.active{ outline:2px solid var(--accent); }
-
-    .canvas {
-      width: 100%;
-      height: 80vh;
-      max-width: 640px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .svg-host {
-      height: 100%;
-      width: auto;
-      display: block;
-    }
-
-    .muscle:hover { fill: rgba(139,92,246,0.25); stroke:#8b5cf6; stroke-width:2; }
-    .muscle.active { fill: rgba(139,92,246,0.55); stroke:#8b5cf6; stroke-width:2; cursor: pointer; }
-    .muscle { transition: fill .3s, stroke .3s; stroke: transparent; stroke-width: 20px; pointer-events: auto; }
-
-    .muscle-test { fill: red !important; opacity: 0.5; }
-
-    .info {
-      position: sticky; bottom: 16px; max-width: 560px;
-      width: calc(100% - 32px);
-      background: var(--card); border:1px solid var(--card-border);
-      border-radius:16px; padding:14px 16px; color:var(--text);
-      box-shadow: 0 6px 26px rgba(0,0,0,.35);
-      animation: fadeUp 0.3s ease;
-    }
-    .info h3{ margin:0 0 6px; color: var(--accent); font-size: 18px; }
-    .info ul{ margin:0; padding-left:18px; }
-    .legend { opacity:.75; font-size: 12px; margin-top:6px; }
-
-    .debug-toggle {
-      margin: 6px;
-      padding:6px 10px;
-      border:1px solid var(--card-border);
-      border-radius:8px;
-      cursor:pointer;
-      background: var(--card);
-      color: var(--text);
-    }
-    .debug-toggle.active { outline:2px solid crimson; color: crimson; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 </head>
+
 <body>
   <div class="wrap">
     <header class="header">
       <button id="btnBackNav" class="nav-btn">← Назад</button>
     </header>
-
 
     <main class="muscle-wrap" aria-live="polite">
       <div class="view-switch" role="tablist" aria-label="Выбор вида тела">
@@ -120,28 +40,21 @@
   </div>
 
   <script>
-    // === Подтягиваем тему из localStorage ===
+    /* === 🌗 Тема === */
     (function() {
       const savedTheme = localStorage.getItem("theme") || "dark";
-      if (savedTheme === "light") {
-        document.documentElement.classList.add("light");
-      } else {
-        document.documentElement.classList.remove("light");
-      }
+      document.documentElement.classList.toggle("light", savedTheme === "light");
     })();
 
-    // === Кнопка Назад ===
+    /* === 🔙 Назад === */
     document.getElementById("btnBackNav").addEventListener("click", () => {
       window.location.href = "index.html";
     });
 
-    // === Системная кнопка Назад (браузер/телефон) ===
-    window.addEventListener("popstate", function () {
-      window.location.href = "index.html";
-    });
+    window.addEventListener("popstate", () => window.location.href = "index.html");
     history.pushState({ page: "exercises" }, "", window.location.href);
 
-    // === Основная логика ===
+    /* === ⚙️ Основная логика === */
     const btnFront = document.getElementById('btnFront');
     const btnBack  = document.getElementById('btnBack');
     const btnDebug = document.getElementById('btnDebug');
@@ -160,12 +73,10 @@
     function setView(isFront){
       front.style.display = isFront ? "block" : "none";
       back.style.display  = isFront ? "none" : "block";
-
       btnFront.classList.toggle('active', isFront);
       btnBack.classList.toggle('active', !isFront);
       btnFront.setAttribute('aria-selected', String(isFront));
       btnBack.setAttribute('aria-selected', String(!isFront));
-
       info.innerHTML = `<h3>Выбери мышцу</h3>
         <p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>`;
     }
@@ -237,43 +148,31 @@
           if (!el.id) el.id = "auto-path-" + idx;
 
           el.addEventListener("pointerdown", () => {
-            svgDoc.querySelectorAll(".muscle.active, .muscle-test").forEach(m => m.classList.remove("active","muscle-test"));
+            svgDoc.querySelectorAll(".muscle.active, .muscle-test")
+                  .forEach(m => m.classList.remove("active","muscle-test"));
 
             const groupKey = findGroup(el.id);
 
             if (debugMode) {
-              if (groupKey) {
-                // Если path входит в группу
-                GROUPS[groupKey].forEach(gid => {
-                  const g = svgDoc.getElementById(gid);
-                  if (g) {
-                    g.classList.add("muscle-test");
-                    const d = g.getAttribute("d") || "";
-                    const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
-                    const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
-                    console.log(`Мышца: ${gid}, координаты: ${coords}`);
-                    alert(`Мышца: ${gid}\n${coords}`);
-                  }
-                });
-              } else {
-                // Если path НЕ в группах (авто-id)
-                el.classList.add("muscle-test");
-                const d = el.getAttribute("d") || "";
+              const list = groupKey ? GROUPS[groupKey] : [el.id];
+              list.forEach(gid => {
+                const g = svgDoc.getElementById(gid);
+                if (!g) return;
+                g.classList.add("muscle-test");
+                const d = g.getAttribute("d") || "";
                 const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
                 const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
-                console.log(`Path: ${el.id}, координаты: ${coords}`);
-                alert(`Path: ${el.id}\n${coords}`);
-              }
+                alert(`Мышца: ${gid}\n${coords}`);
+              });
               return;
             }
-
 
             if (groupKey) {
               GROUPS[groupKey].forEach(gid => {
                 const g = svgDoc.getElementById(gid);
                 if (g) g.classList.add("active");
               });
-              const list = DB[groupKey] && DB[groupKey].length ? DB[groupKey] : ['Нет упражнений'];
+              const list = DB[groupKey] || ['Нет упражнений'];
               info.innerHTML = `<h3>${humanName(groupKey)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
             }
           });
