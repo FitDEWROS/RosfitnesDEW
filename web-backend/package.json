@@ -7,8 +7,7 @@
     "build": "prisma generate --schema=../prisma/schema.prisma --generator client_js",
     "start": "node server.js",
     "dev": "node --watch server.js"
-}
-,
+  },
   "dependencies": {
     "@prisma/client": "^5.17.0",
     "cors": "^2.8.5",
@@ -16,6 +15,6 @@
     "express": "^4.19.2"
   },
   "devDependencies": {
-    "prisma": "^6.16.3"
+    "prisma": "^5.17.0"
   }
 }
