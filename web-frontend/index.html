@@ -5,95 +5,99 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RosApp — Telegram WebApp</title>
 
-  <!-- ⚙️ Сброс темы Telegram -->
+  <!-- ⚙️ Инициализация темы -->
   <script>
     (function() {
       const savedTheme = localStorage.getItem("theme") || "dark";
       const isLight = savedTheme === "light";
       document.documentElement.classList.toggle("light", isLight);
-
-      const root = document.documentElement.style;
-      if (isLight) {
-        root.setProperty("--bg", "#f5f7fa");
-        root.setProperty("--text", "#111113");
-        root.setProperty("--card", "#ffffff");
-        root.setProperty("--card-border", "rgba(0,0,0,0.1)");
-        root.setProperty("--accent", "#3b82f6");
-      } else {
-        root.setProperty("--bg", "#111113");
-        root.setProperty("--text", "#ffffff");
-        root.setProperty("--card", "rgba(255,255,255,0.05)");
-        root.setProperty("--card-border", "rgba(255,255,255,0.1)");
-        root.setProperty("--accent", "#8b5cf6");
-      }
     })();
   </script>
 
   <style>
     :root {
-      --tg-theme-bg-color: unset !important;
-      --tg-theme-text-color: unset !important;
-      --tg-theme-hint-color: unset !important;
-      --tg-theme-link-color: unset !important;
-      --tg-theme-button-color: unset !important;
-      --tg-theme-button-text-color: unset !important;
+      --bg: #111113;
+      --text: #ffffff;
+      --card: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.1);
+      --accent: #8b5cf6;
+      --radius: 16px;
+      --transition: 0.3s ease;
     }
 
-    html, body {
-      background-color: var(--bg) !important;
-      color: var(--text) !important;
+    html.light {
+      --bg: #f5f7fa;
+      --text: #111113;
+      --card: #ffffff;
+      --card-border: rgba(0,0,0,0.1);
+      --accent: #3b82f6;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
       font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
+      transition: background-color var(--transition), color var(--transition);
     }
 
-    /* ================================
-       🔹 Верхняя часть
-    ===================================*/
+    /* ================================ */
+    /* 🌟 Верхняя часть                 */
+    /* ================================ */
     .header {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 10px;
-      padding: 10px 16px;
-    }
-
-    .header-row {
-      display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
+      padding: 18px 12px;
+      text-align: center;
     }
 
     .app-title {
-      font-size: 1.6rem;
+      font-size: 1.8rem;
       font-weight: 700;
-      margin: 0;
+      margin-bottom: 4px;
     }
 
-    .brand-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .logo {
+      width: 72px;
+      height: 72px;
     }
 
-    .logo lottie-player {
-      width: 64px;
-      height: 64px;
+    .slogan {
+      font-size: 0.95rem;
+      opacity: 0.75;
+      margin-top: 4px;
     }
 
+    /* Правая часть с профилем */
     .user {
+      position: absolute;
+      top: 14px;
+      right: 16px;
       text-align: right;
     }
 
     .greeting {
       font-weight: 600;
+      font-size: 1rem;
     }
 
     .user-row {
       display: flex;
       align-items: center;
-      gap: 8px;
       justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .badge {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 12px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
     }
 
     .theme-btn {
@@ -103,24 +107,45 @@
       padding: 6px 8px;
       cursor: pointer;
       color: var(--text);
-      transition: background 0.3s ease;
+      transition: background 0.25s ease, color 0.25s ease;
     }
+
     .theme-btn:hover {
       background: var(--accent);
       color: #fff;
     }
 
-    .badge {
-      background: var(--accent);
-      color: #fff;
-      border-radius: 10px;
-      padding: 4px 10px;
-      font-size: 0.85rem;
+    /* ================================ */
+    /* 📋 Основное содержимое           */
+    /* ================================ */
+    .grid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      padding: 24px 16px 100px; /* отступ под тумблер */
     }
 
-    /* ================================
-       ⚙️ Плавающий тумблер внизу
-    ===================================*/
+    .tile {
+      display: block;
+      width: 260px;
+      text-align: center;
+      padding: 18px;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .tile:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* ================================ */
+    /* ⚙️ Плавающий тумблер             */
+    /* ================================ */
     .toggle-wrapper {
       position: fixed;
       bottom: 20px;
@@ -178,36 +203,9 @@
       color: #fff;
     }
 
-    /* ================================
-       Основное содержимое
-    ===================================*/
-    .grid {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      padding: 24px 16px;
-    }
-
-    .tile {
-      display: block;
-      width: 260px;
-      text-align: center;
-      padding: 18px;
-      border-radius: 16px;
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      color: var(--text);
-      transition: transform 0.2s, background 0.2s;
-    }
-    .tile:hover {
-      transform: translateY(-4px);
-      background: rgba(255,255,255,0.05);
-    }
-
-    /* ================================
-       Модальное окно профиля
-    ===================================*/
+    /* ================================ */
+    /* 📱 Модалка профиля               */
+    /* ================================ */
     .modal {
       position: fixed;
       z-index: 1000;
@@ -218,6 +216,7 @@
       align-items: center;
       justify-content: center;
     }
+
     .modal.hidden { display: none; }
 
     .modal-content {
@@ -243,42 +242,35 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
-
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
   <script src="env.js"></script>
   <script defer src="app.js"></script>
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 </head>
 
 <body>
   <div class="wrap">
     <header class="header">
-      <div class="header-row">
-        <div class="brand">
-          <h1 class="app-title">RosApp</h1>
-        </div>
+      <h1 class="app-title">RosApp</h1>
 
-        <div class="user" id="userbox">
-          <div id="greeting" class="greeting">Привет!</div>
-          <div class="user-row">
-            <div class="badge" id="tariff">Тариф: неизвестно</div>
-            <button id="profileBtn" class="theme-btn" title="Мой профиль" aria-label="Мой профиль">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M12 14c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/>
-              </svg>
-            </button>
-            <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
-          </div>
-        </div>
+      <div class="logo">
+        <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
       </div>
 
-      <div class="brand-row">
-        <div class="logo" aria-hidden="true">
-          <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
+      <p class="slogan">Твой путь к форме начинается здесь</p>
+
+      <div class="user" id="userbox">
+        <div id="greeting" class="greeting">Привет, Максим!</div>
+        <div class="user-row">
+          <div class="badge" id="tariff">Тариф: Максимум</div>
+          <button id="profileBtn" class="theme-btn" title="Мой профиль" aria-label="Мой профиль">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M12 14c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/>
+            </svg>
+          </button>
+          <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
         </div>
-        <p class="muted slogan">Твой путь к форме начинается здесь</p>
       </div>
     </header>
 
@@ -333,11 +325,10 @@
       });
     }
 
-    // === Новый плавающий тумблер ===
+    // === Плавающий тумблер ===
     document.addEventListener("DOMContentLoaded", async () => {
       const toggle = document.getElementById("modeToggle");
       if (!toggle) return;
-
       const savedMode = localStorage.getItem("training_mode") || "gym";
       toggle.dataset.mode = savedMode;
 

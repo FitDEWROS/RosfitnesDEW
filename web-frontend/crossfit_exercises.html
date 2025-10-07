@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RosApp — Кроссфит</title>
+  <title>Раздел: Кроссфит упражнения</title>
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -11,31 +11,32 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-
-  <script>
-    // === применяем тему ===
-    document.addEventListener("DOMContentLoaded", () => {
-      const theme = localStorage.getItem("theme") || "dark";
-      if (theme === "light") document.documentElement.classList.add("light");
-      else document.documentElement.classList.remove("light");
-    });
-  </script>
 </head>
 
 <body class="page-crossfit">
-  <header class="cf-header">
-    <button class="nav-btn" id="backBtn" title="Назад">← Назад</button>
-  </header>
+  <div class="wrap">
+    <!-- 🔙 Кнопка как в exercises.html -->
+    <header class="header">
+      <button id="backBtn" class="nav-btn">← Назад</button>
+    </header>
 
-  <main id="exerciseList" class="cf-main">
-    <!-- Карточки упражнений -->
-  </main>
+    <main class="cf-main" id="exerciseList" aria-live="polite">
+      <!-- Карточки упражнений -->
+    </main>
 
-  <footer class="cf-footer">
-    RosApp — Кроссфит
-  </footer>
+    <footer class="cf-footer">
+      RosApp — Кроссфит: упражнения
+    </footer>
+  </div>
 
   <script>
+    // === применяем тему ===
+    (function() {
+      const theme = localStorage.getItem("theme") || "dark";
+      if (theme === "light") document.documentElement.classList.add("light");
+      else document.documentElement.classList.remove("light");
+    })();
+
     // === данные упражнений ===
     const exercises = [
       { name: "Бёрпи", desc: "Полное упражнение на всё тело: прыжок, планка, отжимание." },
