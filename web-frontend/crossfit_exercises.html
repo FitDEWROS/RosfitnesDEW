@@ -69,8 +69,8 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.05);
       border-bottom: 1px solid rgba(0,0,0,0.05);
       color: #111;
-      width: 100vw;
-      margin-left: calc(-50vw + 50%);
+      width: 100%; /* было 100vw — теперь без артефактов */
+      margin-left: 0; /* убираем сдвиг */
     }
     html.light .cf-header::after {
       background: radial-gradient(circle at 60% 100%, rgba(59,130,246,0.25), transparent 70%);
