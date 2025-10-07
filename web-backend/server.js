@@ -127,15 +127,13 @@ async function preparePrisma() {
     PYTHONPATH: [PY_TARGET, process.env.PYTHONPATH || ''].filter(Boolean).join(':'),
     PATH: [BIN_DIR, process.env.PATH || ''].filter(Boolean).join(':'),
   };
-
   console.log('[prisma] generate...');
   const okGen = await run(PY, ['-m', 'prisma', 'generate'], { cwd: ROOT, env });
   if (!okGen) console.error('[prisma] generate failed');
-
-  // ⚠️ Убираем db push, чтобы Timeweb не падал при старте
-  console.log('[prisma] db push skipped (execute manually when schema changes)');
+  console.log('[prisma] db push...');
+  const okPush = await run(PY, ['-m', 'prisma', 'db', 'push', '--accept-data-loss'], { cwd: ROOT, env });
+  if (!okPush) console.error('[prisma] db push failed (check DATABASE_URL)');
 }
-
 
 function startPythonBot() {
   const env = {
