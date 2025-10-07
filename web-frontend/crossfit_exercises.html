@@ -5,14 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RosApp — Кроссфит упражнения</title>
 
-  <!-- 🧩 Шрифты и базовые стили -->
+  <!-- 🧩 Шрифты -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
-    /* ===============================
-       ⚙️ Тема и базовые переменные
-    =============================== */
     :root {
       --bg: #111113;
       --text: #ffffff;
@@ -32,89 +29,76 @@
       background: var(--bg);
       color: var(--text);
       font-family: 'Inter', sans-serif;
-      transition: background 0.3s ease, color 0.3s ease;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
-    /* ===============================
-       🌈 Градиентная шапка
-    =============================== */
+    /* 🌈 Градиент-аура */
     .cf-header {
       position: sticky;
       top: 0;
-      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 18px;
-      background: linear-gradient(120deg, #8b5cf6, #3b82f6, #6366f1);
-      background-size: 200% 200%;
-      animation: gradientShift 6s ease-in-out infinite alternate;
+      padding: 14px 18px;
       color: #fff;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
-      box-shadow: 0 4px 18px rgba(0,0,0,0.35);
-      backdrop-filter: blur(10px);
-    }
-    @keyframes gradientShift {
-      from { background-position: 0% 50%; }
-      to { background-position: 100% 50%; }
+      background: rgba(17,17,19,0.55);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 2px 20px rgba(139,92,246,0.25);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      z-index: 20;
     }
 
-    .brand-mini {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .cf-header::after {
+      content: "";
       position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-    .brand-mini lottie-player {
-      width: 38px;
-      height: 38px;
-    }
-    .app-title {
-      font-weight: 700;
-      font-size: 1.2rem;
-      letter-spacing: 0.3px;
+      inset: -80px;
+      background: radial-gradient(circle at 50% 100%, rgba(139,92,246,0.45), transparent 70%);
+      z-index: -1;
+      pointer-events: none;
     }
 
-    /* Кнопка Назад */
     .nav-btn {
-      background: rgba(255,255,255,0.15);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
       color: #fff;
-      border: 1px solid rgba(255,255,255,0.25);
       border-radius: 10px;
       padding: 8px 16px;
       font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.25s ease;
-      box-shadow: 0 0 10px rgba(255,255,255,0.15);
     }
     .nav-btn:hover {
-      background: rgba(255,255,255,0.25);
-      transform: translateY(-1px);
-      box-shadow: 0 0 12px rgba(255,255,255,0.25);
-    }
-    .nav-btn:active { transform: scale(0.97); }
-
-    html.light .cf-header {
-      background: linear-gradient(120deg, #93c5fd, #a78bfa, #60a5fa);
-      border-bottom: 1px solid rgba(0,0,0,0.1);
-      color: #111;
-    }
-    html.light .nav-btn {
-      color: #111;
-      background: rgba(255,255,255,0.7);
-      border: 1px solid rgba(0,0,0,0.1);
-      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+      background: rgba(139,92,246,0.3);
+      box-shadow: 0 0 10px rgba(139,92,246,0.5);
     }
 
-    /* ===============================
-       🏋️ Сетка упражнений
-    =============================== */
+    .brand-mini {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-mini lottie-player {
+      width: 42px;
+      height: 42px;
+      filter: drop-shadow(0 0 6px rgba(139,92,246,0.7));
+    }
+
+    .app-title {
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: 0.3px;
+    }
+
+    /* 🏋️ Сетка упражнений */
     .cf-main {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -183,9 +167,7 @@
       padding: 0 10px 12px;
     }
 
-    /* ===============================
-       🎥 Видео-модалка
-    =============================== */
+    /* 🎥 Видео-модалка */
     .modal {
       display: none;
       position: fixed;
@@ -211,16 +193,17 @@
       box-shadow: 0 8px 30px rgba(0,0,0,0.4);
       animation: modalAppear 0.3s ease forwards;
     }
+
+    @keyframes modalAppear {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
     video {
       width: 100%;
       border-radius: 12px;
       margin-bottom: 12px;
       box-shadow: 0 0 10px rgba(0,0,0,0.4);
-    }
-
-    @keyframes modalAppear {
-      from { opacity: 0; transform: translateY(20px) scale(0.97); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .close {
@@ -242,13 +225,12 @@
 
 <body class="page-crossfit">
   <div class="wrap">
-
-    <!-- 🔹 Градиентная шапка -->
+    <!-- 🔹 Градиентная аура-шапка -->
     <header class="cf-header">
       <button id="backBtn" class="nav-btn">← Назад</button>
+
       <div class="brand-mini">
-        <lottie-player src="https://assets4.lottiefiles.com/packages/lf20_q5pk6p1k.json"
-          background="transparent" speed="1" loop autoplay></lottie-player>
+        <lottie-player src="Avocado.json" background="transparent" speed="1" loop autoplay></lottie-player>
         <span class="app-title">RosApp</span>
       </div>
     </header>
@@ -268,13 +250,11 @@
   </div>
 
   <script>
-    // 🌗 Применяем тему
     (function() {
       const theme = localStorage.getItem("theme") || "dark";
       document.documentElement.classList.toggle("light", theme === "light");
     })();
 
-    // 🏋️ Данные упражнений
     const exercises = [
       { name: "Бёрпи", desc: "Полное упражнение на всё тело: прыжок, планка, отжимание.", thumb: "thumbs/burpee.jpg", video: "videos/burpee.mp4" },
       { name: "Трастеры", desc: "Комбинация приседания и жима штанги вверх.", thumb: "thumbs/thruster.jpg", video: "videos/thruster.mp4" },
@@ -287,7 +267,6 @@
       { name: "Русские скручивания", desc: "Развитие мышц кора и косых мышц живота.", thumb: "thumbs/russian_twist.jpg", video: "videos/russian_twist.mp4" }
     ];
 
-    // 🧱 Отрисовка карточек
     const list = document.getElementById("exerciseList");
     exercises.forEach((ex, i) => {
       const card = document.createElement("div");
@@ -302,16 +281,13 @@
       `;
       card.addEventListener("click", () => openVideoModal(ex));
       list.appendChild(card);
-      // плавное появление
       setTimeout(() => { card.style.opacity = 1; card.style.transform = "translateY(0)"; }, 100 * i);
     });
 
-    // 🔙 Назад
     document.getElementById("backBtn").addEventListener("click", () => {
       window.location.href = "index.html";
     });
 
-    // 🎥 Модалка видео
     function openVideoModal(ex) {
       const modal = document.getElementById("videoModal");
       const video = document.getElementById("exerciseVideo");
