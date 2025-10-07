@@ -3,35 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RosApp — Кроссфит: упражнения</title>
+  <title>RosApp — Кроссфит</title>
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+  <script>
+    // === применяем тему ===
+    document.addEventListener("DOMContentLoaded", () => {
+      const theme = localStorage.getItem("theme") || "dark";
+      if (theme === "light") document.documentElement.classList.add("light");
+      else document.documentElement.classList.remove("light");
+    });
+  </script>
 </head>
 
 <body class="page-crossfit">
   <header class="cf-header">
-    <!-- Левая часть -->
-    <button class="nav-btn" id="backBtn" title="Назад">
-      ⬅ Назад
-    </button>
-
-    <!-- Центр -->
-    <div class="brand-mini">
-      <lottie-player
-        src="dumbell animation.json"
-        background="transparent"
-        speed="1"
-        loop autoplay>
-      </lottie-player>
-      <h1 class="page-title">Кроссфит: упражнения</h1>
-    </div>
-
-    <!-- Пустышка для симметрии -->
-    <div style="width: 60px;"></div>
+    <button class="nav-btn" id="backBtn" title="Назад">← Назад</button>
   </header>
 
   <main id="exerciseList" class="cf-main">
@@ -39,11 +32,11 @@
   </main>
 
   <footer class="cf-footer">
-    RosApp — версия для Кроссфита
+    RosApp — Кроссфит
   </footer>
 
   <script>
-    // === Список упражнений ===
+    // === данные упражнений ===
     const exercises = [
       { name: "Бёрпи", desc: "Полное упражнение на всё тело: прыжок, планка, отжимание." },
       { name: "Трастеры", desc: "Комбинация приседания и жима штанги вверх." },
@@ -54,6 +47,7 @@
       { name: "Становая тяга", desc: "Базовое упражнение для спины, ног и хвата." }
     ];
 
+    // === отрисовка карточек ===
     const list = document.getElementById("exerciseList");
     exercises.forEach(ex => {
       const card = document.createElement("div");
@@ -62,7 +56,7 @@
       list.appendChild(card);
     });
 
-    // Кнопка назад
+    // === кнопка Назад ===
     document.getElementById("backBtn").addEventListener("click", () => {
       window.location.href = "index.html";
     });

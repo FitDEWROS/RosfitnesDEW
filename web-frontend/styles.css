@@ -307,16 +307,35 @@ h1, h2, h3, h4, h5 { margin: 0; font-weight: 700; }
 .exercise-info ul, .exercise-list ul { margin: 0; padding-left: 20px; }
 .exercise-info li, .exercise-list li { margin: 4px 0; }
 
+/* ================================
+   🔙 Кнопка "Назад" — фикс
+================================ */
 .nav-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
   background: var(--card);
+  color: var(--text);
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  padding: 6px 12px;
-  color: var(--text);
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background var(--transition), color var(--transition);
+  width: auto !important;
+  min-width: unset;
+  max-width: 180px;
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
 }
-.nav-btn:hover { background: var(--accent); color: #fff; }
+.nav-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 8px var(--accent);
+}
+.nav-btn:active {
+  transform: scale(0.97);
+}
+
 
 .info { animation: fadeUp 0.3s ease; }
 
@@ -421,5 +440,62 @@ button:active, .tile:active, .nav-btn:active, .theme-btn:active {
   text-align: center;
   font-size: 0.8rem;
   color: #999;
+}
+/* ================================
+   ⚙️ Новый единый тумблер (Зал / Кроссфит)
+================================ */
+.toggle-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  width: 160px;
+  height: 36px;
+  padding: 4px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.toggle-option {
+  flex: 1;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  z-index: 2;
+  user-select: none;
+  transition: color 0.25s ease;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 4px);
+  height: calc(100% - 6px);
+  background: var(--accent);
+  border-radius: 8px;
+  transition: left 0.3s ease, background 0.3s ease;
+  z-index: 1;
+}
+
+.toggle-wrapper.light .toggle-slider {
+  background: var(--accent);
+}
+
+.toggle-wrapper[data-mode="crossfit"] .toggle-slider {
+  left: 50%;
+}
+
+.toggle-wrapper[data-mode="gym"] .toggle-slider {
+  left: 3px;
+}
+
+.toggle-wrapper[data-mode="gym"] [data-mode="gym"],
+.toggle-wrapper[data-mode="crossfit"] [data-mode="crossfit"] {
+  color: #fff;
 }
 
