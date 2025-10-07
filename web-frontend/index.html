@@ -445,7 +445,7 @@
   // === 🧠 Функции для работы с режимом ===
   async function loadUserMode(tg_id) {
     try {
-      const res = await fetch(`/api/mode?tg_id=${tg_id}`);
+      const res = await fetch(`https://fitdewros-rosfitnesdew-a720.twc1.net/api/mode?tg_id=${tg_id}`);
       const data = await res.json();
       if (data.ok && data.trainingMode) {
         localStorage.setItem("training_mode", data.trainingMode);
@@ -459,7 +459,7 @@
 
   async function saveUserMode(tg_id, mode) {
     try {
-      await fetch("/api/mode", {
+      await fetch("https://fitdewros-rosfitnesdew-a720.twc1.net/api/mode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tg_id, mode })
@@ -528,7 +528,5 @@
     });
   });
 </script>
-</body>
-</html>
 </body>
 </html>

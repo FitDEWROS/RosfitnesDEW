@@ -1,7 +1,7 @@
 (function () {
   const tg = window.Telegram?.WebApp || null;
   const qs = new URLSearchParams(location.search);
-  const API_BASE = window.ENV?.API_BASE || "";
+  const API_BASE = "https://fitdewros-rosfitnesdew-a720.twc1.net";
 
   const greetingEl = document.getElementById('greeting');
   const tariffEl = document.getElementById('tariff');
@@ -208,7 +208,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
       if (tg?.id) {
         try {
-          await fetch("/api/mode", {
+          await fetch("https://fitdewros-rosfitnesdew-a720.twc1.net/api/mode", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ tg_id: tg.id, mode: newMode })
