@@ -65,8 +65,8 @@
       const photoUrl = json.user?.photo_url || "";
 
       // приветствие
-      greetingEl.textContent = `Привет, ${name}!`;
-      tariffEl.textContent = `Тариф: ${tariff}`;
+      greetingEl.textContent = name;
+      tariffEl.textContent = tariff;
       renderTilesByTariff(tariff);
 
       // профиль в модалке
@@ -77,10 +77,14 @@
       if (profilePhotoEl) {
         profilePhotoEl.src = photoUrl || "default-avatar.png";
       }
+      const avatarThumb = document.getElementById("avatarThumb");
+      if (avatarThumb) {
+        avatarThumb.src = photoUrl || "default-avatar.png";
+      }
 
     } catch (e) {
       console.error("[api/user] ❌ Ошибка запроса", e);
-      tariffEl.textContent = "Тариф: ошибка";
+      tariffEl.textContent = "Offline";
     }
   }
 
@@ -104,7 +108,7 @@
 
     actions.forEach((label, idx) => {
       const tile = document.createElement("button");
-      tile.className = "tile";
+      tile.className = "action-card tile";
       tile.dataset.action = label;
       tile.classList.add("tile--reveal");
       if (idx === 0) tile.classList.add("tile--accent");
@@ -181,14 +185,38 @@
   // Модалка профиля
   // -------------------------------
   if (profileBtn) {
-    profileBtn.addEventListener("click", () => profileModal.classList.remove("hidden"));
+    profileBtn.addEventListener("click", () => profileModal.classList.add("show"));
   }
   if (closeProfile) {
-    closeProfile.addEventListener("click", () => profileModal.classList.add("hidden"));
+    closeProfile.addEventListener("click", () => profileModal.classList.remove("show"));
   }
   window.addEventListener("click", (e) => {
-    if (e.target === profileModal) profileModal.classList.add("hidden");
+    if (e.target === profileModal) profileModal.classList.remove("show");
   });
+
+  const navProfile = document.getElementById("navProfile");
+  if (navProfile) {
+    navProfile.addEventListener("click", () => {
+      if (profileBtn) profileBtn.click();
+    });
+  }
+
+  const navItems = document.querySelectorAll(".nav-item[data-scroll]");
+  if (navItems.length) {
+    navItems.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = btn.getAttribute("data-scroll");
+        if (target === "body") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else if (target) {
+          const el = document.querySelector(target);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        navItems.forEach((b) => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
+      });
+    });
+  }
 
   // -------------------------------
   // 🔀 Тумблер режима
@@ -240,11 +268,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         tg.expand?.();
 
         const u = tg.initDataUnsafe?.user;
-        if (u?.first_name) greetingEl.textContent = `Привет, ${u.first_name}!`;
+        if (u?.first_name) greetingEl.textContent = u.first_name;
       }
 
       const qpTariff = qs.get('tariff');
-      if (qpTariff) tariffEl.textContent = `Тариф: ${qpTariff}`;
+      if (qpTariff) tariffEl.textContent = qpTariff;
 
       if (API_BASE && tg) {
         const initData = buildInitData();

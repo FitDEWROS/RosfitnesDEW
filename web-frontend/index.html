@@ -837,8 +837,451 @@
     }
   </style>
 
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+    <style>
+    .screen {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 22px 18px 170px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .greeting-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .greeting {
+      font-family: var(--font-title);
+      font-size: 1.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .avatar-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      padding: 0;
+      overflow: hidden;
+      background: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .avatar-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .hero-card {
+      position: relative;
+      padding: 20px 20px 54px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
+      color: #1b1b1b;
+      min-height: 200px;
+      overflow: hidden;
+      box-shadow: 0 24px 40px rgba(0, 0, 0, 0.35);
+      animation: riseIn 0.6s ease both;
+    }
+
+    .hero-meta {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hero-value {
+      font-size: 2.1rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-unit {
+      font-size: 0.7rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    .hero-visual {
+      position: absolute;
+      right: 16px;
+      bottom: 20px;
+      width: 150px;
+      height: 150px;
+      z-index: 1;
+    }
+
+    .hero-frame {
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+    }
+
+    .hero-frame lottie-player {
+      width: 120px;
+      height: 120px;
+    }
+
+    .hero-wave {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 12px;
+      opacity: 0.6;
+    }
+
+    .hero-wave svg {
+      width: 100%;
+      height: 38px;
+    }
+
+    .metrics {
+      margin-top: 22px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-head h2 {
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .ghost-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .metric-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .metric-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px 12px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      color: #1b1b1b;
+      font-weight: 600;
+      box-shadow: 0 14px 26px rgba(0, 0, 0, 0.2);
+      animation: riseIn 0.6s ease both;
+    }
+
+    .metric-card span {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      opacity: 0.7;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+    }
+
+    .metric-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      justify-self: end;
+    }
+
+    .metric-status {
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      justify-self: end;
+      opacity: 0.8;
+    }
+
+    .metric-card--mint {
+      background: linear-gradient(135deg, #cde7b0 0%, #b6e0b2 100%);
+    }
+
+    .metric-card--blue {
+      background: linear-gradient(135deg, #c7e5f2 0%, #a7d6ef 100%);
+    }
+
+    .metric-card--soft {
+      background: linear-gradient(135deg, #f5e6b3 0%, #f2d17c 100%);
+    }
+
+    .workouts {
+      margin-top: 24px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .chip {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+    }
+
+    .action-strip {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(160px, 1fr);
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scrollbar-width: none;
+    }
+
+    .action-strip::-webkit-scrollbar {
+      display: none;
+    }
+
+    .action-card {
+      position: relative;
+      border-radius: 22px;
+      padding: 16px;
+      min-height: 120px;
+      background: #1a1a1d;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .action-card::after {
+      content: ">";
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .action-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .action-card .title {
+      font-family: var(--font-title);
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .action-card .desc {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.4;
+    }
+
+    .action-card.tile--accent {
+      background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
+      color: #1b1b1b;
+    }
+
+    .action-card.tile--accent::after {
+      background: #1b1b1b;
+      color: #f6e5a6;
+    }
+
+    .action-card.tile--accent .desc {
+      color: rgba(27, 27, 27, 0.7);
+    }
+
+    .bottom-shell {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px 20px;
+      background: linear-gradient(180deg, rgba(15, 15, 16, 0) 0%, rgba(15, 15, 16, 0.9) 45%, rgba(15, 15, 16, 1) 100%);
+      z-index: 100;
+    }
+
+    .mode-toggle {
+      width: 220px;
+      height: 40px;
+      border-radius: 999px;
+      background: #1a1a1d;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px;
+      position: relative;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+    }
+
+    .mode-toggle .toggle-option {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
+      z-index: 2;
+      flex: 1;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .mode-toggle .toggle-slider {
+      top: 4px;
+      left: 4px;
+      width: calc(50% - 8px);
+      height: calc(100% - 8px);
+      border-radius: 999px;
+      background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
+    }
+
+    .mode-toggle[data-mode="crossfit"] .toggle-slider { left: 50%; }
+    .mode-toggle[data-mode="gym"] .toggle-slider { left: 4px; }
+    .mode-toggle[data-mode="gym"] [data-mode="gym"],
+    .mode-toggle[data-mode="crossfit"] [data-mode="crossfit"] { color: #1b1b1b; }
+
+    .bottom-nav {
+      width: min(420px, 100%);
+      background: #1a1a1d;
+      border-radius: 26px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 16px 26px rgba(0, 0, 0, 0.45);
+    }
+
+    .nav-item {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      border: none;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.6);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .nav-item.is-active {
+      background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
+      color: #1b1b1b;
+      box-shadow: 0 10px 18px rgba(243, 213, 139, 0.35);
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 520px) {
+      .hero-card { padding-bottom: 64px; }
+      .hero-visual { width: 130px; height: 130px; }
+      .hero-value { font-size: 1.8rem; }
+      .action-strip { grid-auto-columns: minmax(140px, 1fr); }
+    }
+
+    html.light .hero-card,
+    html.light .action-card.tile--accent,
+    html.light .metric-card--soft {
+      box-shadow: 0 14px 26px rgba(0, 0, 0, 0.15);
+    }
+
+    html.light .action-card,
+    html.light .bottom-nav,
+    html.light .mode-toggle {
+      background: #ffffff;
+      color: #1b1b1b;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    html.light .nav-item {
+      color: rgba(0, 0, 0, 0.5);
+    }
+  </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -848,59 +1291,112 @@
 </head>
 
 <body>
-  <div class="wrap">
-    <header class="header">
-      <div class="header-bg"></div>
-      <div class="header-left">
-        <div class="logo">
-          <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
-        </div>
-        <h1 class="app-title">RosApp</h1>
+  <div class="screen">
+    <header class="topbar">
+      <div class="greeting-block">
+        <div class="eyebrow">HELLO</div>
+        <div id="greeting" class="greeting">Guest</div>
       </div>
-
-      <div class="user" id="userbox">
-        <div id="greeting" class="greeting">Привет, Максим!</div>
-        <div class="user-row">
-          <div class="badge" id="tariff">Тариф: Максимум</div>
-          <button id="profileBtn" class="theme-btn" title="Мой профиль" aria-label="Мой профиль">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M12 14c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/>
-            </svg>
-          </button>
-          <button id="themeToggle" class="theme-btn" title="Сменить тему" aria-label="Сменить тему">🌙</button>
-        </div>
+      <div class="top-actions">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">T</button>
+        <button id="profileBtn" class="avatar-btn" title="Open profile" aria-label="Open profile">
+          <img id="avatarThumb" src="default-avatar.png" alt="Profile">
+        </button>
       </div>
     </header>
 
+    <section class="hero-card">
+      <div class="hero-meta">
+        <div class="hero-stat">
+          <span class="hero-value" id="heroKcal">4,643</span>
+          <span class="hero-unit">KCAL</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-value" id="heroSteps">16,147</span>
+          <span class="hero-unit">Steps</span>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-frame">
+          <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
+        </div>
+      </div>
+      <div class="hero-wave" aria-hidden="true">
+        <svg viewBox="0 0 300 60" preserveAspectRatio="none">
+          <path d="M0,40 C40,20 80,20 120,38 C160,56 200,56 240,38 C260,30 280,26 300,28" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3"/>
+        </svg>
+      </div>
+    </section>
 
-    <main>
-      <section class="grid" id="tiles" aria-live="polite"></section>
-    </main>
+    <section class="metrics" id="metrics">
+      <div class="section-head">
+        <h2>Health Metrics</h2>
+        <button class="ghost-btn" type="button">Show more</button>
+      </div>
+      <div class="metric-list">
+        <article class="metric-card metric-card--mint">
+          <div class="metric-label">Heart Beat</div>
+          <div class="metric-value">165 <span>bpm</span></div>
+          <div class="metric-status">Normal</div>
+        </article>
+        <article class="metric-card metric-card--blue">
+          <div class="metric-label">Weight</div>
+          <div class="metric-value">55 <span>kg</span></div>
+          <div class="metric-status">Ideal</div>
+        </article>
+        <article class="metric-card metric-card--soft">
+          <div class="metric-label">Sleep</div>
+          <div class="metric-value">08.0 <span>h/day</span></div>
+          <div class="metric-status">Enough</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="workouts" id="workouts">
+      <div class="section-head">
+        <h2>Workouts</h2>
+        <span class="chip" id="tariff">Base</span>
+      </div>
+      <div class="action-strip" id="tiles" aria-live="polite"></div>
+    </section>
   </div>
 
-  <!-- 🔀 Тумблер внизу -->
-  <div id="modeToggle" class="toggle-wrapper" data-mode="gym">
-    <div class="toggle-slider" id="toggleSlider"></div>
-    <span class="toggle-option" data-mode="gym">Зал</span>
-    <span class="toggle-option" data-mode="crossfit">Кроссфит</span>
+  <div class="bottom-shell">
+    <div id="modeToggle" class="mode-toggle" data-mode="gym">
+      <div class="toggle-slider" id="toggleSlider"></div>
+      <span class="toggle-option" data-mode="gym">Gym</span>
+      <span class="toggle-option" data-mode="crossfit">Crossfit</span>
+    </div>
+    <nav class="bottom-nav" aria-label="Main">
+      <button class="nav-item is-active" data-scroll="body" type="button" aria-label="Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" fill="currentColor"/></svg>
+      </button>
+      <button class="nav-item" data-scroll="#workouts" type="button" aria-label="Workouts">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9v6h2V9H7zm8 0v6h2V9h-2zm-6 3a3 3 0 1 1 6 0 3 3 0 0 1-6 0z" fill="currentColor"/></svg>
+      </button>
+      <button class="nav-item" data-scroll="#metrics" type="button" aria-label="Metrics">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h3l2-4 3 8 2-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="nav-item" id="navProfile" type="button" aria-label="Profile">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4 0-7 2-7 5v1h14v-1c0-3-3-5-7-5z" fill="currentColor"/></svg>
+      </button>
+    </nav>
   </div>
 
-  <!-- 🔹 Модалка профиля -->
-  <div id="profileModal" class="modal hidden">
+  <div id="profileModal" class="modal">
     <div class="modal-content">
       <span class="close" id="closeProfile">&times;</span>
       <div class="profile-card">
-        <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Аватар">
-        <h2 id="profileName">Имя Фамилия</h2>
+        <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Profile">
+        <h2 id="profileName">Guest</h2>
         <p id="profileUsername">@username</p>
         <p>ID Telegram: <span id="profileId"></span></p>
-        <p>Тариф: <span id="profileTariff"></span></p>
+        <p>Tariff: <span id="profileTariff"></span></p>
       </div>
     </div>
   </div>
 
-  <noscript>Для работы приложения нужен включённый JavaScript.</noscript>
+<noscript>Для работы приложения нужен включённый JavaScript.</noscript>
 <script>
   // === 🧠 Функции для работы с режимом ===
   async function loadUserMode(tg_id) {
