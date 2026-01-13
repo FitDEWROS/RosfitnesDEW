@@ -201,7 +201,7 @@
     .hero-card {
       position: relative;
       margin-top: 18px;
-      padding: 20px;
+      padding: 20px 20px 34px;
       border-radius: var(--radius-lg);
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       color: #1b1b1b;
@@ -280,6 +280,9 @@
       text-transform: uppercase;
       text-decoration: none;
       font-weight: 700;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 2;
     }
 
 
@@ -287,7 +290,7 @@
       position: absolute;
       left: 16px;
       right: 16px;
-      bottom: 10px;
+      bottom: 6px;
       opacity: 0.5;
     }
 
@@ -615,6 +618,7 @@
       width: min(360px, 92vw);
       max-height: 86vh;
       overflow-y: auto;
+      overflow-x: hidden;
       box-shadow: var(--shadow);
       position: relative;
       animation: modalAppear 0.3s ease both;
@@ -755,13 +759,14 @@
     .profile-fields {
       display: grid;
       gap: 10px;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     }
 
     .profile-field {
       display: grid;
       gap: 6px;
       font-size: 0.8rem;
+      min-width: 0;
     }
 
     .profile-field span {
@@ -778,6 +783,8 @@
       padding: 8px 10px;
       font-size: 0.95rem;
       color: var(--text);
+      width: 100%;
+      min-width: 0;
     }
 
     html.light .profile-input {
@@ -854,6 +861,10 @@
 
       .profile-tags {
         justify-content: center;
+      }
+
+      .profile-fields {
+        grid-template-columns: 1fr;
       }
     }
 
