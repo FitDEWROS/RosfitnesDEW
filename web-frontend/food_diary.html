@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
@@ -103,6 +103,130 @@
       font-size: 0.95rem;
     }
 
+    .date-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .date-title {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .date-sub {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .ghost-btn {
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    html.light .ghost-btn {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .week-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .week-nav {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      font-family: inherit;
+    }
+
+    html.light .week-nav {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .week-days {
+      flex: 1;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(46px, 1fr);
+      gap: 8px;
+    }
+
+    .week-day {
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 8px 6px;
+      display: grid;
+      gap: 4px;
+      justify-items: center;
+      cursor: pointer;
+      color: var(--text);
+      position: relative;
+      font-family: inherit;
+    }
+
+    html.light .week-day {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .week-day .dow {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .week-day .dom {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .week-day.is-active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      border-color: transparent;
+    }
+
+    .week-day.is-active .dow {
+      color: rgba(27, 27, 27, 0.7);
+    }
+
+    .week-day.has-data::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #1b1b1b;
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+    }
+
+    html.light .week-day.has-data::after {
+      background: #1b1b1b;
+    }
+
     .summary-card {
       border-radius: var(--radius-lg);
       padding: 18px;
@@ -151,6 +275,87 @@
     .macro-pill strong {
       font-size: 0.95rem;
       font-weight: 700;
+    }
+
+    .history-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .history-head h2 {
+      margin: 0;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .history-range {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .history-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 10px 12px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      font-family: inherit;
+    }
+
+    html.light .history-item {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .history-item.is-active {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+    }
+
+    .history-date {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .history-macro {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .history-item.is-active .history-macro {
+      color: rgba(27, 27, 27, 0.7);
+    }
+
+    .history-kcal {
+      font-size: 0.85rem;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     .form-card {
@@ -240,6 +445,8 @@
       .summary-value { font-size: 1.6rem; }
       .diary-header h1 { font-size: 1.5rem; }
       .form-grid.three { grid-template-columns: 1fr; }
+      .week-strip { gap: 6px; }
+      .week-days { grid-auto-columns: minmax(42px, 1fr); }
     }
   </style>
 </head>
@@ -249,8 +456,22 @@
     <header class="diary-header">
       <button class="back-btn" id="backHome" type="button">Назад</button>
       <h1>Дневник питания</h1>
-      <p>Заполни калории и БЖУ — показатели сразу появятся на главной.</p>
+      <p>Заполни калории и БЖУ - показатели сразу появятся на главной.</p>
     </header>
+
+    <div class="date-toolbar">
+      <div>
+        <div class="date-title" id="currentDateLabel">Сегодня</div>
+        <div class="date-sub" id="currentDateSub"></div>
+      </div>
+      <button class="ghost-btn" id="goToday" type="button">Сегодня</button>
+    </div>
+
+    <div class="week-strip">
+      <button class="week-nav" id="prevWeek" type="button" aria-label="Предыдущая неделя">&lt;</button>
+      <div class="week-days" id="weekStrip"></div>
+      <button class="week-nav" id="nextWeek" type="button" aria-label="Следующая неделя">&gt;</button>
+    </div>
 
     <section class="summary-card">
       <div>
@@ -271,6 +492,14 @@
           <strong id="previewCarb">0</strong>
         </div>
       </div>
+    </section>
+
+    <section class="history-card">
+      <div class="history-head">
+        <h2>История недели</h2>
+        <span class="history-range" id="historyRange"></span>
+      </div>
+      <div class="history-list" id="historyList"></div>
     </section>
 
     <section class="form-card">
@@ -362,6 +591,15 @@
         carb: byId("previewCarb")
       };
 
+      const dateLabelEl = byId("currentDateLabel");
+      const dateSubEl = byId("currentDateSub");
+      const weekStripEl = byId("weekStrip");
+      const prevWeekBtn = byId("prevWeek");
+      const nextWeekBtn = byId("nextWeek");
+      const goTodayBtn = byId("goToday");
+      const historyRangeEl = byId("historyRange");
+      const historyListEl = byId("historyList");
+
       const readNumber = (value) => {
         if (value === null || value === undefined || value === "") return null;
         const normalized = String(value).replace(",", ".");
@@ -372,6 +610,122 @@
       const formatWhole = (value, fallback = "0") => {
         if (!Number.isFinite(value)) return fallback;
         return Math.round(value).toLocaleString("ru-RU");
+      };
+
+      const daysShort = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+      const monthsShort = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+
+      const toYMD = (date) => {
+        const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      };
+
+      const parseYMD = (value) => new Date(`${value}T00:00:00`);
+
+      const addDays = (date, offset) => {
+        const d = new Date(date);
+        d.setDate(d.getDate() + offset);
+        return d;
+      };
+
+      const startOfWeek = (date) => {
+        const d = new Date(date);
+        const day = (d.getDay() + 6) % 7;
+        d.setDate(d.getDate() - day);
+        return d;
+      };
+
+      const isSameDay = (a, b) => (
+        a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate()
+      );
+
+      let selectedDate = new Date();
+      let weekStart = startOfWeek(selectedDate);
+      let historyMap = {};
+
+      const formatDateLabel = (date) => {
+        const today = new Date();
+        const yesterday = addDays(today, -1);
+        if (isSameDay(date, today)) return "Сегодня";
+        if (isSameDay(date, yesterday)) return "Вчера";
+        return `${date.getDate()} ${monthsShort[date.getMonth()]}`;
+      };
+
+      const formatDateSub = (date) => `${date.getDate()} ${monthsShort[date.getMonth()]} ${date.getFullYear()}`;
+
+      const updateDateLabels = () => {
+        if (dateLabelEl) dateLabelEl.textContent = formatDateLabel(selectedDate);
+        if (dateSubEl) dateSubEl.textContent = formatDateSub(selectedDate);
+      };
+
+      const updateHistoryRange = () => {
+        const end = addDays(weekStart, 6);
+        const label = `${weekStart.getDate()} ${monthsShort[weekStart.getMonth()]} — ${end.getDate()} ${monthsShort[end.getMonth()]}`;
+        if (historyRangeEl) historyRangeEl.textContent = label;
+      };
+
+      const renderWeekStrip = () => {
+        if (!weekStripEl) return;
+        weekStripEl.innerHTML = "";
+        for (let i = 0; i < 7; i += 1) {
+          const dayDate = addDays(weekStart, i);
+          const key = toYMD(dayDate);
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "week-day";
+          if (key === toYMD(selectedDate)) btn.classList.add("is-active");
+          if (historyMap[key]) btn.classList.add("has-data");
+          btn.innerHTML = `<span class="dow">${daysShort[i]}</span><span class="dom">${dayDate.getDate()}</span>`;
+          btn.addEventListener("click", () => {
+            selectedDate = parseYMD(key);
+            updateDateLabels();
+            renderWeekStrip();
+            renderHistory();
+            loadEntry(key);
+          });
+          weekStripEl.appendChild(btn);
+        }
+      };
+
+      const renderHistory = () => {
+        if (!historyListEl) return;
+        historyListEl.innerHTML = "";
+        for (let i = 0; i < 7; i += 1) {
+          const dayDate = addDays(weekStart, i);
+          const key = toYMD(dayDate);
+          const entry = historyMap[key];
+          const kcalValue = readNumber(entry?.kcal);
+          const kcalText = kcalValue === null ? "— ккал" : `${formatWhole(kcalValue)} ккал`;
+          const protein = formatWhole(readNumber(entry?.protein), "0");
+          const fat = formatWhole(readNumber(entry?.fat), "0");
+          const carb = formatWhole(readNumber(entry?.carb), "0");
+          const macroText = entry ? `Б ${protein} · Ж ${fat} · У ${carb}` : "Нет данных";
+
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "history-item";
+          if (key === toYMD(selectedDate)) row.classList.add("is-active");
+          row.innerHTML = `
+            <div>
+              <div class="history-date">${formatDateLabel(dayDate)}</div>
+              <div class="history-macro">${macroText}</div>
+            </div>
+            <div class="history-kcal">${kcalText}</div>
+          `;
+          row.addEventListener("click", () => {
+            selectedDate = parseYMD(key);
+            updateDateLabels();
+            renderWeekStrip();
+            renderHistory();
+            loadEntry(key);
+          });
+          historyListEl.appendChild(row);
+        }
       };
 
       const updatePreview = () => {
@@ -400,16 +754,39 @@
         updatePreview();
       };
 
-      const loadEntry = async () => {
+      const loadHistory = async () => {
         if (!API_BASE || !initData) return;
+        const from = toYMD(weekStart);
+        const to = toYMD(addDays(weekStart, 6));
         try {
-          const url = `${API_BASE}/api/nutrition?initData=${encodeURIComponent(initData)}`;
+          const url = `${API_BASE}/api/nutrition/history?initData=${encodeURIComponent(initData)}&from=${from}&to=${to}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          historyMap = {};
+          if (json?.ok && Array.isArray(json.entries)) {
+            json.entries.forEach((entry) => {
+              if (entry?.date) historyMap[entry.date] = entry;
+            });
+          }
+          updateHistoryRange();
+          renderWeekStrip();
+          renderHistory();
+        } catch (e) {
+          console.warn("Ошибка загрузки истории", e);
+        }
+      };
+
+      const loadEntry = async (dateKey) => {
+        if (!API_BASE || !initData) return;
+        const key = dateKey || toYMD(selectedDate);
+        try {
+          const url = `${API_BASE}/api/nutrition?initData=${encodeURIComponent(initData)}&date=${key}`;
           const res = await fetch(url);
           const json = await res.json().catch(() => ({}));
           if (json?.ok && json.entry) {
             applyEntry(json.entry);
           } else {
-            updatePreview();
+            applyEntry({});
           }
         } catch (e) {
           console.warn("Ошибка загрузки дневника питания", e);
@@ -420,6 +797,7 @@
         if (!API_BASE || !initData) return false;
         const payload = {
           initData,
+          date: toYMD(selectedDate),
           kcal: readNumber(inputs.kcal?.value),
           protein: readNumber(inputs.protein?.value),
           fat: readNumber(inputs.fat?.value),
@@ -433,6 +811,11 @@
           body: JSON.stringify(payload)
         });
         const json = await res.json().catch(() => ({}));
+        if (json?.ok) {
+          await loadHistory();
+          renderWeekStrip();
+          renderHistory();
+        }
         return !!json?.ok;
       };
 
@@ -448,11 +831,36 @@
         });
       }
 
+      const shiftWeek = (direction) => {
+        const selectedIndex = Math.max(0, Math.min(6, Math.round((selectedDate - weekStart) / 86400000)));
+        weekStart = addDays(weekStart, direction * 7);
+        selectedDate = addDays(weekStart, selectedIndex);
+        updateDateLabels();
+        loadHistory();
+        loadEntry(toYMD(selectedDate));
+      };
+
+      if (prevWeekBtn) prevWeekBtn.addEventListener("click", () => shiftWeek(-1));
+      if (nextWeekBtn) nextWeekBtn.addEventListener("click", () => shiftWeek(1));
+      if (goTodayBtn) {
+        goTodayBtn.addEventListener("click", () => {
+          selectedDate = new Date();
+          weekStart = startOfWeek(selectedDate);
+          updateDateLabels();
+          loadHistory();
+          loadEntry(toYMD(selectedDate));
+        });
+      }
+
       const back = byId("backHome");
       if (back) back.addEventListener("click", () => { window.location.href = "index.html"; });
 
-      loadEntry();
+      updateDateLabels();
+      loadHistory();
+      loadEntry(toYMD(selectedDate));
     })();
   </script>
 </body>
 </html>
+
+

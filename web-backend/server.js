@@ -258,6 +258,19 @@ const getDateKey = (value) => {
   return new Date().toISOString().slice(0, 10);
 };
 
+const toDateKeyLocal = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const addDaysLocal = (date, days) => {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
 function parseInitData(initData) {
   if (!initData || typeof initData !== 'string') {
     return { ok: false, status: 400, error: 'no_initData' };
@@ -330,6 +343,54 @@ app.post('/api/profile', async (req, res) => {
     });
   } catch (e) {
     console.error('[api/profile] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === История питания (GET) ===
+app.get('/api/nutrition/history', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.query.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const daysRaw = Number(req.query.days || 7);
+    const days = Number.isFinite(daysRaw) ? Math.max(1, Math.min(daysRaw, 31)) : 7;
+
+    const toKey = req.query.to ? getDateKey(req.query.to) : toDateKeyLocal(new Date());
+    let fromKey = req.query.from ? getDateKey(req.query.from) : null;
+    if (!fromKey) {
+      const endDate = new Date(`${toKey}T00:00:00`);
+      const startDate = addDaysLocal(endDate, -(days - 1));
+      fromKey = toDateKeyLocal(startDate);
+    }
+
+    let startKey = fromKey;
+    let endKey = toKey;
+    if (startKey > endKey) {
+      [startKey, endKey] = [endKey, startKey];
+    }
+
+    const dbUser = await prisma.user.upsert({
+      where: { tg_id: Number(parsed.tg_id) },
+      update: {},
+      create: {
+        tg_id: Number(parsed.tg_id),
+        username: parsed.user?.username || null,
+        first_name: parsed.user?.first_name || null
+      }
+    });
+
+    const entries = await prisma.nutritionEntry.findMany({
+      where: {
+        userId: dbUser.id,
+        date: { gte: startKey, lte: endKey }
+      },
+      orderBy: { date: 'desc' }
+    });
+
+    res.json({ ok: true, from: startKey, to: endKey, entries });
+  } catch (e) {
+    console.error('[api/nutrition:history] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
