@@ -58,10 +58,10 @@
         return;
       }
 
-      const name = json.profile?.fio || json.profile?.first_name || json.user?.first_name || "друг";
-      const username = json.user?.username ? `@${json.user.username}` : "не указан";
+      const name = json.profile?.fio || json.profile?.first_name || json.user?.first_name || "Гость";
+      const username = json.user?.username ? `@${json.user.username}` : "Нет никнейма";
       const id = json.user?.id || "-";
-      const tariff = json.profile?.tariffName || "неизвестно";
+      const tariff = json.profile?.tariffName || "Без тарифа";
       const photoUrl = json.user?.photo_url || "";
 
       // приветствие
@@ -84,7 +84,7 @@
 
     } catch (e) {
       console.error("[api/user] ❌ Ошибка запроса", e);
-      tariffEl.textContent = "Offline";
+      tariffEl.textContent = "Нет связи";
     }
   }
 
@@ -94,18 +94,17 @@
   function renderTilesByTariff(tariff) {
     const tiles = document.getElementById("tiles");
     if (!tiles) return;
-
+  
     tiles.innerHTML = "";
     let actions = [];
-
-    if (tariff === "Базовый") {
-      actions = ["Тренировки", "Дневник питания", "Упражнения"];
-    } else if (tariff === "Выгодный" || tariff === "Максимальный") {
-      actions = ["Тренировки", "Дневник питания", "Упражнения", "Связь с куратором"];
+  
+    const isPremium = /прем|макс|про/i.test(tariff || "");
+    if (isPremium) {
+      actions = ["Тренировки", "Питание", "Программа", "План питания"];
     } else {
-      actions = ["Тренировки", "Дневник питания", "Упражнения"];
+      actions = ["Тренировки", "Питание", "Программа"];
     }
-
+  
     actions.forEach((label, idx) => {
       const tile = document.createElement("button");
       tile.className = "action-card tile";
@@ -115,11 +114,11 @@
       tile.style.animationDelay = `${idx * 80}ms`;
       tile.innerHTML = `
         <div class="title">${label}</div>
-        <div class="desc">${label === "Упражнения" ? "Выбор мышц и упражнений" : "Раздел в разработке"}</div>
+        <div class="desc">${label === "Тренировки" ? "Силовые, кардио и кроссфит" : "Скоро будет доступно"}</div>
       `;
-
+  
       tile.addEventListener("click", () => {
-        if (label === "Упражнения") {
+        if (label === "Тренировки") {
           const mode = localStorage.getItem("training_mode") || "gym";
           if (mode === "crossfit") {
             window.location.href = "crossfit_exercises.html";
@@ -127,10 +126,10 @@
             window.location.href = "exercises.html";
           }
         } else {
-          showAlert(`«${label}» — раздел в разработке`);
+          showAlert(`«${label}» Скоро будет доступно`);
         }
       });
-
+  
       tiles.appendChild(tile);
     });
   }
@@ -250,7 +249,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       // Можно сразу обновить плитки
-      const tariff = document.getElementById("tariff").textContent.replace("Тариф: ", "") || "Базовый";
+      const tariff = json.profile?.tariffName || "Без тарифа";
       if (window.renderTilesByTariff) window.renderTilesByTariff(tariff);
     });
   });

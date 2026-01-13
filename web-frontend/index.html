@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RosApp — Telegram WebApp</title>
+  <title>RosApp — веб-приложение Telegram</title>
 
   <!-- ⚙️ Инициализация темы -->
   <script>
@@ -1294,13 +1294,13 @@
   <div class="screen">
     <header class="topbar">
       <div class="greeting-block">
-        <div class="eyebrow">HELLO</div>
-        <div id="greeting" class="greeting">Guest</div>
+        <div class="eyebrow">Привет</div>
+        <div id="greeting" class="greeting">Гость</div>
       </div>
       <div class="top-actions">
-        <button id="themeToggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">T</button>
-        <button id="profileBtn" class="avatar-btn" title="Open profile" aria-label="Open profile">
-          <img id="avatarThumb" src="default-avatar.png" alt="Profile">
+        <button id="themeToggle" class="icon-btn" title="Сменить тему" aria-label="Сменить тему">Т</button>
+        <button id="profileBtn" class="avatar-btn" title="Открыть профиль" aria-label="Открыть профиль">
+          <img id="avatarThumb" src="default-avatar.png" alt="Фото профиля">
         </button>
       </div>
     </header>
@@ -1309,11 +1309,7 @@
       <div class="hero-meta">
         <div class="hero-stat">
           <span class="hero-value" id="heroKcal">4,643</span>
-          <span class="hero-unit">KCAL</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-value" id="heroSteps">16,147</span>
-          <span class="hero-unit">Steps</span>
+          <span class="hero-unit">ККАЛ</span>
         </div>
       </div>
       <div class="hero-visual">
@@ -1330,32 +1326,32 @@
 
     <section class="metrics" id="metrics">
       <div class="section-head">
-        <h2>Health Metrics</h2>
-        <button class="ghost-btn" type="button">Show more</button>
+        <h2>Показатели</h2>
+        <button class="ghost-btn" type="button">Подробнее</button>
       </div>
       <div class="metric-list">
         <article class="metric-card metric-card--mint">
-          <div class="metric-label">Heart Beat</div>
-          <div class="metric-value">165 <span>bpm</span></div>
-          <div class="metric-status">Normal</div>
+          <div class="metric-label">Пульс</div>
+          <div class="metric-value">165 <span>уд/мин</span></div>
+          <div class="metric-status">Норма</div>
         </article>
         <article class="metric-card metric-card--blue">
-          <div class="metric-label">Weight</div>
-          <div class="metric-value">55 <span>kg</span></div>
-          <div class="metric-status">Ideal</div>
+          <div class="metric-label">Вес</div>
+          <div class="metric-value">55 <span>кг</span></div>
+          <div class="metric-status">Идеал</div>
         </article>
         <article class="metric-card metric-card--soft">
-          <div class="metric-label">Sleep</div>
-          <div class="metric-value">08.0 <span>h/day</span></div>
-          <div class="metric-status">Enough</div>
+          <div class="metric-label">Сон</div>
+          <div class="metric-value">08.0 <span>ч/день</span></div>
+          <div class="metric-status">Достаточно</div>
         </article>
       </div>
     </section>
 
     <section class="workouts" id="workouts">
       <div class="section-head">
-        <h2>Workouts</h2>
-        <span class="chip" id="tariff">Base</span>
+        <h2>Тренировки</h2>
+        <span class="chip" id="tariff">Без тарифа</span>
       </div>
       <div class="action-strip" id="tiles" aria-live="polite"></div>
     </section>
@@ -1364,20 +1360,20 @@
   <div class="bottom-shell">
     <div id="modeToggle" class="mode-toggle" data-mode="gym">
       <div class="toggle-slider" id="toggleSlider"></div>
-      <span class="toggle-option" data-mode="gym">Gym</span>
-      <span class="toggle-option" data-mode="crossfit">Crossfit</span>
+      <span class="toggle-option" data-mode="gym">Зал</span>
+      <span class="toggle-option" data-mode="crossfit">Кроссфит</span>
     </div>
-    <nav class="bottom-nav" aria-label="Main">
-      <button class="nav-item is-active" data-scroll="body" type="button" aria-label="Home">
+    <nav class="bottom-nav" aria-label="Основная навигация">
+      <button class="nav-item is-active" data-scroll="body" type="button" aria-label="Главная">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" fill="currentColor"/></svg>
       </button>
-      <button class="nav-item" data-scroll="#workouts" type="button" aria-label="Workouts">
+      <button class="nav-item" data-scroll="#workouts" type="button" aria-label="Тренировки">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9v6h2V9H7zm8 0v6h2V9h-2zm-6 3a3 3 0 1 1 6 0 3 3 0 0 1-6 0z" fill="currentColor"/></svg>
       </button>
-      <button class="nav-item" data-scroll="#metrics" type="button" aria-label="Metrics">
+      <button class="nav-item" data-scroll="#metrics" type="button" aria-label="Показатели">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h3l2-4 3 8 2-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <button class="nav-item" id="navProfile" type="button" aria-label="Profile">
+      <button class="nav-item" id="navProfile" type="button" aria-label="Профиль">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4 0-7 2-7 5v1h14v-1c0-3-3-5-7-5z" fill="currentColor"/></svg>
       </button>
     </nav>
@@ -1387,11 +1383,11 @@
     <div class="modal-content">
       <span class="close" id="closeProfile">&times;</span>
       <div class="profile-card">
-        <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Profile">
-        <h2 id="profileName">Guest</h2>
-        <p id="profileUsername">@username</p>
-        <p>ID Telegram: <span id="profileId"></span></p>
-        <p>Tariff: <span id="profileTariff"></span></p>
+        <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Фото профиля">
+        <h2 id="profileName">Гость</h2>
+        <p id="profileUsername">@ник</p>
+        <p>Идентификатор Telegram: <span id="profileId"></span></p>
+        <p>Тариф: <span id="profileTariff"></span></p>
       </div>
     </div>
   </div>
