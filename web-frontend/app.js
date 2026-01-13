@@ -102,10 +102,13 @@
       actions = ["Тренировки", "Дневник питания", "Упражнения"];
     }
 
-    actions.forEach(label => {
+    actions.forEach((label, idx) => {
       const tile = document.createElement("button");
       tile.className = "tile";
       tile.dataset.action = label;
+      tile.classList.add("tile--reveal");
+      if (idx === 0) tile.classList.add("tile--accent");
+      tile.style.animationDelay = `${idx * 80}ms`;
       tile.innerHTML = `
         <div class="title">${label}</div>
         <div class="desc">${label === "Упражнения" ? "Выбор мышц и упражнений" : "Раздел в разработке"}</div>
@@ -257,6 +260,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.API_BASE = API_BASE;
   window.tg = tg;
   window.buildInitData = buildInitData;
+  window.renderTilesByTariff = renderTilesByTariff;
 
   init();
 })();
