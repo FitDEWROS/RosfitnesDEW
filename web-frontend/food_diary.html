@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RosApp — Дневник питания</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', 'Exo 2', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .diary-screen {
+      padding: 22px 20px 32px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .diary-header {
+      display: grid;
+      gap: 10px;
+    }
+
+    .back-btn {
+      width: fit-content;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .diary-header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    .diary-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .summary-card {
+      border-radius: 26px;
+      padding: 18px;
+      background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
+      color: #1b1b1b;
+      display: grid;
+      gap: 14px;
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .summary-value {
+      font-size: 2rem;
+      font-weight: 800;
+    }
+
+    .summary-unit {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .summary-macros {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .macro-pill {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 14px;
+      padding: 8px 12px;
+      min-width: 70px;
+      display: grid;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .macro-pill span {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .macro-pill strong {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .diary-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .form-grid.three {
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .field span {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .field input {
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px 12px;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .save-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
+      color: #1b1b1b;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .save-status {
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-height: 18px;
+    }
+
+    @media (max-width: 520px) {
+      .summary-value { font-size: 1.6rem; }
+      .diary-header h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="diary-screen">
+    <header class="diary-header">
+      <button class="back-btn" id="backHome">← Назад</button>
+      <h1>Дневник питания</h1>
+      <p>Заполняй калории и БЖУ за сегодня.</p>
+    </header>
+
+    <section class="summary-card">
+      <div>
+        <div class="summary-value" id="previewKcal">0</div>
+        <div class="summary-unit">ККАЛ</div>
+      </div>
+      <div class="summary-macros">
+        <div class="macro-pill">
+          <span>Б</span>
+          <strong id="previewProtein">0</strong>
+        </div>
+        <div class="macro-pill">
+          <span>Ж</span>
+          <strong id="previewFat">0</strong>
+        </div>
+        <div class="macro-pill">
+          <span>У</span>
+          <strong id="previewCarb">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-card">
+      <form id="diaryForm" class="diary-form" autocomplete="off">
+        <div class="form-grid">
+          <label class="field">
+            <span>Калории</span>
+            <input id="inputKcal" type="number" min="0" step="1" placeholder="0" />
+          </label>
+          <label class="field">
+            <span>Вес (кг)</span>
+            <input id="inputWeight" type="number" min="0" step="0.1" placeholder="0" />
+          </label>
+        </div>
+
+        <div class="form-grid three">
+          <label class="field">
+            <span>Белки (г)</span>
+            <input id="inputProtein" type="number" min="0" step="1" placeholder="0" />
+          </label>
+          <label class="field">
+            <span>Жиры (г)</span>
+            <input id="inputFat" type="number" min="0" step="1" placeholder="0" />
+          </label>
+          <label class="field">
+            <span>Углеводы (г)</span>
+            <input id="inputCarb" type="number" min="0" step="1" placeholder="0" />
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Вода (л)</span>
+            <input id="inputWater" type="number" min="0" step="0.1" placeholder="0" />
+          </label>
+          <label class="field">
+            <span>Приёмы пищи</span>
+            <input id="inputMeals" type="number" min="0" step="1" placeholder="0" />
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button class="save-btn" type="submit">Сохранить</button>
+        </div>
+        <p class="save-status" id="saveStatus"></p>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.classList.toggle('light', savedTheme === 'light');
+
+      const byId = (id) => document.getElementById(id);
+      const inputs = {
+        kcal: byId('inputKcal'),
+        protein: byId('inputProtein'),
+        fat: byId('inputFat'),
+        carb: byId('inputCarb'),
+        water: byId('inputWater'),
+        meals: byId('inputMeals'),
+        weight: byId('inputWeight')
+      };
+
+      const preview = {
+        kcal: byId('previewKcal'),
+        protein: byId('previewProtein'),
+        fat: byId('previewFat'),
+        carb: byId('previewCarb')
+      };
+
+      const keys = {
+        kcal: 'nutrition_kcal',
+        protein: 'nutrition_protein',
+        fat: 'nutrition_fat',
+        carb: 'nutrition_carb',
+        water: 'nutrition_water',
+        meals: 'nutrition_meals',
+        weight: 'user_weight'
+      };
+
+      const readNumber = (value) => {
+        if (value === null || value === undefined || value === '') return null;
+        const normalized = String(value).replace(',', '.');
+        const num = Number(normalized);
+        return Number.isFinite(num) ? num : null;
+      };
+
+      const formatWhole = (value, fallback = '0') => {
+        if (!Number.isFinite(value)) return fallback;
+        return Math.round(value).toLocaleString('ru-RU');
+      };
+
+      const updatePreview = () => {
+        const kcal = readNumber(inputs.kcal.value);
+        const protein = readNumber(inputs.protein.value);
+        const fat = readNumber(inputs.fat.value);
+        const carb = readNumber(inputs.carb.value);
+        if (preview.kcal) preview.kcal.textContent = formatWhole(kcal);
+        if (preview.protein) preview.protein.textContent = formatWhole(protein);
+        if (preview.fat) preview.fat.textContent = formatWhole(fat);
+        if (preview.carb) preview.carb.textContent = formatWhole(carb);
+      };
+
+      const loadStored = () => {
+        Object.keys(keys).forEach((key) => {
+          const stored = localStorage.getItem(keys[key]);
+          if (inputs[key]) inputs[key].value = stored ?? '';
+        });
+        updatePreview();
+      };
+
+      const saveStored = () => {
+        Object.keys(keys).forEach((key) => {
+          const value = inputs[key] ? inputs[key].value.trim() : '';
+          if (!value) {
+            localStorage.removeItem(keys[key]);
+          } else {
+            localStorage.setItem(keys[key], value);
+          }
+        });
+      };
+
+      const form = byId('diaryForm');
+      const status = byId('saveStatus');
+      if (form) {
+        form.addEventListener('input', updatePreview);
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          saveStored();
+          if (status) status.textContent = 'Сохранено';
+          setTimeout(() => { if (status) status.textContent = ''; }, 2000);
+        });
+      }
+
+      const back = byId('backHome');
+      if (back) back.addEventListener('click', () => { window.location.href = 'index.html'; });
+
+      loadStored();
+    })();
+  </script>
+</body>
+</html>

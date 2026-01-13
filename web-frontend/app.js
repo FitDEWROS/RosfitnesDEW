@@ -5,6 +5,16 @@
 
   const greetingEl = document.getElementById('greeting');
   const tariffEl = document.getElementById('tariff');
+  const heroKcalEl = document.getElementById('heroKcal');
+  const macroProteinEl = document.getElementById('macroProtein');
+  const macroFatEl = document.getElementById('macroFat');
+  const macroCarbEl = document.getElementById('macroCarb');
+  const metricWeightEl = document.getElementById('metricWeight');
+  const metricWeightStatusEl = document.getElementById('metricWeightStatus');
+  const metricWaterEl = document.getElementById('metricWater');
+  const metricWaterStatusEl = document.getElementById('metricWaterStatus');
+  const metricMealsEl = document.getElementById('metricMeals');
+  const metricMealsStatusEl = document.getElementById('metricMealsStatus');
   const themeToggleBtn = document.getElementById("themeToggle");
   const USE_TG_THEME = false; // ← запрещаем любые цвета из Telegram
 
@@ -112,9 +122,14 @@
       tile.classList.add("tile--reveal");
       if (idx === 0) tile.classList.add("tile--accent");
       tile.style.animationDelay = `${idx * 80}ms`;
+      const desc = label === "Тренировки"
+        ? "Силовые, кардио и кроссфит"
+        : label === "Питание"
+          ? "Дневник питания и БЖУ"
+          : "Скоро будет доступно";
       tile.innerHTML = `
         <div class="title">${label}</div>
-        <div class="desc">${label === "Тренировки" ? "Силовые, кардио и кроссфит" : "Скоро будет доступно"}</div>
+        <div class="desc">${desc}</div>
       `;
   
       tile.addEventListener("click", () => {
@@ -125,6 +140,8 @@
           } else {
             window.location.href = "exercises.html";
           }
+        } else if (label === "Питание") {
+          window.location.href = "food_diary.html";
         } else {
           showAlert(`«${label}» Скоро будет доступно`);
         }
@@ -132,6 +149,66 @@
   
       tiles.appendChild(tile);
     });
+  }
+
+  // -------------------------------
+  // Данные дневника питания
+  // -------------------------------
+  const readNumber = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const normalized = String(value).replace(',', '.');
+    const num = Number(normalized);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  const formatWhole = (value, fallback = '0') => {
+    if (!Number.isFinite(value)) return fallback;
+    return Math.round(value).toLocaleString('ru-RU');
+  };
+
+  const formatSimple = (value, fallback = '0') => {
+    if (!Number.isFinite(value)) return fallback;
+    const rounded = Math.round(value * 10) / 10;
+    return rounded % 1 === 0 ? String(rounded.toFixed(0)) : String(rounded.toFixed(1));
+  };
+
+  function applyNutritionFromStorage() {
+    const kcal = readNumber(localStorage.getItem('nutrition_kcal'));
+    const protein = readNumber(localStorage.getItem('nutrition_protein'));
+    const fat = readNumber(localStorage.getItem('nutrition_fat'));
+    const carb = readNumber(localStorage.getItem('nutrition_carb'));
+    const water = readNumber(localStorage.getItem('nutrition_water'));
+    const meals = readNumber(localStorage.getItem('nutrition_meals'));
+    const weight = readNumber(localStorage.getItem('user_weight'));
+
+    if (heroKcalEl) heroKcalEl.textContent = formatWhole(kcal);
+    if (macroProteinEl) macroProteinEl.textContent = formatWhole(protein);
+    if (macroFatEl) macroFatEl.textContent = formatWhole(fat);
+    if (macroCarbEl) macroCarbEl.textContent = formatWhole(carb);
+
+    if (metricWeightEl) {
+      if (weight && weight > 0) {
+        metricWeightEl.textContent = formatSimple(weight, '—');
+        if (metricWeightStatusEl) metricWeightStatusEl.textContent = 'Обновлено';
+      } else {
+        metricWeightEl.textContent = '—';
+        if (metricWeightStatusEl) metricWeightStatusEl.textContent = 'Введите';
+      }
+    }
+
+    if (metricWaterEl) {
+      metricWaterEl.textContent = formatSimple(water, '0');
+      if (metricWaterStatusEl) {
+        metricWaterStatusEl.textContent = water && water > 0 ? 'Сегодня' : 'Не заполнено';
+      }
+    }
+
+    if (metricMealsEl) {
+      metricMealsEl.textContent = formatWhole(meals, '0');
+      if (metricMealsStatusEl) {
+        metricMealsStatusEl.textContent = meals && meals > 0 ? 'Сегодня' : 'Не заполнено';
+      }
+    }
   }
 
   // -------------------------------
@@ -272,6 +349,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const qpTariff = qs.get('tariff');
       if (qpTariff) tariffEl.textContent = qpTariff;
+
+      applyNutritionFromStorage();
 
       if (API_BASE && tg) {
         const initData = buildInitData();

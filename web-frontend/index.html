@@ -909,26 +909,32 @@
       object-fit: cover;
       display: block;
     }
-
     .hero-card {
       position: relative;
-      padding: 20px 20px 54px;
+      padding: 20px;
       border-radius: 28px;
       background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
       color: #1b1b1b;
-      min-height: 200px;
+      min-height: 220px;
       overflow: hidden;
       box-shadow: 0 24px 40px rgba(0, 0, 0, 0.35);
       animation: riseIn 0.6s ease both;
+      display: grid;
+      gap: 14px;
     }
 
     .hero-meta {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto;
       gap: 16px;
+      align-items: center;
       position: relative;
       z-index: 2;
+    }
+
+    .hero-main {
+      display: grid;
+      gap: 10px;
     }
 
     .hero-stat {
@@ -950,12 +956,50 @@
       opacity: 0.8;
     }
 
+    .hero-macros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .macro {
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 14px;
+      padding: 8px 10px;
+      min-width: 62px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .macro-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .macro-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .hero-link {
+      width: fit-content;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: #1b1b1b;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
     .hero-visual {
-      position: absolute;
-      right: 16px;
-      bottom: 20px;
-      width: 150px;
-      height: 150px;
+      width: 118px;
+      height: 118px;
       z-index: 1;
     }
 
@@ -967,25 +1011,25 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 6px;
+      padding: 8px;
     }
 
     .hero-frame lottie-player {
-      width: 120px;
-      height: 120px;
+      width: 92px;
+      height: 92px;
     }
 
     .hero-wave {
       position: absolute;
       left: 16px;
       right: 16px;
-      bottom: 12px;
-      opacity: 0.6;
+      bottom: 10px;
+      opacity: 0.55;
     }
 
     .hero-wave svg {
       width: 100%;
-      height: 38px;
+      height: 34px;
     }
 
     .metrics {
@@ -1256,10 +1300,11 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 520px) {
-      .hero-card { padding-bottom: 64px; }
-      .hero-visual { width: 130px; height: 130px; }
+            @media (max-width: 520px) {
+      .hero-card { padding-bottom: 56px; }
+      .hero-visual { width: 110px; height: 110px; }
       .hero-value { font-size: 1.8rem; }
+      .hero-link { font-size: 0.65rem; letter-spacing: 0.16em; }
       .action-strip { grid-auto-columns: minmax(140px, 1fr); }
     }
 
@@ -1307,14 +1352,31 @@
 
     <section class="hero-card">
       <div class="hero-meta">
-        <div class="hero-stat">
-          <span class="hero-value" id="heroKcal">4,643</span>
-          <span class="hero-unit">ККАЛ</span>
+        <div class="hero-main">
+          <div class="hero-stat">
+            <span class="hero-value" id="heroKcal">0</span>
+            <span class="hero-unit">ККАЛ</span>
+          </div>
+          <div class="hero-macros" aria-label="БЖУ за день">
+            <div class="macro">
+              <span class="macro-label">Б</span>
+              <span class="macro-value" id="macroProtein">0</span>
+            </div>
+            <div class="macro">
+              <span class="macro-label">Ж</span>
+              <span class="macro-value" id="macroFat">0</span>
+            </div>
+            <div class="macro">
+              <span class="macro-label">У</span>
+              <span class="macro-value" id="macroCarb">0</span>
+            </div>
+          </div>
+          <a class="hero-link" href="food_diary.html">Дневник питания</a>
         </div>
-      </div>
-      <div class="hero-visual">
-        <div class="hero-frame">
-          <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
+        <div class="hero-visual">
+          <div class="hero-frame">
+            <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
+          </div>
         </div>
       </div>
       <div class="hero-wave" aria-hidden="true">
@@ -1331,19 +1393,19 @@
       </div>
       <div class="metric-list">
         <article class="metric-card metric-card--mint">
-          <div class="metric-label">Пульс</div>
-          <div class="metric-value">165 <span>уд/мин</span></div>
-          <div class="metric-status">Норма</div>
+          <div class="metric-label">Вес</div>
+          <div class="metric-value"><strong id="metricWeight">—</strong> <span>кг</span></div>
+          <div class="metric-status" id="metricWeightStatus">Введите</div>
         </article>
         <article class="metric-card metric-card--blue">
-          <div class="metric-label">Вес</div>
-          <div class="metric-value">55 <span>кг</span></div>
-          <div class="metric-status">Идеал</div>
+          <div class="metric-label">Вода</div>
+          <div class="metric-value"><strong id="metricWater">0</strong> <span>л</span></div>
+          <div class="metric-status" id="metricWaterStatus">Сегодня</div>
         </article>
         <article class="metric-card metric-card--soft">
-          <div class="metric-label">Сон</div>
-          <div class="metric-value">08.0 <span>ч/день</span></div>
-          <div class="metric-status">Достаточно</div>
+          <div class="metric-label">Приёмы пищи</div>
+          <div class="metric-value"><strong id="metricMeals">0</strong> <span>раз</span></div>
+          <div class="metric-status" id="metricMealsStatus">Сегодня</div>
         </article>
       </div>
     </section>
