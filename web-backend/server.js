@@ -288,6 +288,52 @@ function parseInitData(initData) {
   return { ok: true, user, tg_id };
 }
 
+// === Профиль (POST) ===
+app.post('/api/profile', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.body?.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const body = req.body || {};
+    const data = {};
+
+    if (Object.prototype.hasOwnProperty.call(body, 'heightCm')) {
+      data.heightCm = toInt(body.heightCm);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'weightKg')) {
+      data.weightKg = toFloat(body.weightKg);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'age')) {
+      data.age = toInt(body.age);
+    }
+
+    const tg_id = parsed.tg_id;
+
+    const dbUser = await prisma.user.upsert({
+      where: { tg_id: Number(tg_id) },
+      update: data,
+      create: {
+        tg_id: Number(tg_id),
+        username: parsed.user?.username || null,
+        first_name: parsed.user?.first_name || null,
+        ...data
+      }
+    });
+
+    res.json({
+      ok: true,
+      profile: {
+        heightCm: dbUser.heightCm ?? null,
+        weightKg: dbUser.weightKg ?? null,
+        age: dbUser.age ?? null
+      }
+    });
+  } catch (e) {
+    console.error('[api/profile] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
 // === Дневник питания (GET / POST) ===
 app.get('/api/nutrition', async (req, res) => {
   try {

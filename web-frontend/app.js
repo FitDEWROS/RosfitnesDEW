@@ -28,6 +28,11 @@
   const profileWeightEl = document.getElementById("profileWeight");
   const profileAgeEl = document.getElementById("profileAge");
   const profilePhotoEl = document.getElementById("profilePhoto");
+  const editHeightEl = document.getElementById("editHeight");
+  const editWeightEl = document.getElementById("editWeight");
+  const editAgeEl = document.getElementById("editAge");
+  const saveProfileBtn = document.getElementById("saveProfile");
+  const profileSaveStatusEl = document.getElementById("profileSaveStatus");
 
   const buildInitData = () => {
     const raw = tg?.initData || "";
@@ -165,6 +170,9 @@
       if (profileWeightEl) profileWeightEl.textContent = weightKg ?? "-";
       if (profileAgeEl) profileAgeEl.textContent = age ?? "-";
       if (profilePhotoEl) profilePhotoEl.src = photoUrl || "default-avatar.png";
+      if (editHeightEl) editHeightEl.value = heightCm ?? "";
+      if (editWeightEl) editWeightEl.value = weightKg ?? "";
+      if (editAgeEl) editAgeEl.value = age ?? "";
 
       const avatarThumb = document.getElementById("avatarThumb");
       if (avatarThumb) avatarThumb.src = photoUrl || "default-avatar.png";
@@ -184,19 +192,58 @@
     }
   };
 
+  const saveProfile = async () => {
+    if (!API_BASE) return false;
+    const initData = buildInitData();
+    if (!initData) return false;
+
+    const payload = {
+      initData,
+      heightCm: readNumber(editHeightEl?.value),
+      weightKg: readNumber(editWeightEl?.value),
+      age: readNumber(editAgeEl?.value)
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/api/profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!json?.ok) return false;
+
+      const profile = json.profile || {};
+      if (profileHeightEl) profileHeightEl.textContent = profile.heightCm ?? "-";
+      if (profileWeightEl) profileWeightEl.textContent = profile.weightKg ?? "-";
+      if (profileAgeEl) profileAgeEl.textContent = profile.age ?? "-";
+      if (editHeightEl) editHeightEl.value = profile.heightCm ?? "";
+      if (editWeightEl) editWeightEl.value = profile.weightKg ?? "";
+      if (editAgeEl) editAgeEl.value = profile.age ?? "";
+
+      if (metricWeightEl) {
+        if (typeof profile.weightKg === "number" && Number.isFinite(profile.weightKg)) {
+          metricWeightEl.textContent = formatSimple(profile.weightKg, "-");
+          if (metricWeightStatusEl) metricWeightStatusEl.textContent = "Профиль";
+        } else {
+          metricWeightEl.textContent = "-";
+          if (metricWeightStatusEl) metricWeightStatusEl.textContent = "Нет данных";
+        }
+      }
+
+      return true;
+    } catch (e) {
+      console.error("[api/profile] Ошибка запроса", e);
+      return false;
+    }
+  };
+
   const renderTilesByTariff = (tariff) => {
     const tiles = document.getElementById("tiles");
     if (!tiles) return;
 
     tiles.innerHTML = "";
-    let actions = [];
-
-    const isPremium = /прем|макс|про/i.test(tariff || "");
-    if (isPremium) {
-      actions = ["Тренировки", "Питание", "Программа", "План питания"];
-    } else {
-      actions = ["Тренировки", "Питание", "Программа"];
-    }
+    const actions = ["Тренировки", "Программа"];
 
     actions.forEach((label, idx) => {
       const tile = document.createElement("button");
@@ -208,9 +255,7 @@
 
       const desc = label === "Тренировки"
         ? "Силовые, кардио и кроссфит"
-        : label === "Питание"
-          ? "Дневник питания и БЖУ"
-          : "Скоро будет доступно";
+        : "Скоро будет доступно";
 
       tile.innerHTML = `
         <div class="title">${label}</div>
@@ -221,8 +266,6 @@
         if (label === "Тренировки") {
           const mode = localStorage.getItem("training_mode") || "gym";
           window.location.href = mode === "crossfit" ? "crossfit_exercises.html" : "exercises.html";
-        } else if (label === "Питание") {
-          window.location.href = "food_diary.html";
         } else {
           showAlert(`<${label}> Скоро будет доступно`);
         }
@@ -260,11 +303,11 @@
     clearInlineVars();
     if (isDark) {
       document.documentElement.classList.remove("light");
-      if (themeToggleBtn) themeToggleBtn.textContent = "Т";
+      if (themeToggleBtn) themeToggleBtn.textContent = "🌙";
       localStorage.setItem("theme", "dark");
     } else {
       document.documentElement.classList.add("light");
-      if (themeToggleBtn) themeToggleBtn.textContent = "С";
+      if (themeToggleBtn) themeToggleBtn.textContent = "☀️";
       localStorage.setItem("theme", "light");
     }
   };
@@ -287,6 +330,17 @@
   window.addEventListener("click", (e) => {
     if (e.target === profileModal) profileModal.classList.remove("show");
   });
+
+  if (saveProfileBtn) {
+    saveProfileBtn.addEventListener("click", async () => {
+      if (profileSaveStatusEl) profileSaveStatusEl.textContent = "Сохранение...";
+      const ok = await saveProfile();
+      if (profileSaveStatusEl) {
+        profileSaveStatusEl.textContent = ok ? "Сохранено" : "Ошибка сохранения";
+        setTimeout(() => { profileSaveStatusEl.textContent = ""; }, 2000);
+      }
+    });
+  }
 
   const navProfile = document.getElementById("navProfile");
   if (navProfile) {

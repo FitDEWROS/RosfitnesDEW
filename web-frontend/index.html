@@ -16,7 +16,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
   <script src="env.js"></script>
 
   <style>
@@ -27,8 +26,8 @@
       --muted: #c6c0b2;
       --card: #1b1b1f;
       --card-border: rgba(255, 255, 255, 0.08);
-      --accent: #f6e1a2;
-      --accent-strong: #f1c65a;
+      --accent: #f6e5a6;
+      --accent-strong: #f2d17c;
       --accent-cool: #9ad7ca;
       --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
       --radius: 18px;
@@ -45,8 +44,8 @@
       --muted: #6f6a60;
       --card: #ffffff;
       --card-border: rgba(0, 0, 0, 0.08);
-      --accent: #e8c86a;
-      --accent-strong: #ddb24d;
+      --accent: #e8cc7a;
+      --accent-strong: #ddb965;
       --accent-cool: #6ab6a7;
       --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
     }
@@ -103,7 +102,7 @@
 
     .topbar {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 14px;
       flex-wrap: wrap;
@@ -136,25 +135,24 @@
       text-transform: uppercase;
     }
 
-    .greeting-anim {
-      width: 44px;
-      height: 44px;
-      display: grid;
-      place-items: center;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      border: 1px solid var(--card-border);
+    .tariff-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .greeting-anim lottie-player {
-      width: 28px;
-      height: 28px;
+    #tariff {
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .top-actions {
       display: flex;
       align-items: center;
       gap: 10px;
+      margin-left: auto;
     }
 
     .icon-btn {
@@ -173,6 +171,12 @@
     .icon-btn:hover {
       transform: translateY(-1px);
       background: rgba(255, 255, 255, 0.16);
+    }
+
+    html.light .icon-btn {
+      background: rgba(0, 0, 0, 0.05);
+      border-color: rgba(0, 0, 0, 0.08);
+      color: #1b1b1b;
     }
 
     .avatar-btn {
@@ -208,9 +212,7 @@
 
     .hero-content {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
       gap: 16px;
-      align-items: center;
       position: relative;
       z-index: 1;
     }
@@ -239,8 +241,9 @@
 
     .hero-macros {
       display: grid;
-      grid-template-columns: repeat(2, minmax(72px, 96px));
+      grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
       gap: 10px;
+      max-width: 320px;
     }
 
     .macro {
@@ -279,20 +282,6 @@
       font-weight: 700;
     }
 
-    .hero-icon {
-      width: clamp(96px, 24vw, 140px);
-      height: clamp(96px, 24vw, 140px);
-      border-radius: 26px;
-      background: rgba(0, 0, 0, 0.14);
-      display: grid;
-      place-items: center;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-    }
-
-    .hero-icon svg {
-      width: 60%;
-      height: 60%;
-    }
 
     .hero-wave {
       position: absolute;
@@ -408,6 +397,11 @@
       color: var(--text);
     }
 
+    html.light .chip {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
     .action-strip {
       display: grid;
       grid-auto-flow: column;
@@ -515,6 +509,16 @@
       box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
     }
 
+    html.light .mode-toggle {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    html.light .mode-toggle .toggle-option {
+      color: rgba(0, 0, 0, 0.5);
+    }
+
     .mode-toggle .toggle-option {
       font-size: 0.65rem;
       letter-spacing: 0.2em;
@@ -553,6 +557,12 @@
       box-shadow: 0 16px 26px rgba(0, 0, 0, 0.45);
     }
 
+    html.light .bottom-nav {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 12px 22px rgba(0, 0, 0, 0.08);
+    }
+
     .nav-item {
       width: 44px;
       height: 44px;
@@ -564,6 +574,10 @@
       place-items: center;
       cursor: pointer;
       transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    html.light .nav-item {
+      color: rgba(0, 0, 0, 0.55);
     }
 
     .nav-item svg {
@@ -602,6 +616,11 @@
       box-shadow: var(--shadow);
       position: relative;
       animation: modalAppear 0.3s ease both;
+    }
+
+    html.light .modal-content {
+      background: #ffffff;
+      color: #1b1b1b;
     }
 
     .close {
@@ -647,6 +666,85 @@
       opacity: 0.85;
     }
 
+    .profile-edit {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      display: grid;
+      gap: 10px;
+      text-align: left;
+    }
+
+    html.light .profile-edit {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .profile-edit-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .profile-fields {
+      display: grid;
+      gap: 10px;
+    }
+
+    .profile-field {
+      display: grid;
+      gap: 6px;
+      font-size: 0.8rem;
+    }
+
+    .profile-field span {
+      color: var(--muted);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+    }
+
+    .profile-input {
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 8px 10px;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    html.light .profile-input {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .profile-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .profile-save {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-size: 0.7rem;
+    }
+
+    .profile-status {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
     @keyframes riseIn {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
@@ -663,19 +761,23 @@
     }
 
     @media (max-width: 520px) {
-      .greeting-anim { width: 38px; height: 38px; }
-      .greeting-anim lottie-player { width: 24px; height: 24px; }
       .icon-btn { width: 36px; height: 36px; font-size: 16px; }
       .avatar-btn { width: 42px; height: 42px; }
       .hero-link { font-size: 0.65rem; letter-spacing: 0.16em; }
-      .hero-macros { grid-template-columns: repeat(2, minmax(64px, 90px)); }
+      .hero-macros { grid-template-columns: repeat(auto-fit, minmax(64px, 90px)); }
       .action-strip { grid-auto-columns: minmax(140px, 1fr); }
     }
 
     @media (max-width: 420px) {
       .screen { padding-left: 14px; padding-right: 14px; }
-      .hero-content { grid-template-columns: 1fr; }
-      .hero-icon { justify-self: end; width: clamp(90px, 32vw, 130px); height: clamp(90px, 32vw, 130px); }
+    }
+
+    @media (max-width: 360px) {
+      .top-actions { gap: 8px; }
+      .bottom-nav { padding: 6px 8px; }
+      .nav-item { width: 40px; height: 40px; border-radius: 14px; }
+      .nav-item svg { width: 20px; height: 20px; }
+      .mode-toggle { width: 200px; }
     }
 
     @media (max-height: 700px) {
@@ -693,13 +795,13 @@
         <div class="eyebrow">Привет</div>
         <div class="greeting-row">
           <div id="greeting" class="greeting">Гость</div>
-          <div class="greeting-anim" aria-hidden="true">
-            <lottie-player src="dumbell animation.json" background="transparent" speed="1" loop autoplay></lottie-player>
-          </div>
+        </div>
+        <div class="tariff-row">
+          <span class="chip" id="tariff">Без тарифа</span>
         </div>
       </div>
       <div class="top-actions">
-        <button id="themeToggle" class="icon-btn" title="Переключить тему" aria-label="Переключить тему">Т</button>
+        <button id="themeToggle" class="icon-btn" title="Переключить тему" aria-label="Переключить тему">🌙</button>
         <button id="profileBtn" class="avatar-btn" title="Открыть профиль" aria-label="Открыть профиль">
           <img id="avatarThumb" src="default-avatar.png" alt="Фото профиля">
         </button>
@@ -728,16 +830,6 @@
             </div>
           </div>
           <a class="hero-link" href="food_diary.html">Дневник питания</a>
-        </div>
-        <div class="hero-icon" aria-hidden="true">
-          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
-            <rect x="10" y="26" width="6" height="12" rx="3" fill="#1b1b1b"/>
-            <rect x="48" y="26" width="6" height="12" rx="3" fill="#1b1b1b"/>
-            <rect x="16" y="22" width="6" height="20" rx="3" fill="#1b1b1b"/>
-            <rect x="42" y="22" width="6" height="20" rx="3" fill="#1b1b1b"/>
-            <rect x="22" y="30" width="20" height="4" rx="2" fill="#1b1b1b"/>
-            <circle cx="34" cy="32" r="3" fill="#f6e1a2"/>
-          </svg>
         </div>
       </div>
       <div class="hero-wave" aria-hidden="true">
@@ -774,7 +866,6 @@
     <section class="workouts" id="workouts">
       <div class="section-head">
         <h2>Тренировки</h2>
-        <span class="chip" id="tariff">Без тарифа</span>
       </div>
       <div class="action-strip" id="tiles" aria-live="polite"></div>
     </section>
@@ -791,10 +882,10 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" fill="currentColor"/></svg>
       </button>
       <button class="nav-item" data-scroll="#workouts" type="button" aria-label="Тренировки">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9v6h2V9H7zm8 0v6h2V9h-2zm-6 3a3 3 0 1 1 6 0 3 3 0 0 1-6 0z" fill="currentColor"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h2V7h2v10H5v-3H3v-4zm4 3h10v-2H7v2zm10-6h2v10h-2v-3h-2V10h2V7z" fill="currentColor"/></svg>
       </button>
       <button class="nav-item" data-scroll="#metrics" type="button" aria-label="Показатели">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h3l2-4 3 8 2-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h3v10H5V9zm5-4h3v14h-3V5zm5 7h3v7h-3v-7z" fill="currentColor"/></svg>
       </button>
       <button class="nav-item" id="navProfile" type="button" aria-label="Профиль">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-4 0-7 2-7 5v1h14v-1c0-3-3-5-7-5z" fill="currentColor"/></svg>
@@ -814,6 +905,27 @@
         <p>Рост: <span id="profileHeight"></span> см</p>
         <p>Вес: <span id="profileWeight"></span> кг</p>
         <p>Возраст: <span id="profileAge"></span></p>
+        <div class="profile-edit">
+          <div class="profile-edit-title">Редактор профиля</div>
+          <div class="profile-fields">
+            <label class="profile-field">
+              <span>Рост (см)</span>
+              <input id="editHeight" class="profile-input" type="number" inputmode="numeric" min="0" step="1" placeholder="-" />
+            </label>
+            <label class="profile-field">
+              <span>Вес (кг)</span>
+              <input id="editWeight" class="profile-input" type="number" inputmode="decimal" min="0" step="0.1" placeholder="-" />
+            </label>
+            <label class="profile-field">
+              <span>Возраст</span>
+              <input id="editAge" class="profile-input" type="number" inputmode="numeric" min="0" step="1" placeholder="-" />
+            </label>
+          </div>
+          <div class="profile-actions">
+            <button id="saveProfile" class="profile-save" type="button">Сохранить</button>
+            <span id="profileSaveStatus" class="profile-status"></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
