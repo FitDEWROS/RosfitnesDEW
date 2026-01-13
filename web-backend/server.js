@@ -208,7 +208,14 @@ app.get('/api/user', async (req, res) => {
     try {
       dbUser = await prisma.user.findUnique({
         where: { tg_id: Number(tg_id) },
-        select: { first_name: true, tariffName: true }
+        select: {
+          first_name: true,
+          tariffName: true,
+          trainingMode: true,
+          heightCm: true,
+          weightKg: true,
+          age: true
+        }
       });
       console.log('[api/user] dbUser:', dbUser);
     } catch (e) {
@@ -218,7 +225,10 @@ app.get('/api/user', async (req, res) => {
     const profile = {
       first_name: dbUser?.first_name || user?.first_name || 'друг',
       tariffName: dbUser?.tariffName || 'Базовый',
-      trainingMode: dbUser?.trainingMode || 'gym'
+      trainingMode: dbUser?.trainingMode || 'gym',
+      heightCm: dbUser?.heightCm ?? null,
+      weightKg: dbUser?.weightKg ?? null,
+      age: dbUser?.age ?? null
     };
 
     console.log(`[api/user] profile for ${tg_id}:`, profile);
@@ -229,6 +239,124 @@ app.get('/api/user', async (req, res) => {
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
+// helpers for nutrition
+const toFloat = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const normalized = String(value).replace(',', '.');
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+};
+
+const toInt = (value) => {
+  const num = toFloat(value);
+  if (num === null) return null;
+  return Math.round(num);
+};
+
+const getDateKey = (value) => {
+  if (typeof value === 'string' && value.length >= 10) return value.slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
+};
+
+function parseInitData(initData) {
+  if (!initData || typeof initData !== 'string') {
+    return { ok: false, status: 400, error: 'no_initData' };
+  }
+
+  const params = new URLSearchParams(initData);
+  const hash = params.get('hash');
+  if (!hash) return { ok: false, status: 400, error: 'no_hash' };
+
+  const pairs = [];
+  for (const [k, v] of params.entries()) if (k !== 'hash') pairs.push(`${k}=${v}`);
+  pairs.sort();
+  const dataCheckString = pairs.join('\n');
+
+  const botToken = process.env.BOT_TOKEN;
+  if (!botToken) return { ok: false, status: 500, error: 'no_bot_token' };
+
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+  const calcHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+  if (calcHash !== hash) return { ok: false, status: 401, error: 'bad_hash' };
+
+  const userStr = params.get('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const tg_id = user?.id ? Number(user.id) : null;
+  if (!tg_id) return { ok: false, status: 400, error: 'no_tg_id' };
+
+  return { ok: true, user, tg_id };
+}
+
+// === Дневник питания (GET / POST) ===
+app.get('/api/nutrition', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.query.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const date = getDateKey(req.query.date);
+    const tg_id = parsed.tg_id;
+
+    const dbUser = await prisma.user.upsert({
+      where: { tg_id: Number(tg_id) },
+      update: {},
+      create: {
+        tg_id: Number(tg_id),
+        username: parsed.user?.username || null,
+        first_name: parsed.user?.first_name || null
+      }
+    });
+
+    const entry = await prisma.nutritionEntry.findUnique({
+      where: { userId_date: { userId: dbUser.id, date } }
+    });
+
+    res.json({ ok: true, date, entry });
+  } catch (e) {
+    console.error('[api/nutrition:get] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/nutrition', async (req, res) => {
+  try {
+    const { initData, date: rawDate } = req.body || {};
+    const parsed = parseInitData(initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const date = getDateKey(rawDate);
+    const tg_id = parsed.tg_id;
+
+    const dbUser = await prisma.user.upsert({
+      where: { tg_id: Number(tg_id) },
+      update: {},
+      create: {
+        tg_id: Number(tg_id),
+        username: parsed.user?.username || null,
+        first_name: parsed.user?.first_name || null
+      }
+    });
+
+    const kcal = toInt(req.body?.kcal);
+    const protein = toFloat(req.body?.protein);
+    const fat = toFloat(req.body?.fat);
+    const carb = toFloat(req.body?.carb);
+    const waterLiters = toFloat(req.body?.water);
+    const mealsCount = toInt(req.body?.meals);
+
+    const entry = await prisma.nutritionEntry.upsert({
+      where: { userId_date: { userId: dbUser.id, date } },
+      update: { kcal, protein, fat, carb, waterLiters, mealsCount },
+      create: { userId: dbUser.id, date, kcal, protein, fat, carb, waterLiters, mealsCount }
+    });
+
+    res.json({ ok: true, date, entry });
+  } catch (e) {
+    console.error('[api/nutrition:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
 // === Получить текущий режим пользователя ===
 app.get('/api/mode', async (req, res) => {
   try {

@@ -28,6 +28,7 @@ model User {
   tariffName      String?
   trainingMode    String    @default("gym")
   fatsecret_token FatSecretToken?
+  nutritionEntries NutritionEntry[]
 }
 
 model FatSecretToken {
@@ -40,4 +41,21 @@ model FatSecretToken {
   scope        String?
   tokenType    String?
   createdAt    DateTime @default(now())
+}
+
+model NutritionEntry {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  date       String   @db.VarChar(10)
+  kcal       Int?
+  protein    Float?
+  fat        Float?
+  carb       Float?
+  waterLiters Float?
+  mealsCount Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, date])
 }

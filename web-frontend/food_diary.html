@@ -3,25 +3,70 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RosApp — Дневник питания</title>
+  <title>RosApp — дневник питания</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
   <style>
+    :root {
+      --bg: #0f0f10;
+      --bg-soft: #141417;
+      --text: #f4f1e8;
+      --muted: #c6c0b2;
+      --card: #1b1b1f;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f6e1a2;
+      --accent-strong: #f1c65a;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-lg: 26px;
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+      --transition: 0.3s ease;
+    }
+
+    html.light {
+      --bg: #f4f1e6;
+      --bg-soft: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8c86a;
+      --accent-strong: #ddb24d;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
+      margin: 0;
+      min-height: 100vh;
       background: var(--bg);
       color: var(--text);
-      font-family: 'Manrope', 'Exo 2', sans-serif;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
+      font-family: var(--font-body);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(520px 280px at 15% 8%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(420px 300px at 80% 85%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
     }
 
     .diary-screen {
-      padding: 22px 20px 32px;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 22px 18px calc(32px + env(safe-area-inset-bottom));
       display: grid;
       gap: 18px;
     }
@@ -46,7 +91,10 @@
 
     .diary-header h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-family: var(--font-title);
+      font-size: clamp(1.3rem, 5vw, 1.8rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     .diary-header p {
@@ -56,17 +104,17 @@
     }
 
     .summary-card {
-      border-radius: 26px;
+      border-radius: var(--radius-lg);
       padding: 18px;
-      background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       color: #1b1b1b;
       display: grid;
       gap: 14px;
-      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.25);
+      box-shadow: var(--shadow);
     }
 
     .summary-value {
-      font-size: 2rem;
+      font-size: clamp(1.6rem, 6vw, 2rem);
       font-weight: 800;
     }
 
@@ -108,7 +156,7 @@
     .form-card {
       background: var(--card);
       border: 1px solid var(--card-border);
-      border-radius: 22px;
+      border-radius: var(--radius-lg);
       padding: 18px;
       display: grid;
       gap: 16px;
@@ -150,6 +198,12 @@
       color: var(--text);
     }
 
+    .note {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
     .form-actions {
       display: flex;
       flex-wrap: wrap;
@@ -160,7 +214,7 @@
       border: none;
       border-radius: 999px;
       padding: 10px 18px;
-      background: linear-gradient(135deg, #f6e5a6 0%, #f2d17c 100%);
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       color: #1b1b1b;
       font-weight: 700;
       letter-spacing: 0.1em;
@@ -176,7 +230,7 @@
 
     @media (max-width: 520px) {
       .summary-value { font-size: 1.6rem; }
-      .diary-header h1 { font-size: 1.4rem; }
+      .diary-header h1 { font-size: 1.5rem; }
     }
   </style>
 </head>
@@ -184,9 +238,9 @@
 <body>
   <div class="diary-screen">
     <header class="diary-header">
-      <button class="back-btn" id="backHome">← Назад</button>
+      <button class="back-btn" id="backHome" type="button">Назад</button>
       <h1>Дневник питания</h1>
-      <p>Заполняй калории и БЖУ за сегодня.</p>
+      <p>Заполни калории и БЖУ — показатели сразу появятся на главной.</p>
     </header>
 
     <section class="summary-card">
@@ -215,37 +269,34 @@
         <div class="form-grid">
           <label class="field">
             <span>Калории</span>
-            <input id="inputKcal" type="number" min="0" step="1" placeholder="0" />
-          </label>
-          <label class="field">
-            <span>Вес (кг)</span>
-            <input id="inputWeight" type="number" min="0" step="0.1" placeholder="0" />
+            <input id="inputKcal" type="number" inputmode="numeric" min="0" step="1" placeholder="0" />
           </label>
         </div>
+        <p class="note">Вес указывается в профиле.</p>
 
         <div class="form-grid three">
           <label class="field">
             <span>Белки (г)</span>
-            <input id="inputProtein" type="number" min="0" step="1" placeholder="0" />
+            <input id="inputProtein" type="number" inputmode="decimal" min="0" step="1" placeholder="0" />
           </label>
           <label class="field">
             <span>Жиры (г)</span>
-            <input id="inputFat" type="number" min="0" step="1" placeholder="0" />
+            <input id="inputFat" type="number" inputmode="decimal" min="0" step="1" placeholder="0" />
           </label>
           <label class="field">
             <span>Углеводы (г)</span>
-            <input id="inputCarb" type="number" min="0" step="1" placeholder="0" />
+            <input id="inputCarb" type="number" inputmode="decimal" min="0" step="1" placeholder="0" />
           </label>
         </div>
 
         <div class="form-grid">
           <label class="field">
             <span>Вода (л)</span>
-            <input id="inputWater" type="number" min="0" step="0.1" placeholder="0" />
+            <input id="inputWater" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0" />
           </label>
           <label class="field">
-            <span>Приёмы пищи</span>
-            <input id="inputMeals" type="number" min="0" step="1" placeholder="0" />
+            <span>Приемы пищи</span>
+            <input id="inputMeals" type="number" inputmode="numeric" min="0" step="1" placeholder="0" />
           </label>
         </div>
 
@@ -259,95 +310,139 @@
 
   <script>
     (function() {
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      document.documentElement.classList.toggle('light', savedTheme === 'light');
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
 
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+
+      function buildInitData() {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+
+        return p.toString();
+      }
+
+      const initData = buildInitData();
       const byId = (id) => document.getElementById(id);
       const inputs = {
-        kcal: byId('inputKcal'),
-        protein: byId('inputProtein'),
-        fat: byId('inputFat'),
-        carb: byId('inputCarb'),
-        water: byId('inputWater'),
-        meals: byId('inputMeals'),
-        weight: byId('inputWeight')
+        kcal: byId("inputKcal"),
+        protein: byId("inputProtein"),
+        fat: byId("inputFat"),
+        carb: byId("inputCarb"),
+        water: byId("inputWater"),
+        meals: byId("inputMeals")
       };
 
       const preview = {
-        kcal: byId('previewKcal'),
-        protein: byId('previewProtein'),
-        fat: byId('previewFat'),
-        carb: byId('previewCarb')
-      };
-
-      const keys = {
-        kcal: 'nutrition_kcal',
-        protein: 'nutrition_protein',
-        fat: 'nutrition_fat',
-        carb: 'nutrition_carb',
-        water: 'nutrition_water',
-        meals: 'nutrition_meals',
-        weight: 'user_weight'
+        kcal: byId("previewKcal"),
+        protein: byId("previewProtein"),
+        fat: byId("previewFat"),
+        carb: byId("previewCarb")
       };
 
       const readNumber = (value) => {
-        if (value === null || value === undefined || value === '') return null;
-        const normalized = String(value).replace(',', '.');
+        if (value === null || value === undefined || value === "") return null;
+        const normalized = String(value).replace(",", ".");
         const num = Number(normalized);
         return Number.isFinite(num) ? num : null;
       };
 
-      const formatWhole = (value, fallback = '0') => {
+      const formatWhole = (value, fallback = "0") => {
         if (!Number.isFinite(value)) return fallback;
-        return Math.round(value).toLocaleString('ru-RU');
+        return Math.round(value).toLocaleString("ru-RU");
       };
 
       const updatePreview = () => {
-        const kcal = readNumber(inputs.kcal.value);
-        const protein = readNumber(inputs.protein.value);
-        const fat = readNumber(inputs.fat.value);
-        const carb = readNumber(inputs.carb.value);
+        const kcal = readNumber(inputs.kcal?.value);
+        const protein = readNumber(inputs.protein?.value);
+        const fat = readNumber(inputs.fat?.value);
+        const carb = readNumber(inputs.carb?.value);
         if (preview.kcal) preview.kcal.textContent = formatWhole(kcal);
         if (preview.protein) preview.protein.textContent = formatWhole(protein);
         if (preview.fat) preview.fat.textContent = formatWhole(fat);
         if (preview.carb) preview.carb.textContent = formatWhole(carb);
       };
 
-      const loadStored = () => {
-        Object.keys(keys).forEach((key) => {
-          const stored = localStorage.getItem(keys[key]);
-          if (inputs[key]) inputs[key].value = stored ?? '';
-        });
+      const applyEntry = (entry = {}) => {
+        const setValue = (el, value) => {
+          if (!el) return;
+          el.value = value ?? "";
+        };
+
+        setValue(inputs.kcal, entry.kcal);
+        setValue(inputs.protein, entry.protein);
+        setValue(inputs.fat, entry.fat);
+        setValue(inputs.carb, entry.carb);
+        setValue(inputs.water, entry.waterLiters);
+        setValue(inputs.meals, entry.mealsCount);
         updatePreview();
       };
 
-      const saveStored = () => {
-        Object.keys(keys).forEach((key) => {
-          const value = inputs[key] ? inputs[key].value.trim() : '';
-          if (!value) {
-            localStorage.removeItem(keys[key]);
+      const loadEntry = async () => {
+        if (!API_BASE || !initData) return;
+        try {
+          const url = `${API_BASE}/api/nutrition?initData=${encodeURIComponent(initData)}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          if (json?.ok && json.entry) {
+            applyEntry(json.entry);
           } else {
-            localStorage.setItem(keys[key], value);
+            updatePreview();
           }
-        });
+        } catch (e) {
+          console.warn("Ошибка загрузки дневника питания", e);
+        }
       };
 
-      const form = byId('diaryForm');
-      const status = byId('saveStatus');
+      const saveEntry = async () => {
+        if (!API_BASE || !initData) return false;
+        const payload = {
+          initData,
+          kcal: readNumber(inputs.kcal?.value),
+          protein: readNumber(inputs.protein?.value),
+          fat: readNumber(inputs.fat?.value),
+          carb: readNumber(inputs.carb?.value),
+          water: readNumber(inputs.water?.value),
+          meals: readNumber(inputs.meals?.value)
+        };
+        const res = await fetch(`${API_BASE}/api/nutrition`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json().catch(() => ({}));
+        return !!json?.ok;
+      };
+
+      const form = byId("diaryForm");
+      const status = byId("saveStatus");
       if (form) {
-        form.addEventListener('input', updatePreview);
-        form.addEventListener('submit', (e) => {
+        form.addEventListener("input", updatePreview);
+        form.addEventListener("submit", async (e) => {
           e.preventDefault();
-          saveStored();
-          if (status) status.textContent = 'Сохранено';
-          setTimeout(() => { if (status) status.textContent = ''; }, 2000);
+          const ok = await saveEntry();
+          if (status) status.textContent = ok ? "Сохранено" : "Ошибка сохранения";
+          setTimeout(() => { if (status) status.textContent = ""; }, 2000);
         });
       }
 
-      const back = byId('backHome');
-      if (back) back.addEventListener('click', () => { window.location.href = 'index.html'; });
+      const back = byId("backHome");
+      if (back) back.addEventListener("click", () => { window.location.href = "index.html"; });
 
-      loadStored();
+      loadEntry();
     })();
   </script>
 </body>
