@@ -345,6 +345,59 @@ function parseInitData(initData) {
   return { ok: true, user, tg_id };
 }
 
+const TRANSLIT_MAP = {
+  'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
+  'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+  'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+  'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
+  'я': 'ya'
+};
+
+function slugify(value) {
+  if (!value) return '';
+  const lowered = String(value).toLowerCase();
+  let out = '';
+  for (const ch of lowered) {
+    if (TRANSLIT_MAP[ch] !== undefined) {
+      out += TRANSLIT_MAP[ch];
+      continue;
+    }
+    if ((ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')) {
+      out += ch;
+      continue;
+    }
+    out += '-';
+  }
+  out = out.replace(/-+/g, '-').replace(/^-|-$/g, '');
+  return out || `program-${Date.now()}`;
+}
+
+function cleanString(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim();
+}
+
+function optionalString(value) {
+  const trimmed = cleanString(value);
+  return trimmed ? trimmed : null;
+}
+
+async function requireAdmin(initData) {
+  const parsed = parseInitData(initData);
+  if (!parsed.ok) return parsed;
+
+  const user = await prisma.user.findUnique({
+    where: { tg_id: Number(parsed.tg_id) },
+    select: { role: true }
+  });
+
+  if (!user || user.role !== 'admin') {
+    return { ok: false, status: 403, error: 'forbidden' };
+  }
+
+  return { ok: true, tg_id: parsed.tg_id };
+}
+
 const PROGRAM_SEED = [
   {
     slug: 'crossfit-busy-fullbody',
@@ -755,6 +808,115 @@ app.post('/api/mode', async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     console.error('[api/mode:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: create training program ===
+app.post('/api/admin/programs', async (req, res) => {
+  try {
+    const auth = await requireAdmin(req.body?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const payload = req.body?.program || {};
+    const title = cleanString(payload.title);
+    const type = cleanString(payload.type).toLowerCase();
+
+    if (!title) {
+      return res.status(400).json({ ok: false, error: 'missing_title' });
+    }
+    if (!['gym', 'crossfit'].includes(type)) {
+      return res.status(400).json({ ok: false, error: 'invalid_type' });
+    }
+
+    const slugSource = cleanString(payload.slug) || title;
+    const slug = slugify(slugSource);
+    const existing = await prisma.trainingProgram.findUnique({ where: { slug } });
+    if (existing) {
+      return res.status(409).json({ ok: false, error: 'slug_exists', slug });
+    }
+
+    const weeks = Array.isArray(payload.weeks) ? payload.weeks : [];
+    if (!weeks.length) {
+      return res.status(400).json({ ok: false, error: 'no_weeks' });
+    }
+
+    const errors = [];
+    const weeksData = weeks.map((week, weekIndex) => {
+      const weekTitle = optionalString(week?.title) || `Неделя ${weekIndex + 1}`;
+      const workouts = Array.isArray(week?.workouts) ? week.workouts : [];
+      if (!workouts.length) {
+        errors.push(`Неделя ${weekIndex + 1}: добавьте хотя бы одну тренировку.`);
+      }
+
+      const workoutsData = workouts.map((workout, workoutIndex) => {
+        const workoutTitle = cleanString(workout?.title);
+        if (!workoutTitle) {
+          errors.push(`Неделя ${weekIndex + 1}: заполните название тренировки ${workoutIndex + 1}.`);
+        }
+        const exercises = Array.isArray(workout?.exercises) ? workout.exercises : [];
+        if (!exercises.length) {
+          errors.push(`Неделя ${weekIndex + 1}: тренировка ${workoutIndex + 1} должна содержать упражнения.`);
+        }
+
+        const exercisesData = exercises.map((exercise, exerciseIndex) => {
+          const exerciseTitle = cleanString(exercise?.title);
+          if (!exerciseTitle) {
+            errors.push(`Неделя ${weekIndex + 1}: тренировка ${workoutIndex + 1}, упражнение ${exerciseIndex + 1} — нет названия.`);
+          }
+          return {
+            order: exerciseIndex + 1,
+            label: optionalString(exercise?.label),
+            title: exerciseTitle || `Упражнение ${exerciseIndex + 1}`,
+            details: optionalString(exercise?.details),
+            description: optionalString(exercise?.description),
+            videoUrl: optionalString(exercise?.videoUrl)
+          };
+        });
+
+        return {
+          index: workoutIndex + 1,
+          title: workoutTitle || `Тренировка ${workoutIndex + 1}`,
+          description: optionalString(workout?.description),
+          exercises: { create: exercisesData }
+        };
+      });
+
+      return {
+        index: weekIndex + 1,
+        title: weekTitle,
+        workouts: { create: workoutsData }
+      };
+    });
+
+    if (errors.length) {
+      return res.status(400).json({ ok: false, error: 'validation_failed', details: errors });
+    }
+
+    const weeksCount = weeks.length;
+    const created = await prisma.trainingProgram.create({
+      data: {
+        slug,
+        title,
+        type,
+        subtitle: optionalString(payload.subtitle),
+        summary: optionalString(payload.summary),
+        description: optionalString(payload.description),
+        level: optionalString(payload.level),
+        gender: optionalString(payload.gender),
+        frequency: optionalString(payload.frequency),
+        weeksCount,
+        coverImage: optionalString(payload.coverImage),
+        authorName: optionalString(payload.authorName) || 'Тестов Тест Тестович',
+        authorRole: optionalString(payload.authorRole) || 'Тренер Fit Dew',
+        authorAvatar: optionalString(payload.authorAvatar),
+        weeks: { create: weeksData }
+      }
+    });
+
+    res.json({ ok: true, program: { id: created.id, slug: created.slug } });
+  } catch (e) {
+    console.error('[api/admin/programs] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fit Dew вЂ” РђРґРјРёРЅ РїР°РЅРµР»СЊ</title>
+  <title>Fit Dew — Админка программ</title>
 
   <script>
     (function() {
@@ -16,6 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
 
   <style>
     :root {
@@ -72,7 +73,7 @@
     }
 
     .admin-screen {
-      max-width: 760px;
+      max-width: 860px;
       margin: 0 auto;
       padding: 22px 18px 140px;
     }
@@ -107,6 +108,14 @@
       z-index: 1;
     }
 
+    .header-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
     .eyebrow {
       font-size: 0.7rem;
       letter-spacing: 0.3em;
@@ -117,7 +126,7 @@
     .page-title {
       margin: 0;
       font-family: var(--font-title);
-      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      font-size: clamp(1.6rem, 6vw, 2.4rem);
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
@@ -126,9 +135,52 @@
       margin: 0;
       color: var(--muted);
       font-size: 0.95rem;
+      line-height: 1.5;
     }
 
-    .info-card {
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .status-pill::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9c9c9c;
+    }
+
+    .status-pill.ok {
+      color: #1b1b1b;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      border-color: transparent;
+    }
+
+    .status-pill.ok::before {
+      background: #1b1b1b;
+    }
+
+    .status-pill.bad {
+      color: #ffb0b0;
+      border-color: rgba(255, 120, 120, 0.4);
+      background: rgba(120, 20, 20, 0.3);
+    }
+
+    .status-pill.bad::before {
+      background: #ff8a8a;
+    }
+
+    .section-card {
       margin-top: 18px;
       padding: 18px;
       border-radius: var(--radius-lg);
@@ -136,21 +188,368 @@
       border: 1px solid var(--card-border);
       box-shadow: var(--shadow);
       display: grid;
+      gap: 14px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-head.compact {
+      align-items: flex-start;
+    }
+
+    .section-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .section-title {
+      margin: 4px 0 0;
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .muted {
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-grid label {
+      display: grid;
+      gap: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .form-grid label.full {
+      grid-column: 1 / -1;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    html.light input,
+    html.light textarea,
+    html.light select {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(242, 209, 124, 0.6);
+      box-shadow: 0 0 0 3px rgba(242, 209, 124, 0.15);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .slug-field {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .slug-field input {
+      flex: 1;
+    }
+
+    .type-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 10px 0;
+    }
+
+    .field-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .pill-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .pill input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .pill span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      font-family: var(--font-title);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      transition: var(--transition);
+    }
+
+    .pill input:checked + span {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      border-color: transparent;
+    }
+
+    .note-box {
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px dashed var(--card-border);
+      background: rgba(255, 255, 255, 0.03);
+      display: grid;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .section-divider {
+      height: 1px;
+      background: var(--card-border);
+      border-radius: 999px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .week-card {
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      display: grid;
+      gap: 12px;
+    }
+
+    html.light .week-card {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .workout-card {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.22);
+      display: grid;
+      gap: 12px;
+    }
+
+    html.light .workout-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .exercise-card {
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.15);
+      display: grid;
       gap: 10px;
     }
 
-    .info-title {
-      font-family: var(--font-title);
-      letter-spacing: 0.08em;
+    html.light .exercise-card {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .exercise-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .btn-primary,
+    .btn-outline,
+    .btn-ghost {
+      border-radius: 999px;
+      border: none;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-family: var(--font-title);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      transition: var(--transition);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      box-shadow: 0 12px 26px rgba(243, 213, 139, 0.3);
+    }
+
+    .btn-primary:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+      box-shadow: none;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      padding: 8px 14px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .status-line {
+      min-height: 20px;
+      font-size: 0.9rem;
+    }
+
+    .status-line.ok {
+      color: #7ee0a8;
+    }
+
+    .status-line.bad {
+      color: #ff9b9b;
+    }
+
+    .program-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .program-item {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    html.light .program-item {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .program-meta {
+      display: grid;
+      gap: 4px;
+    }
+
+    .program-meta strong {
       font-size: 1rem;
     }
 
-    .info-text {
+    .program-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .program-tag {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
       color: var(--muted);
-      line-height: 1.5;
-      font-size: 0.95rem;
-      margin: 0;
+    }
+
+    @media (max-width: 720px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
@@ -158,21 +557,647 @@
 <body>
   <div class="admin-screen">
     <header class="page-header">
-      <span class="eyebrow">РђРґРјРёРЅРєР°</span>
-      <h1 class="page-title">РЈРїСЂР°РІР»РµРЅРёРµ РїСЂРѕРіСЂР°РјРјР°РјРё</h1>
-      <p class="page-subtitle">Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ С‚СЂРµРЅРёСЂРѕРІРѕРє, РІРёРґРµРѕ Рё РѕРїРёСЃР°РЅРёР№.</p>
+      <div class="header-top">
+        <span class="eyebrow">Админка</span>
+        <span class="status-pill" id="accessStatus">Проверяем доступ...</span>
+      </div>
+      <h1 class="page-title">Программы тренировок</h1>
+      <p class="page-subtitle">Создавай программы, наполняй неделями, тренировками и упражнениями. Видео — публичные ссылки Яндекс.Диска.</p>
     </header>
 
-    <section class="info-card">
-      <div class="info-title">Р’ СЂР°Р·СЂР°Р±РѕС‚РєРµ</div>
-      <p class="info-text">РЎРґРµР»Р°СЋ РїРѕР»РЅРѕС†РµРЅРЅС‹Р№ СЂРµРґР°РєС‚РѕСЂ РїСЂРѕРіСЂР°РјРј, СѓРїСЂР°Р¶РЅРµРЅРёР№ Рё РІРёРґРµРѕ. РЎРєР°Р¶Рё, РІ РєР°РєРѕРј С„РѕСЂРјР°С‚Рµ СѓРґРѕР±РЅРµРµ РґРѕР±Р°РІР»СЏС‚СЊ РґР°РЅРЅС‹Рµ: CSV РёР»Рё JSON.</p>
+    <section class="section-card" id="accessCard">
+      <h2 class="section-title">Доступ</h2>
+      <p class="muted" id="accessMessage">Проверяем права администратора...</p>
+    </section>
+
+    <section class="section-card" id="formCard" hidden>
+      <div class="section-head">
+        <div>
+          <span class="section-eyebrow">Новая программа</span>
+          <h2 class="section-title">Создание программы</h2>
+        </div>
+        <div class="section-actions">
+          <button class="btn-outline" id="resetForm" type="button">Очистить</button>
+        </div>
+      </div>
+
+      <div class="type-row">
+        <span class="field-label">Тип программы</span>
+        <div class="pill-group">
+          <label class="pill">
+            <input type="radio" name="programType" value="gym" checked>
+            <span>Зал</span>
+          </label>
+          <label class="pill">
+            <input type="radio" name="programType" value="crossfit">
+            <span>Кроссфит</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Название программы
+          <input id="programTitle" type="text" placeholder="Например: Программа на все тело">
+        </label>
+        <label>
+          Слаг (URL)
+          <div class="slug-field">
+            <input id="programSlug" type="text" placeholder="crossfit-busy-fullbody">
+            <button class="btn-ghost" id="slugAuto" type="button">Авто</button>
+          </div>
+        </label>
+        <label>
+          Подзаголовок
+          <input id="programSubtitle" type="text" placeholder="Для самых занятых">
+        </label>
+        <label>
+          Краткое описание
+          <input id="programSummary" type="text" placeholder="3 тренировки в неделю, весь функционал">
+        </label>
+        <label class="full">
+          Полное описание
+          <textarea id="programDescription" placeholder="Опишите программу подробнее..."></textarea>
+        </label>
+        <label>
+          Уровень
+          <input id="programLevel" type="text" placeholder="Новички">
+        </label>
+        <label>
+          Пол
+          <input id="programGender" type="text" placeholder="Универсальная">
+        </label>
+        <label>
+          Частота
+          <input id="programFrequency" type="text" placeholder="3 трен/нед">
+        </label>
+        <label>
+          Недель
+          <input id="programWeeksCount" type="number" min="1" readonly>
+        </label>
+        <label>
+          CoverImage ключ
+          <input id="programCover" type="text" placeholder="crossfit-amber">
+        </label>
+        <label>
+          Автор
+          <input id="programAuthorName" type="text" value="Тестов Тест Тестович">
+        </label>
+        <label>
+          Роль автора
+          <input id="programAuthorRole" type="text" value="Тренер Fit Dew">
+        </label>
+        <label class="full">
+          Avatar URL (опционально)
+          <input id="programAuthorAvatar" type="text" placeholder="https://...">
+        </label>
+      </div>
+
+      <div class="note-box">
+        <strong>Видео</strong>
+        <span>Используй публичные ссылки Яндекс.Диска (поделись файлом). Вставляй ссылку на файл в упражнении.</span>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-head compact">
+        <div>
+          <span class="section-eyebrow">Структура</span>
+          <h3 class="section-title">Недели, тренировки, упражнения</h3>
+        </div>
+        <div class="section-actions">
+          <button class="btn-outline" data-action="add-week" type="button">+ Неделя</button>
+        </div>
+      </div>
+
+      <div id="weeksContainer" class="stack"></div>
+
+      <div class="actions">
+        <button class="btn-primary" id="saveProgram" type="button">Сохранить программу</button>
+      </div>
+      <div class="status-line" id="formStatus"></div>
+    </section>
+
+    <section class="section-card" id="listCard" hidden>
+      <div class="section-head compact">
+        <div>
+          <span class="section-eyebrow">Каталог</span>
+          <h2 class="section-title">Существующие программы</h2>
+        </div>
+        <div class="section-actions">
+          <button class="btn-outline" id="reloadPrograms" type="button">Обновить</button>
+        </div>
+      </div>
+      <div class="program-list" id="programList"></div>
     </section>
   </div>
 
   <script>
     (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const params = new URLSearchParams(window.location.search);
+      const API_BASE = window.ENV?.API_BASE || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+      const initData = tg?.initData || params.get("initData") || "";
+
+      const accessStatus = document.getElementById("accessStatus");
+      const accessMessage = document.getElementById("accessMessage");
+      const formCard = document.getElementById("formCard");
+      const listCard = document.getElementById("listCard");
+      const weeksContainer = document.getElementById("weeksContainer");
+      const formStatus = document.getElementById("formStatus");
+      const programList = document.getElementById("programList");
+
+      const programTitle = document.getElementById("programTitle");
+      const programSlug = document.getElementById("programSlug");
+      const programSubtitle = document.getElementById("programSubtitle");
+      const programSummary = document.getElementById("programSummary");
+      const programDescription = document.getElementById("programDescription");
+      const programLevel = document.getElementById("programLevel");
+      const programGender = document.getElementById("programGender");
+      const programFrequency = document.getElementById("programFrequency");
+      const programWeeksCount = document.getElementById("programWeeksCount");
+      const programCover = document.getElementById("programCover");
+      const programAuthorName = document.getElementById("programAuthorName");
+      const programAuthorRole = document.getElementById("programAuthorRole");
+      const programAuthorAvatar = document.getElementById("programAuthorAvatar");
+
+      const slugAuto = document.getElementById("slugAuto");
+      const resetForm = document.getElementById("resetForm");
+      const saveProgram = document.getElementById("saveProgram");
+      const reloadPrograms = document.getElementById("reloadPrograms");
+
+      const setStatus = (message, ok) => {
+        formStatus.textContent = message;
+        formStatus.classList.toggle("ok", Boolean(ok));
+        formStatus.classList.toggle("bad", ok === false);
+      };
+
+      const setAccess = (ok, message) => {
+        accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
+        accessStatus.classList.toggle("ok", ok);
+        accessStatus.classList.toggle("bad", !ok);
+        accessMessage.textContent = message;
+        formCard.hidden = !ok;
+        listCard.hidden = !ok;
+      };
+
+      const translitMap = {
+        "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e",
+        "ж": "zh", "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m",
+        "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u",
+        "ф": "f", "х": "h", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "sch", "ъ": "",
+        "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya"
+      };
+
+      const slugify = (value) => {
+        if (!value) return "";
+        const lower = value.toLowerCase();
+        let out = "";
+        for (const ch of lower) {
+          if (translitMap[ch] !== undefined) {
+            out += translitMap[ch];
+            continue;
+          }
+          if ((ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9")) {
+            out += ch;
+            continue;
+          }
+          out += "-";
+        }
+        out = out.replace(/-+/g, "-").replace(/^-|-$/g, "");
+        return out;
+      };
+
+      const createExerciseCard = () => {
+        const card = document.createElement("div");
+        card.className = "exercise-card";
+        card.dataset.exercise = "true";
+        card.innerHTML = `
+          <div class="card-head">
+            <span class="chip" data-exercise-label>Упражнение</span>
+            <button class="btn-ghost" data-action="remove-exercise" type="button">Удалить</button>
+          </div>
+          <div class="form-grid">
+            <label>
+              Метка (1a)
+              <input type="text" data-ex-label placeholder="1a">
+            </label>
+            <label>
+              Название упражнения
+              <input type="text" data-ex-title placeholder="Например: Оверхед присед">
+            </label>
+            <label>
+              Кратко (повторы/сек)
+              <input type="text" data-ex-details placeholder="12 повторов">
+            </label>
+            <label class="full">
+              Описание
+              <textarea data-ex-description placeholder="Техника выполнения..."></textarea>
+            </label>
+            <label class="full">
+              Видео (Яндекс.Диск, публичная ссылка)
+              <input type="url" data-ex-video placeholder="https://disk.yandex.ru/...">
+            </label>
+          </div>
+        `;
+        return card;
+      };
+
+      const createWorkoutCard = () => {
+        const card = document.createElement("div");
+        card.className = "workout-card";
+        card.dataset.workout = "true";
+        card.innerHTML = `
+          <div class="card-head">
+            <span class="chip" data-workout-label>Тренировка</span>
+            <button class="btn-ghost" data-action="remove-workout" type="button">Удалить</button>
+          </div>
+          <div class="form-grid">
+            <label>
+              Название тренировки
+              <input type="text" data-workout-title placeholder="Силовая + кардио">
+            </label>
+            <label class="full">
+              Описание тренировки
+              <textarea data-workout-desc placeholder="Короткое описание тренировки..."></textarea>
+            </label>
+          </div>
+          <div class="exercise-list" data-exercises></div>
+          <div class="section-actions">
+            <button class="btn-outline" data-action="add-exercise" type="button">+ Упражнение</button>
+          </div>
+        `;
+        return card;
+      };
+
+      const createWeekCard = () => {
+        const card = document.createElement("div");
+        card.className = "week-card";
+        card.dataset.week = "true";
+        card.innerHTML = `
+          <div class="card-head">
+            <span class="chip" data-week-label>Неделя</span>
+            <button class="btn-ghost" data-action="remove-week" type="button">Удалить</button>
+          </div>
+          <label>
+            Название недели
+            <input type="text" data-week-title placeholder="Неделя 1">
+          </label>
+          <div class="stack" data-workouts></div>
+          <div class="section-actions">
+            <button class="btn-outline" data-action="add-workout" type="button">+ Тренировка</button>
+          </div>
+        `;
+        return card;
+      };
+
+      const addDefaultWeek = () => {
+        const weekCard = createWeekCard();
+        const workoutsContainer = weekCard.querySelector("[data-workouts]");
+        const workoutCard = createWorkoutCard();
+        workoutsContainer.appendChild(workoutCard);
+        const exercisesContainer = workoutCard.querySelector("[data-exercises]");
+        exercisesContainer.appendChild(createExerciseCard());
+        weeksContainer.appendChild(weekCard);
+        renumber();
+      };
+
+      const renumber = () => {
+        const weekCards = Array.from(weeksContainer.querySelectorAll("[data-week]"));
+        programWeeksCount.value = weekCards.length || "";
+        weekCards.forEach((weekCard, weekIndex) => {
+          const weekLabel = weekCard.querySelector("[data-week-label]");
+          if (weekLabel) weekLabel.textContent = `Неделя ${weekIndex + 1}`;
+          const workoutCards = Array.from(weekCard.querySelectorAll("[data-workout]"));
+          workoutCards.forEach((workoutCard, workoutIndex) => {
+            const workoutLabel = workoutCard.querySelector("[data-workout-label]");
+            if (workoutLabel) workoutLabel.textContent = `Тренировка ${workoutIndex + 1}`;
+            const exerciseCards = Array.from(workoutCard.querySelectorAll("[data-exercise]"));
+            exerciseCards.forEach((exerciseCard, exerciseIndex) => {
+              const exLabel = exerciseCard.querySelector("[data-exercise-label]");
+              if (exLabel) exLabel.textContent = `Упражнение ${exerciseIndex + 1}`;
+            });
+          });
+        });
+      };
+
+      const collectProgram = () => {
+        const type = document.querySelector("input[name='programType']:checked")?.value || "gym";
+        const program = {
+          title: programTitle.value.trim(),
+          slug: programSlug.value.trim(),
+          type,
+          subtitle: programSubtitle.value.trim(),
+          summary: programSummary.value.trim(),
+          description: programDescription.value.trim(),
+          level: programLevel.value.trim(),
+          gender: programGender.value.trim(),
+          frequency: programFrequency.value.trim(),
+          coverImage: programCover.value.trim(),
+          authorName: programAuthorName.value.trim(),
+          authorRole: programAuthorRole.value.trim(),
+          authorAvatar: programAuthorAvatar.value.trim(),
+          weeks: []
+        };
+
+        const errors = [];
+        if (!program.title) errors.push("Заполни название программы.");
+
+        const weekCards = Array.from(weeksContainer.querySelectorAll("[data-week]"));
+        if (!weekCards.length) errors.push("Добавь хотя бы одну неделю.");
+
+        weekCards.forEach((weekCard, weekIndex) => {
+          const weekTitle = weekCard.querySelector("[data-week-title]")?.value.trim();
+          const week = { title: weekTitle, workouts: [] };
+          const workoutCards = Array.from(weekCard.querySelectorAll("[data-workout]"));
+          if (!workoutCards.length) {
+            errors.push(`Неделя ${weekIndex + 1}: добавь тренировку.`);
+          }
+          workoutCards.forEach((workoutCard, workoutIndex) => {
+            const workoutTitle = workoutCard.querySelector("[data-workout-title]")?.value.trim();
+            const workoutDesc = workoutCard.querySelector("[data-workout-desc]")?.value.trim();
+            const workout = { title: workoutTitle, description: workoutDesc, exercises: [] };
+            if (!workoutTitle) {
+              errors.push(`Неделя ${weekIndex + 1}: заполни название тренировки ${workoutIndex + 1}.`);
+            }
+            const exerciseCards = Array.from(workoutCard.querySelectorAll("[data-exercise]"));
+            if (!exerciseCards.length) {
+              errors.push(`Неделя ${weekIndex + 1}: тренировка ${workoutIndex + 1} без упражнений.`);
+            }
+            exerciseCards.forEach((exerciseCard, exerciseIndex) => {
+              const exLabel = exerciseCard.querySelector("[data-ex-label]")?.value.trim();
+              const exTitle = exerciseCard.querySelector("[data-ex-title]")?.value.trim();
+              const exDetails = exerciseCard.querySelector("[data-ex-details]")?.value.trim();
+              const exDescription = exerciseCard.querySelector("[data-ex-description]")?.value.trim();
+              const exVideo = exerciseCard.querySelector("[data-ex-video]")?.value.trim();
+              if (!exTitle) {
+                errors.push(`Неделя ${weekIndex + 1}: тренировка ${workoutIndex + 1}, упражнение ${exerciseIndex + 1} — нет названия.`);
+              }
+              workout.exercises.push({
+                label: exLabel,
+                title: exTitle,
+                details: exDetails,
+                description: exDescription,
+                videoUrl: exVideo
+              });
+            });
+            week.workouts.push(workout);
+          });
+          program.weeks.push(week);
+        });
+
+        return { program, errors };
+      };
+
+      const clearForm = () => {
+        programTitle.value = "";
+        programSlug.value = "";
+        programSubtitle.value = "";
+        programSummary.value = "";
+        programDescription.value = "";
+        programLevel.value = "";
+        programGender.value = "";
+        programFrequency.value = "";
+        programCover.value = "";
+        programAuthorName.value = "Тестов Тест Тестович";
+        programAuthorRole.value = "Тренер Fit Dew";
+        programAuthorAvatar.value = "";
+        document.querySelector("input[name='programType'][value='gym']").checked = true;
+        weeksContainer.innerHTML = "";
+        addDefaultWeek();
+        setStatus("", null);
+      };
+
+      const renderProgramList = (programs) => {
+        programList.innerHTML = "";
+        if (!programs.length) {
+          programList.innerHTML = "<p class='muted'>Программ пока нет.</p>";
+          return;
+        }
+        programs.forEach((program) => {
+          const item = document.createElement("div");
+          item.className = "program-item";
+          item.innerHTML = `
+            <div class="program-meta">
+              <strong>${program.title || program.slug}</strong>
+              <div class="program-tags">
+                <span class="program-tag">${program.type === "crossfit" ? "Кроссфит" : "Зал"}</span>
+                <span class="program-tag">${program.weeksCount || "-"} недель</span>
+              </div>
+            </div>
+            <div class="section-actions">
+              <button class="btn-outline" type="button" data-load-slug="${program.slug}">Загрузить</button>
+            </div>
+          `;
+          programList.appendChild(item);
+        });
+      };
+
+      const loadPrograms = async () => {
+        if (!apiBase) return;
+        try {
+          const res = await fetch(`${apiBase}/api/programs`);
+          const json = await res.json().catch(() => ({}));
+          if (json?.ok && Array.isArray(json.programs)) {
+            renderProgramList(json.programs);
+          }
+        } catch (err) {
+          console.warn("programs load failed", err);
+        }
+      };
+
+      const loadProgramIntoForm = async (slug) => {
+        if (!slug || !apiBase) return;
+        try {
+          const res = await fetch(`${apiBase}/api/programs/${encodeURIComponent(slug)}`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok || !json.program) return;
+          const program = json.program;
+
+          programTitle.value = program.title || "";
+          programSlug.value = program.slug || "";
+          programSubtitle.value = program.subtitle || "";
+          programSummary.value = program.summary || "";
+          programDescription.value = program.description || "";
+          programLevel.value = program.level || "";
+          programGender.value = program.gender || "";
+          programFrequency.value = program.frequency || "";
+          programCover.value = program.coverImage || "";
+          programAuthorName.value = program.authorName || "Тестов Тест Тестович";
+          programAuthorRole.value = program.authorRole || "Тренер Fit Dew";
+          programAuthorAvatar.value = program.authorAvatar || "";
+          const typeInput = document.querySelector(`input[name='programType'][value='${program.type}']`);
+          if (typeInput) typeInput.checked = true;
+
+          weeksContainer.innerHTML = "";
+          (program.weeks || []).forEach((week) => {
+            const weekCard = createWeekCard();
+            weekCard.querySelector("[data-week-title]").value = week.title || "";
+            const workoutsContainer = weekCard.querySelector("[data-workouts]");
+            workoutsContainer.innerHTML = "";
+            (week.workouts || []).forEach((workout) => {
+              const workoutCard = createWorkoutCard();
+              workoutCard.querySelector("[data-workout-title]").value = workout.title || "";
+              workoutCard.querySelector("[data-workout-desc]").value = workout.description || "";
+              const exercisesContainer = workoutCard.querySelector("[data-exercises]");
+              exercisesContainer.innerHTML = "";
+              (workout.exercises || []).forEach((exercise) => {
+                const exerciseCard = createExerciseCard();
+                exerciseCard.querySelector("[data-ex-label]").value = exercise.label || "";
+                exerciseCard.querySelector("[data-ex-title]").value = exercise.title || "";
+                exerciseCard.querySelector("[data-ex-details]").value = exercise.details || "";
+                exerciseCard.querySelector("[data-ex-description]").value = exercise.description || "";
+                exerciseCard.querySelector("[data-ex-video]").value = exercise.videoUrl || "";
+                exercisesContainer.appendChild(exerciseCard);
+              });
+              workoutsContainer.appendChild(workoutCard);
+            });
+            weeksContainer.appendChild(weekCard);
+          });
+
+          if (!weeksContainer.querySelector("[data-week]")) {
+            addDefaultWeek();
+          } else {
+            renumber();
+          }
+          setStatus("Программа загружена в форму.", true);
+        } catch (err) {
+          console.warn("load program failed", err);
+        }
+      };
+
+      document.addEventListener("click", (event) => {
+        const actionBtn = event.target.closest("[data-action]");
+        if (actionBtn) {
+          const action = actionBtn.dataset.action;
+          if (action === "add-week") {
+            addDefaultWeek();
+            return;
+          }
+          if (action === "remove-week") {
+            actionBtn.closest("[data-week]")?.remove();
+            renumber();
+            return;
+          }
+          if (action === "add-workout") {
+            const weekCard = actionBtn.closest("[data-week]");
+            if (!weekCard) return;
+            const workoutsContainer = weekCard.querySelector("[data-workouts]");
+            const workoutCard = createWorkoutCard();
+            workoutsContainer.appendChild(workoutCard);
+            const exercisesContainer = workoutCard.querySelector("[data-exercises]");
+            exercisesContainer.appendChild(createExerciseCard());
+            renumber();
+            return;
+          }
+          if (action === "remove-workout") {
+            actionBtn.closest("[data-workout]")?.remove();
+            renumber();
+            return;
+          }
+          if (action === "add-exercise") {
+            const workoutCard = actionBtn.closest("[data-workout]");
+            if (!workoutCard) return;
+            const exercisesContainer = workoutCard.querySelector("[data-exercises]");
+            exercisesContainer.appendChild(createExerciseCard());
+            renumber();
+            return;
+          }
+          if (action === "remove-exercise") {
+            actionBtn.closest("[data-exercise]")?.remove();
+            renumber();
+          }
+        }
+
+        const loadBtn = event.target.closest("[data-load-slug]");
+        if (loadBtn) {
+          loadProgramIntoForm(loadBtn.dataset.loadSlug);
+        }
+      });
+
+      slugAuto?.addEventListener("click", () => {
+        programSlug.value = slugify(programTitle.value.trim());
+      });
+
+      resetForm?.addEventListener("click", () => clearForm());
+
+      saveProgram?.addEventListener("click", async () => {
+        if (!apiBase) {
+          setStatus("Не найден API_BASE. Проверь env.js.", false);
+          return;
+        }
+        if (!initData) {
+          setStatus("Нет initData. Открой админку внутри Telegram.", false);
+          return;
+        }
+        const { program, errors } = collectProgram();
+        if (errors.length) {
+          setStatus(errors[0], false);
+          return;
+        }
+
+        saveProgram.disabled = true;
+        setStatus("Сохраняем программу...", null);
+        try {
+          const res = await fetch(`${apiBase}/api/admin/programs`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, program })
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json?.ok) {
+            const details = Array.isArray(json?.details) ? json.details[0] : null;
+            setStatus(details || "Не удалось сохранить программу.", false);
+            saveProgram.disabled = false;
+            return;
+          }
+          programSlug.value = json.program?.slug || programSlug.value;
+          setStatus("Программа сохранена.", true);
+          await loadPrograms();
+        } catch (err) {
+          console.error(err);
+          setStatus("Ошибка сети при сохранении программы.", false);
+        } finally {
+          saveProgram.disabled = false;
+        }
+      });
+
+      reloadPrograms?.addEventListener("click", () => loadPrograms());
+
+      const checkAccess = async () => {
+        if (!apiBase) {
+          setAccess(false, "Нет API_BASE. Проверь env.js и конфиг.");
+          return;
+        }
+        if (!initData) {
+          setAccess(false, "Открой админку через Telegram, чтобы получить initData.");
+          return;
+        }
+        try {
+          const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) {
+            setAccess(false, "Не удалось подтвердить доступ.");
+            return;
+          }
+          const role = json?.profile?.role || "user";
+          if (role !== "admin") {
+            setAccess(false, "Доступ закрыт. Нужна роль admin.");
+            return;
+          }
+          setAccess(true, "Доступ подтвержден. Можно создавать программы.");
+          clearForm();
+          await loadPrograms();
+        } catch (err) {
+          console.error(err);
+          setAccess(false, "Ошибка сети при проверке доступа.");
+        }
+      };
+
+      checkAccess();
+
       try {
-        const tg = window.Telegram?.WebApp || null;
         tg?.ready?.();
         tg?.expand?.();
       } catch (_) {}
