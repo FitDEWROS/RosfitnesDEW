@@ -243,31 +243,39 @@
     if (!tiles) return;
 
     tiles.innerHTML = "";
-    const actions = ["Тренировки", "Программа"];
+    const actions = [
+      {
+        key: "workouts",
+        label: "??????????",
+        desc: "???????, ?????? ? ????????."
+      },
+      {
+        key: "programs",
+        label: "?????????",
+        desc: "??????? ????? ? ??????????."
+      }
+    ];
 
-    actions.forEach((label, idx) => {
+    actions.forEach((action, idx) => {
       const tile = document.createElement("button");
       tile.className = "action-card tile";
-      tile.dataset.action = label;
+      tile.dataset.action = action.key;
       tile.classList.add("tile--reveal");
       if (idx === 0) tile.classList.add("tile--accent");
       tile.style.animationDelay = `${idx * 80}ms`;
 
-      const desc = label === "Тренировки"
-        ? "Силовые, кардио и кроссфит"
-        : "Скоро будет доступно";
-
       tile.innerHTML = `
-        <div class="title">${label}</div>
-        <div class="desc">${desc}</div>
+        <div class="title">${action.label}</div>
+        <div class="desc">${action.desc}</div>
       `;
 
       tile.addEventListener("click", () => {
-        if (label === "Тренировки") {
+        if (action.key === "workouts") {
           const mode = localStorage.getItem("training_mode") || "gym";
           window.location.href = mode === "crossfit" ? "crossfit_exercises.html" : "exercises.html";
         } else {
-          showAlert(`<${label}> Скоро будет доступно`);
+          const mode = localStorage.getItem("training_mode") || "gym";
+          window.location.href = `programs.html?type=${encodeURIComponent(mode)}`;
         }
       });
 

@@ -59,3 +59,64 @@ model NutritionEntry {
 
   @@unique([userId, date])
 }
+
+enum TrainingProgramType {
+  gym
+  crossfit
+}
+
+model TrainingProgram {
+  id          Int                  @id @default(autoincrement())
+  slug        String               @unique
+  title       String
+  type        TrainingProgramType
+  subtitle    String?
+  summary     String?
+  description String?
+  level       String?
+  gender      String?
+  frequency   String?
+  weeksCount  Int?
+  coverImage  String?
+  authorName  String?
+  authorRole  String?
+  authorAvatar String?
+  weeks       ProgramWeek[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model ProgramWeek {
+  id        Int             @id @default(autoincrement())
+  program   TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  programId Int
+  index     Int
+  title     String?
+  workouts  ProgramWorkout[]
+
+  @@unique([programId, index])
+}
+
+model ProgramWorkout {
+  id        Int           @id @default(autoincrement())
+  week      ProgramWeek   @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  weekId    Int
+  index     Int
+  title     String
+  description String?
+  exercises ProgramExercise[]
+
+  @@unique([weekId, index])
+}
+
+model ProgramExercise {
+  id       Int           @id @default(autoincrement())
+  workout  ProgramWorkout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutId Int
+  order    Int
+  label    String?
+  title    String
+  details  String?
+
+  @@unique([workoutId, order])
+}

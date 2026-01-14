@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fit Dew — Тренировка</title>
+
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <script src="programs_data.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --bg-soft: #141417;
+      --text: #f4f1e8;
+      --muted: #c6c0b2;
+      --card: #1b1b1f;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f6e5a6;
+      --accent-strong: #f2d17c;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-lg: 28px;
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+      --transition: 0.3s ease;
+    }
+
+    html.light {
+      --bg: #f4f1e6;
+      --bg-soft: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8cc7a;
+      --accent-strong: #ddb965;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(520px 280px at 15% 8%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(440px 320px at 90% 20%, rgba(154, 215, 202, 0.12), transparent 65%),
+        radial-gradient(420px 300px at 40% 90%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
+    }
+
+    .workout-screen {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 22px 18px 140px;
+    }
+
+    .page-header {
+      display: grid;
+      gap: 10px;
+    }
+
+    .back-btn {
+      width: fit-content;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
+    }
+
+    .page-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .summary-card {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 8px;
+    }
+
+    .summary-tag {
+      width: fit-content;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    html.light .summary-tag {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .summary-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.3rem, 5vw, 1.8rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .summary-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .exercise-list {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .exercise-item {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      align-items: flex-start;
+      position: relative;
+    }
+
+    .exercise-marker {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      font-size: 0.8rem;
+      position: relative;
+    }
+
+    .exercise-line {
+      position: absolute;
+      left: 17px;
+      top: 38px;
+      width: 2px;
+      height: calc(100% + 10px);
+      background: rgba(243, 213, 139, 0.45);
+    }
+
+    .exercise-item:last-child .exercise-line {
+      display: none;
+    }
+
+    .exercise-card {
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.22);
+      box-shadow: var(--shadow);
+    }
+
+    html.light .exercise-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .exercise-title {
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .exercise-details {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .empty-state {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: var(--radius);
+      border: 1px dashed var(--card-border);
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .workout-screen { padding-left: 14px; padding-right: 14px; }
+      .exercise-item { grid-template-columns: 36px 1fr; }
+      .exercise-marker { width: 32px; height: 32px; font-size: 0.75rem; }
+      .exercise-line { left: 15px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="workout-screen">
+    <header class="page-header">
+      <button class="back-btn" id="backBtn" type="button">Назад</button>
+      <span class="page-eyebrow">Тренировка</span>
+      <h1 class="page-title" id="workoutTitle">Тренировка</h1>
+      <p class="page-subtitle" id="programTitle"></p>
+    </header>
+
+    <section class="summary-card">
+      <span class="summary-tag" id="programTag">КРОССФИТ</span>
+      <h2 class="summary-title" id="workoutHeading">Тренировка</h2>
+      <p class="summary-note" id="workoutDescription"></p>
+    </section>
+
+    <section class="exercise-list" id="exerciseList"></section>
+    <div class="empty-state" id="emptyState" style="display: none;">Упражнения скоро появятся.</div>
+  </div>
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const fallback = window.PROGRAMS_FALLBACK || [];
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("slug");
+      const workoutId = params.get("workout");
+
+      const byId = (id) => document.getElementById(id);
+      const backBtn = byId("backBtn");
+      const emptyState = byId("emptyState");
+      const list = byId("exerciseList");
+
+      if (backBtn) {
+        backBtn.addEventListener("click", () => {
+          if (slug) {
+            window.location.href = `program_detail.html?slug=${encodeURIComponent(slug)}`;
+          } else {
+            window.location.href = "programs.html";
+          }
+        });
+      }
+
+      const findWorkout = (program, target) => {
+        if (!program || !Array.isArray(program.weeks)) return null;
+        for (const week of program.weeks) {
+          const workouts = Array.isArray(week.workouts) ? week.workouts : [];
+          for (const workout of workouts) {
+            const id = workout.id ?? `${week.index}-${workout.index}`;
+            if (String(id) === String(target)) {
+              return workout;
+            }
+          }
+        }
+        return null;
+      };
+
+      const renderWorkout = (program, workout) => {
+        if (program) {
+          byId("programTitle").textContent = program.title || "";
+          byId("programTag").textContent = program.type === "gym" ? "ЗАЛ" : "КРОССФИТ";
+        }
+        if (workout) {
+          byId("workoutTitle").textContent = workout.title || "Тренировка";
+          byId("workoutHeading").textContent = workout.title || "Тренировка";
+          byId("workoutDescription").textContent = workout.description || "";
+        }
+
+        list.innerHTML = "";
+        const exercises = Array.isArray(workout?.exercises) ? workout.exercises : [];
+        if (!exercises.length) {
+          emptyState.style.display = "block";
+          return;
+        }
+        emptyState.style.display = "none";
+
+        exercises.forEach((exercise) => {
+          const item = document.createElement("div");
+          item.className = "exercise-item";
+          const label = exercise.label || String(exercise.order || "");
+          const details = exercise.details ? `<p class="exercise-details">${exercise.details}</p>` : "";
+          item.innerHTML = `
+            <div class="exercise-marker">
+              ${label}
+              <span class="exercise-line"></span>
+            </div>
+            <div class="exercise-card">
+              <p class="exercise-title">${exercise.title || "Упражнение"}</p>
+              ${details}
+            </div>
+          `;
+          list.appendChild(item);
+        });
+      };
+
+      const loadWorkout = async () => {
+        const fallbackProgram = fallback[0] || null;
+        const targetSlug = slug || fallbackProgram?.slug;
+
+        if (API_BASE && targetSlug) {
+          try {
+            const res = await fetch(`${API_BASE}/api/programs/${encodeURIComponent(targetSlug)}`);
+            const json = await res.json().catch(() => ({}));
+            if (json?.ok && json.program) {
+              const workout = findWorkout(json.program, workoutId);
+              return renderWorkout(json.program, workout || null);
+            }
+          } catch (err) {
+            console.warn("Workout fetch failed:", err);
+          }
+        }
+
+        const program = fallback.find((item) => item.slug === targetSlug) || fallbackProgram;
+        const workout = findWorkout(program, workoutId) || (program?.weeks?.[0]?.workouts?.[0] || null);
+        renderWorkout(program, workout);
+      };
+
+      loadWorkout();
+
+      try {
+        tg?.ready?.();
+        tg?.expand?.();
+      } catch (_) {}
+    })();
+  </script>
+</body>
+</html>
