@@ -69,6 +69,7 @@ enum TrainingProgramType {
 enum UserRole {
   user
   admin
+  trainer
 }
 
 model TrainingProgram {
@@ -84,12 +85,23 @@ model TrainingProgram {
   frequency   String?
   weeksCount  Int?
   coverImage  String?
+  authorUserId Int?
+  authorUser  User?                @relation(fields: [authorUserId], references: [id])
   authorName  String?
   authorRole  String?
   authorAvatar String?
   weeks       ProgramWeek[]
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
+}
+
+model Exercise {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  videoUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model ProgramWeek {

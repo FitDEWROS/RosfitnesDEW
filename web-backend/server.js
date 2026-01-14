@@ -821,6 +821,21 @@ app.post('/api/admin/programs', async (req, res) => {
     const payload = req.body?.program || {};
     const title = cleanString(payload.title);
     const type = cleanString(payload.type).toLowerCase();
+    const trainerId = payload.trainerId ? Number(payload.trainerId) : null;
+    let trainer = null;
+
+    if (trainerId) {
+      if (!Number.isInteger(trainerId)) {
+        return res.status(400).json({ ok: false, error: 'invalid_trainer_id' });
+      }
+      trainer = await prisma.user.findUnique({
+        where: { id: trainerId },
+        select: { first_name: true, last_name: true, username: true, role: true }
+      });
+      if (!trainer || trainer.role !== 'trainer') {
+        return res.status(400).json({ ok: false, error: 'trainer_not_found' });
+      }
+    }
 
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });
@@ -894,6 +909,11 @@ app.post('/api/admin/programs', async (req, res) => {
     }
 
     const weeksCount = weeks.length;
+    const trainerName = trainer
+      ? [trainer.first_name, trainer.last_name].filter(Boolean).join(' ') || trainer.username
+      : null;
+    const authorName = optionalString(payload.authorName) || trainerName || 'Тестов Тест Тестович';
+    const authorRole = optionalString(payload.authorRole) || 'Тренер Fit Dew';
     const created = await prisma.trainingProgram.create({
       data: {
         slug,
@@ -907,8 +927,9 @@ app.post('/api/admin/programs', async (req, res) => {
         frequency: optionalString(payload.frequency),
         weeksCount,
         coverImage: optionalString(payload.coverImage),
-        authorName: optionalString(payload.authorName) || 'Тестов Тест Тестович',
-        authorRole: optionalString(payload.authorRole) || 'Тренер Fit Dew',
+        authorUserId: trainer?.id || null,
+        authorName,
+        authorRole,
         authorAvatar: optionalString(payload.authorAvatar),
         weeks: { create: weeksData }
       }
@@ -917,6 +938,105 @@ app.post('/api/admin/programs', async (req, res) => {
     res.json({ ok: true, program: { id: created.id, slug: created.slug } });
   } catch (e) {
     console.error('[api/admin/programs] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: trainers list ===
+app.get('/api/admin/trainers', async (req, res) => {
+  try {
+    const auth = await requireAdmin(req.query?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const trainers = await prisma.user.findMany({
+      where: { role: 'trainer' },
+      orderBy: { id: 'asc' },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        username: true
+      }
+    });
+
+    res.json({ ok: true, trainers });
+  } catch (e) {
+    console.error('[api/admin/trainers] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: exercise library ===
+app.get('/api/admin/exercises', async (req, res) => {
+  try {
+    const auth = await requireAdmin(req.query?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const exercises = await prisma.exercise.findMany({
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    res.json({ ok: true, exercises });
+  } catch (e) {
+    console.error('[api/admin/exercises:get] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/admin/exercises', async (req, res) => {
+  try {
+    const auth = await requireAdmin(req.body?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const payload = req.body?.exercise || {};
+    const title = cleanString(payload.title);
+    if (!title) {
+      return res.status(400).json({ ok: false, error: 'missing_title' });
+    }
+
+    const created = await prisma.exercise.create({
+      data: {
+        title,
+        description: optionalString(payload.description),
+        videoUrl: optionalString(payload.videoUrl)
+      }
+    });
+
+    res.json({ ok: true, exercise: created });
+  } catch (e) {
+    console.error('[api/admin/exercises:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.put('/api/admin/exercises/:id', async (req, res) => {
+  try {
+    const auth = await requireAdmin(req.body?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ ok: false, error: 'invalid_id' });
+    }
+
+    const payload = req.body?.exercise || {};
+    const title = cleanString(payload.title);
+    if (!title) {
+      return res.status(400).json({ ok: false, error: 'missing_title' });
+    }
+
+    const updated = await prisma.exercise.update({
+      where: { id },
+      data: {
+        title,
+        description: optionalString(payload.description),
+        videoUrl: optionalString(payload.videoUrl)
+      }
+    });
+
+    res.json({ ok: true, exercise: updated });
+  } catch (e) {
+    console.error('[api/admin/exercises:put] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
@@ -942,6 +1062,7 @@ app.get('/api/programs', async (req, res) => {
         frequency: true,
         weeksCount: true,
         coverImage: true,
+        authorUserId: true,
         authorName: true,
         authorRole: true,
         authorAvatar: true
