@@ -126,8 +126,8 @@ async def tariff_to_home(message: Message, state: FSMContext):
     await state.clear()
     u = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     has_app = bool(u and u.tariffName)
-        is_admin = bool(u and getattr(u, 'role', None) == 'admin')
-        await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app, is_admin))
+    is_admin = bool(u and getattr(u, 'role', None) == 'admin')
+    await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app, is_admin))
 
 
 # ---------- Базовый ----------
@@ -190,8 +190,8 @@ async def handle_tariff_purchase(message: Message, state: FSMContext):
 
     u = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     has_app = bool(u and u.tariffName)
-        is_admin = bool(u and getattr(u, 'role', None) == 'admin')
-        await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app, is_admin))
+    is_admin = bool(u and getattr(u, 'role', None) == 'admin')
+    await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app, is_admin))
     await state.clear()
 
 
@@ -201,5 +201,5 @@ async def back_to_main_menu(message: Message, state: FSMContext):
     await state.clear()
     u = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     has_app = bool(u and u.tariffName)
-        is_admin = bool(u and getattr(u, 'role', None) == 'admin')
-        await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app, is_admin))
+    is_admin = bool(u and getattr(u, 'role', None) == 'admin')
+    await send_temp(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_app, is_admin))
