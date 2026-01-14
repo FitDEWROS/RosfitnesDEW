@@ -30,6 +30,7 @@ model User {
   role            UserRole  @default(user)
   fatsecret_token FatSecretToken?
   nutritionEntries NutritionEntry[]
+  authoredPrograms TrainingProgram[] @relation("TrainingProgramAuthor")
 }
 
 model FatSecretToken {
@@ -86,7 +87,7 @@ model TrainingProgram {
   weeksCount  Int?
   coverImage  String?
   authorUserId Int?
-  authorUser  User?                @relation(fields: [authorUserId], references: [id])
+  authorUser  User?                @relation("TrainingProgramAuthor", fields: [authorUserId], references: [id])
   authorName  String?
   authorRole  String?
   authorAvatar String?
