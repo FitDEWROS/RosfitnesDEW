@@ -214,7 +214,8 @@ app.get('/api/user', async (req, res) => {
           trainingMode: true,
           heightCm: true,
           weightKg: true,
-          age: true
+          age: true,
+          role: true
         }
       });
       console.log('[api/user] dbUser:', dbUser);
@@ -228,7 +229,8 @@ app.get('/api/user', async (req, res) => {
       trainingMode: dbUser?.trainingMode || 'gym',
       heightCm: dbUser?.heightCm ?? null,
       weightKg: dbUser?.weightKg ?? null,
-      age: dbUser?.age ?? null
+      age: dbUser?.age ?? null,
+      role: dbUser?.role || 'user'
     };
 
     console.log(`[api/user] profile for ${tg_id}:`, profile);
@@ -459,6 +461,11 @@ const PROGRAM_SEED = [
 ];
 
 async function ensureProgramSeed() {
+  await prisma.trainingProgram.updateMany({
+    where: { authorName: 'Виктор Ярославский' },
+    data: { authorName: 'Тестов Тест Тестович' }
+  });
+
   const existing = await prisma.trainingProgram.findFirst();
   if (existing) return;
 

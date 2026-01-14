@@ -8,8 +8,16 @@ APP_URL = os.getenv("APP_URL")
 if not APP_URL:
     raise RuntimeError("Не задан APP_URL в .env")
 
+def _build_admin_url(app_url: str) -> str:
+    if app_url.endswith(".html"):
+        return f"{app_url.rsplit('/', 1)[0]}/admin_programs.html"
+    return f"{app_url.rstrip('/')}/admin_programs.html"
 
-def client_kb(has_tariff: bool = False) -> ReplyKeyboardMarkup:
+ADMIN_URL = os.getenv("ADMIN_URL") or _build_admin_url(APP_URL)
+
+
+
+def client_kb(has_tariff: bool = False, is_admin: bool = False) -> ReplyKeyboardMarkup:
     if not has_tariff:
         # Меню до покупки (Reply-клавиатура)
         rows = [
@@ -23,6 +31,14 @@ def client_kb(has_tariff: bool = False) -> ReplyKeyboardMarkup:
             [KeyboardButton(text="Тариф"), KeyboardButton(text="Профиль")],
             [KeyboardButton(text="Приложение")],  # просто текст, обрабатываем в хендлере
         ]
+    if is_admin:
+        rows.append([
+            KeyboardButton(
+                text="Управление программами",
+                web_app=WebAppInfo(url=ADMIN_URL)
+            )
+        ])
+
     return ReplyKeyboardMarkup(
         keyboard=rows,
         resize_keyboard=True,

@@ -321,14 +321,16 @@ async def client_back(message: Message, state: FSMContext):
     await state.clear()
     u = await db.user.find_unique(where={"tg_id": message.from_user.id})
     has_tariff = bool(u and u.tariffName)
-    await send_keep(message, "🏠 Меню клиента", reply_markup=client_kb(has_tariff))
+    is_admin = bool(u and getattr(u, 'role', None) == 'admin')
+    await send_keep(message, "🏠 Меню клиента", reply_markup=client_kb(has_tariff, is_admin))
 
 @router.message(StateFilter(EditClientFSM), F.text == "⬅️ Назад")
 async def edit_client_back(message: Message, state: FSMContext):
     await state.clear()
     u = await db.user.find_unique(where={"tg_id": message.from_user.id})
     has_tariff = bool(u and u.tariffName)
-    await send_temp(message, "🏠 Меню клиента", reply_markup=client_kb(has_tariff))
+    is_admin = bool(u and getattr(u, 'role', None) == 'admin')
+    await send_temp(message, "🏠 Меню клиента", reply_markup=client_kb(has_tariff, is_admin))
 
     
 
@@ -337,7 +339,8 @@ async def back_to_main_menu(message: Message, state: FSMContext):
     await state.clear()
     u = await db.user.find_unique(where={"tg_id": message.from_user.id})
     has_tariff = bool(u and u.tariffName)
-    await send_keep(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_tariff))
+    is_admin = bool(u and getattr(u, 'role', None) == 'admin')
+    await send_keep(message, "🏠 Главное меню клиента", reply_markup=client_kb(has_tariff, is_admin))
 
 
 

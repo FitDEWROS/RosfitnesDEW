@@ -387,8 +387,8 @@
       <div class="hero-footer">
         <div class="coach-avatar" id="coachAvatar">FD</div>
         <div>
-          <div class="coach-name" id="coachName">Команда Fit Dew</div>
-          <div class="coach-role" id="coachRole">Тренер</div>
+          <div class="coach-name" id="coachName">Тестов Тест Тестович</div>
+          <div class="coach-role" id="coachRole">Тренер Fit Dew</div>
         </div>
       </div>
     </section>
@@ -460,9 +460,9 @@
         ];
         byId("heroStats").innerHTML = stats.map((stat) => `<span class="stat-chip">${stat}</span>`).join("");
 
-        const coachName = program.authorName || "Команда Fit Dew";
+        const coachName = program.authorName || "Тестов Тест Тестович";
         byId("coachName").textContent = coachName;
-        byId("coachRole").textContent = program.authorRole || "Тренер";
+        byId("coachRole").textContent = program.authorRole || "Тренер Fit Dew";
         byId("coachAvatar").textContent = getInitials(coachName);
 
         const weeksList = byId("weeksList");

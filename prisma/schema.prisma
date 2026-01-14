@@ -27,6 +27,7 @@ model User {
   agreed_offer    Boolean   @default(false)
   tariffName      String?
   trainingMode    String    @default("gym")
+  role            UserRole  @default(user)
   fatsecret_token FatSecretToken?
   nutritionEntries NutritionEntry[]
 }
@@ -63,6 +64,11 @@ model NutritionEntry {
 enum TrainingProgramType {
   gym
   crossfit
+}
+
+enum UserRole {
+  user
+  admin
 }
 
 model TrainingProgram {

@@ -159,48 +159,6 @@
       font-size: 0.95rem;
     }
 
-    .filter-card {
-      margin-top: 18px;
-      padding: 16px;
-      border-radius: var(--radius);
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      box-shadow: var(--shadow);
-      display: grid;
-      gap: 12px;
-    }
-
-    .filter-title {
-      font-size: 0.75rem;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .mode-row {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .mode-pill {
-      border-radius: 999px;
-      padding: 6px 14px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-      color: #1b1b1b;
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      font-weight: 700;
-      box-shadow: 0 10px 18px rgba(243, 213, 139, 0.3);
-    }
-
-    .mode-note {
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-
     .program-list {
       margin-top: 20px;
       display: grid;
@@ -373,14 +331,6 @@
       <p class="page-subtitle">Выбери формат и стартуй сегодня.</p>
     </header>
 
-    <section class="filter-card">
-      <div class="filter-title">Тип программы</div>
-      <div class="mode-row">
-        <span class="mode-pill" id="modeLabel">КРОССФИТ</span>
-        <span class="mode-note">Сменить можно на главной.</span>
-      </div>
-    </section>
-
     <section class="program-list" id="programList"></section>
     <div class="empty-state" id="emptyState">Пока нет программ для этого типа.</div>
   </div>
@@ -392,7 +342,6 @@
       const fallback = window.PROGRAMS_FALLBACK || [];
 
       const params = new URLSearchParams(window.location.search);
-      const modeLabel = document.getElementById("modeLabel");
       const programList = document.getElementById("programList");
       const emptyState = document.getElementById("emptyState");
       const backBtn = document.getElementById("backBtn");
@@ -406,11 +355,6 @@
           window.location.href = "index.html";
         });
       }
-
-      const setActiveType = (type) => {
-        localStorage.setItem("training_mode", type);
-        if (modeLabel) modeLabel.textContent = type === "gym" ? "ЗАЛ" : "КРОССФИТ";
-      };
 
       const getCoachInitials = (name) => {
         if (!name) return "FD";
@@ -434,6 +378,9 @@
           const gender = program.gender || "Универсальная";
 
           card.className = "program-card";
+          const coachName = program.authorName || "Тестов Тест Тестович";
+          const coachRole = program.authorRole || "Тренер Fit Dew";
+
           card.innerHTML = `
             <div class="program-hero ${typeClass}">
               <span class="program-badge">${program.type === "gym" ? "ЗАЛ" : "КРОССФИТ"}</span>
@@ -449,10 +396,10 @@
             <p class="program-summary">${program.summary || ""}</p>
             <div class="program-footer">
               <div class="coach">
-                <div class="coach-avatar">${getCoachInitials(program.authorName)}</div>
+                <div class="coach-avatar">${getCoachInitials(coachName)}</div>
                 <div>
-                  <div class="coach-name">${program.authorName || "Команда Fit Dew"}</div>
-                  <div class="coach-role">${program.authorRole || "Тренер"}</div>
+                  <div class="coach-name">${coachName}</div>
+                  <div class="coach-role">${coachRole}</div>
                 </div>
               </div>
               <button class="open-btn" type="button">Открыть</button>
@@ -485,7 +432,7 @@
       };
 
       const applyType = async (type) => {
-        setActiveType(type);
+        localStorage.setItem("training_mode", type);
         const programs = await loadPrograms(type);
         renderPrograms(programs);
       };

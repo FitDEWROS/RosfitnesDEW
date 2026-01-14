@@ -28,7 +28,8 @@ async def on_start(message: Message):
     user = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     if user:
         has_tariff = bool(user.tariffName)
-        await send_keep(message, "👋 С возвращением! Главное меню клиента.", reply_markup=client_kb(has_tariff))
+        is_admin = getattr(user, "role", None) == "admin"
+        await send_keep(message, "👋 С возвращением! Главное меню клиента.", reply_markup=client_kb(has_tariff, is_admin))
         return
     await send_keep(message, "👋 Добро пожаловать!\nТут будет в будущем крутой текст 🚀\n\n", reply_markup=main_kb())
 
@@ -36,7 +37,8 @@ async def on_client(message: Message, state: FSMContext):
     user = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     if user:
         has_tariff = bool(user.tariffName)
-        await send_keep(message, "Открываю меню клиента.", reply_markup=client_kb(has_tariff))
+        is_admin = getattr(user, "role", None) == "admin"
+        await send_keep(message, "Открываю меню клиента.", reply_markup=client_kb(has_tariff, is_admin))
         return
     await show_client_reg(message, state)
 
