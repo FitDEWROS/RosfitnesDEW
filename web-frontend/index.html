@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>RosApp — фитнес помощник</title>
 
   <script>
@@ -16,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="env.js"></script>
+  <script src="env.js?v=20260115"></script>
 
   <style>
     :root {
@@ -413,6 +416,7 @@
       overflow-x: auto;
       padding-bottom: 6px;
       scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
 
     .action-strip::-webkit-scrollbar {
@@ -429,6 +433,8 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       text-align: left;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
       transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
 
@@ -496,6 +502,12 @@
       padding: 12px 16px calc(20px + env(safe-area-inset-bottom));
       background: linear-gradient(180deg, rgba(15, 15, 16, 0) 0%, rgba(15, 15, 16, 0.92) 45%, rgba(15, 15, 16, 1) 100%);
       z-index: 100;
+      pointer-events: none;
+    }
+
+    .bottom-shell .mode-toggle,
+    .bottom-shell .bottom-nav {
+      pointer-events: auto;
     }
 
     .mode-toggle {
@@ -873,7 +885,7 @@
       .mode-toggle { height: 36px; }
     }
   </style>
-  <script defer src="app.js"></script>
+  <script defer src="app.js?v=20260115"></script>
 </head>
 
 <body>
