@@ -315,6 +315,16 @@
       font-size: 0.85rem;
     }
 
+    .video-link {
+      color: var(--accent-strong);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .video-link:hover {
+      text-decoration: underline;
+    }
+
     .modal-close {
       position: absolute;
       top: 10px;
@@ -373,6 +383,7 @@
     (function() {
       const tg = window.Telegram?.WebApp || null;
       const API_BASE = window.ENV?.API_BASE || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
       const fallback = window.PROGRAMS_FALLBACK || [];
       const params = new URLSearchParams(window.location.search);
       const slug = params.get("slug");
@@ -388,6 +399,47 @@
       const videoDesc = byId("videoDesc");
       const videoNote = byId("videoNote");
       const closeVideo = byId("closeVideo");
+      let currentVideoRequest = 0;
+
+      const isYandexPublicLink = (url) => {
+        try {
+          const host = new URL(url).hostname;
+          return host === "disk.yandex.ru" || host === "yadi.sk" || host.endsWith(".yandex.ru");
+        } catch (_) {
+          return false;
+        }
+      };
+
+      const resolveVideoUrl = async (url) => {
+        if (!url) return null;
+        if (!isYandexPublicLink(url)) return url;
+        try {
+          const res = await fetch(`${apiBase}/api/yadisk/resolve?publicUrl=${encodeURIComponent(url)}`);
+          const json = await res.json().catch(() => ({}));
+          if (json?.ok && json.href) return json.href;
+        } catch (err) {
+          console.warn("Yandex resolve failed:", err);
+        }
+        return null;
+      };
+
+      const showVideoLink = (href, message) => {
+        if (!videoNote) return;
+        videoNote.innerHTML = "";
+        if (message) {
+          const text = document.createElement("span");
+          text.textContent = message;
+          videoNote.appendChild(text);
+          videoNote.appendChild(document.createElement("br"));
+        }
+        const link = document.createElement("a");
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.className = "video-link";
+        link.textContent = "Открыть видео";
+        videoNote.appendChild(link);
+      };
 
       if (backBtn) {
         backBtn.addEventListener("click", () => {
@@ -399,32 +451,48 @@
         });
       }
 
-      const openVideo = (exercise) => {
+      const openVideo = async (exercise) => {
         if (!videoModal) return;
+        currentVideoRequest += 1;
+        const requestId = currentVideoRequest;
         const title = exercise?.title || "Упражнение";
         const description = exercise?.description || exercise?.details || "Описание появится позже.";
         videoTitle.textContent = title;
         videoDesc.textContent = description;
 
-        if (exercise?.videoUrl) {
-          videoEl.src = exercise.videoUrl;
-          videoEl.style.display = "block";
-          videoNote.style.display = "none";
-        } else {
-          if (videoEl) {
-            videoEl.pause();
-            videoEl.removeAttribute("src");
-            videoEl.style.display = "none";
-          }
+        if (videoEl) {
+          videoEl.pause();
+          videoEl.removeAttribute("src");
+          videoEl.style.display = "none";
+        }
+        if (videoNote) {
           videoNote.style.display = "block";
+          videoNote.textContent = "???????? ?????...";
         }
 
         videoModal.classList.add("show");
         videoModal.setAttribute("aria-hidden", "false");
+
+        if (!exercise?.videoUrl) {
+          if (videoNote) videoNote.textContent = "????? ???? ?? ?????????.";
+          return;
+        }
+
+        const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
+        if (requestId != currentVideoRequest) return;
+
+        if (resolvedUrl) {
+          videoEl.src = resolvedUrl;
+          videoEl.style.display = "block";
+          if (videoNote) videoNote.style.display = "none";
+        } else {
+          showVideoLink(exercise.videoUrl, "?? ??????? ????????? ?????.");
+        }
       };
 
       const closeVideoModal = () => {
         if (!videoModal) return;
+        currentVideoRequest += 1;
         videoModal.classList.remove("show");
         videoModal.setAttribute("aria-hidden", "true");
         if (videoEl) {

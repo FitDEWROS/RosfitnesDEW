@@ -95,6 +95,26 @@ function run(cmd, args, opts = {}) {
   });
 }
 
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, res => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
+          return reject(new Error(`HTTP ${res.statusCode || 0}`));
+        }
+        try {
+          resolve(JSON.parse(data));
+        } catch (err) {
+          reject(err);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
 async function ensurePip() {
   const ok = await run(PY, ['-m', 'pip', '--version'], { cwd: ROOT });
   if (ok) return;
@@ -241,6 +261,28 @@ app.get('/api/user', async (req, res) => {
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
+
+// === Yandex Disk public link resolve ===
+app.get('/api/yadisk/resolve', async (req, res) => {
+  try {
+    const publicUrl = req.query.publicUrl;
+    if (!publicUrl || typeof publicUrl !== 'string') {
+      return res.status(400).json({ ok: false, error: 'missing_public_url' });
+    }
+
+    const apiUrl = `https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=${encodeURIComponent(publicUrl)}`;
+    const data = await fetchJson(apiUrl);
+    if (!data?.href) {
+      return res.status(502).json({ ok: false, error: 'no_href' });
+    }
+
+    return res.json({ ok: true, href: data.href, method: data.method || 'GET' });
+  } catch (e) {
+    console.error('[api/yadisk:resolve] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
 // helpers for nutrition
 const toFloat = (value) => {
   if (value === null || value === undefined || value === '') return null;
