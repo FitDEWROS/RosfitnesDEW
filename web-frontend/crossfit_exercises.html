@@ -255,6 +255,31 @@
       color: var(--text);
     }
 
+    .video-note {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      text-align: center;
+      margin: 6px 0 0;
+    }
+
+    .video-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .thumb-letter {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      font-size: 2.2rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+      color: #f6f2e7;
+      background: linear-gradient(135deg, rgba(243, 213, 139, 0.55), rgba(143, 208, 197, 0.4));
+    }
+
     /* ❌ Кнопка закрытия */
     .close {
       position: absolute;
@@ -406,6 +431,20 @@
       color: var(--muted);
     }
 
+    .empty-state {
+      width: 100%;
+      text-align: center;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px dashed var(--card-border);
+      color: var(--muted);
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    html.light .empty-state {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
     .thumb {
       background: #0c0c0d;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -438,6 +477,7 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <script src="env.js?v=20260115"></script>
 </head>
 
 <body class="page-crossfit">
@@ -460,6 +500,7 @@
       <video id="exerciseVideo" controls playsinline></video>
       <h3 id="videoTitle"></h3>
       <p id="videoDesc"></p>
+      <p id="videoNote" class="video-note"></p>
     </div>
   </div>
 
@@ -469,47 +510,131 @@
       document.documentElement.classList.toggle("light", theme === "light");
     })();
 
-    const exercises = [
-      { name: "Бёрпи", desc: "Полное упражнение на всё тело: прыжок, планка, отжимание.", thumb: "thumbs/burpee.jpg", video: "videos/burpee.mp4" },
-      { name: "Трастеры", desc: "Комбинация приседания и жима штанги вверх.", thumb: "thumbs/thruster.jpg", video: "videos/thruster.mp4" },
-      { name: "Гребля", desc: "Кардио-нагрузка на всё тело с акцентом на ноги и спину.", thumb: "thumbs/row.jpg", video: "videos/row.mp4" },
-      { name: "Прыжки на тумбу", desc: "Развивают силу ног и взрывную мощь.", thumb: "thumbs/boxjump.jpg", video: "videos/boxjump.mp4" },
-      { name: "Подтягивания", desc: "Классическое упражнение для спины и рук.", thumb: "thumbs/pullup.jpg", video: "videos/pullup.mp4" },
-      { name: "Отжимания в стойке на руках", desc: "Развитие плечевого пояса и равновесия.", thumb: "thumbs/hspu.jpg", video: "videos/hspu.mp4" },
-      { name: "Становая тяга", desc: "Базовое упражнение для спины, ног и хвата.", thumb: "thumbs/deadlift.jpg", video: "videos/deadlift.mp4" },
-      { name: "Спринт", desc: "Высокоинтенсивное упражнение на выносливость.", thumb: "thumbs/sprint.jpg", video: "videos/sprint.mp4" },
-      { name: "Русские скручивания", desc: "Развитие мышц кора и косых мышц живота.", thumb: "thumbs/russian_twist.jpg", video: "videos/russian_twist.mp4" }
-    ];
-
+    const API_BASE = window.ENV?.API_BASE || "";
+    const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
     const list = document.getElementById("exerciseList");
-    exercises.forEach((ex, i) => {
+    const videoModal = document.getElementById("videoModal");
+    const videoEl = document.getElementById("exerciseVideo");
+    const videoTitle = document.getElementById("videoTitle");
+    const videoDesc = document.getElementById("videoDesc");
+    const videoNote = document.getElementById("videoNote");
+    let currentVideoRequest = 0;
+
+    const isYandexPublicLink = (url) => {
+      try {
+        const host = new URL(url).hostname;
+        return host === "disk.yandex.ru" || host === "yadi.sk" || host.endsWith(".yandex.ru");
+      } catch (_) {
+        return false;
+      }
+    };
+
+    const resolveVideoUrl = async (url) => {
+      if (!url) return null;
+      if (!isYandexPublicLink(url)) return url;
+      try {
+        const res = await fetch(`${apiBase}/api/yadisk/resolve?publicUrl=${encodeURIComponent(url)}`);
+        const json = await res.json().catch(() => ({}));
+        if (json?.ok && json.href) return json.href;
+      } catch (err) {
+        console.warn("Yandex resolve failed:", err);
+      }
+      return null;
+    };
+
+    const showVideoLink = (href, message) => {
+      if (!videoNote) return;
+      videoNote.innerHTML = "";
+      if (message) {
+        const text = document.createElement("span");
+        text.textContent = message;
+        videoNote.appendChild(text);
+        videoNote.appendChild(document.createElement("br"));
+      }
+      const link = document.createElement("a");
+      link.href = href;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.className = "video-link";
+      link.textContent = "Открыть видео";
+      videoNote.appendChild(link);
+    };
+
+    const renderExercises = (items) => {
+      if (!list) return;
+      list.innerHTML = "";
+      if (!items.length) {
+        list.innerHTML = "<div class='empty-state'>Пока нет упражнений.</div>";
+        return;
+      }
+      items.forEach((exercise, i) => {
       const card = document.createElement("div");
       card.className = "exercise-card";
+      const letter = (exercise.title || "У").slice(0, 1);
       card.innerHTML = `
         <div class="thumb">
-          <img src="${ex.thumb}" alt="${ex.name}">
+          <div class="thumb-letter">${letter}</div>
           <div class="overlay">▶</div>
         </div>
-        <h3>${ex.name}</h3>
-        <p>${ex.desc}</p>
+        <h3>${exercise.title || "Упражнение"}</h3>
+        <p>${exercise.description || "Описание появится позже."}</p>
       `;
-      card.addEventListener("click", () => openVideoModal(ex));
+      card.addEventListener("click", () => openVideoModal(exercise));
       list.appendChild(card);
       setTimeout(() => { card.style.opacity = 1; card.style.transform = "translateY(0)"; }, 100 * i);
     });
+    };
+
+    const loadExercises = async () => {
+      if (!apiBase) return;
+      try {
+        const res = await fetch(`${apiBase}/api/exercises`);
+        const json = await res.json().catch(() => ({}));
+        if (json?.ok && Array.isArray(json.exercises)) {
+          renderExercises(json.exercises);
+        }
+      } catch (err) {
+        console.warn("exercises load failed", err);
+      }
+    };
 
     document.getElementById("backBtn").addEventListener("click", () => {
       window.location.href = "index.html";
     });
 
-    function openVideoModal(ex) {
-      const modal = document.getElementById("videoModal");
-      const video = document.getElementById("exerciseVideo");
-      document.getElementById("videoTitle").textContent = ex.name;
-      document.getElementById("videoDesc").textContent = ex.desc;
-      video.src = ex.video;
-      modal.classList.add("show");
-    }
+    const openVideoModal = async (exercise) => {
+      if (!videoModal) return;
+      currentVideoRequest += 1;
+      const requestId = currentVideoRequest;
+      if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
+      if (videoDesc) videoDesc.textContent = exercise?.description || "";
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.removeAttribute("src");
+        videoEl.style.display = "none";
+      }
+      if (videoNote) {
+        videoNote.style.display = "block";
+        videoNote.textContent = "Загружаем видео...";
+      }
+      videoModal.classList.add("show");
+
+      if (!exercise?.videoUrl) {
+        if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
+        return;
+      }
+
+      const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
+      if (requestId !== currentVideoRequest) return;
+
+      if (resolvedUrl) {
+        videoEl.src = resolvedUrl;
+        videoEl.style.display = "block";
+        if (videoNote) videoNote.style.display = "none";
+      } else {
+        showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
+      }
+    };
 
     document.getElementById("closeVideo").addEventListener("click", closeModal);
     window.addEventListener("click", (e) => {
@@ -518,12 +643,19 @@
     });
 
     function closeModal() {
-      const modal = document.getElementById("videoModal");
-      const video = document.getElementById("exerciseVideo");
-      modal.classList.remove("show");
-      video.pause();
-      video.src = "";
+      if (videoModal) {
+        videoModal.classList.remove("show");
+      }
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.removeAttribute("src");
+      }
+      if (videoNote) {
+        videoNote.textContent = "";
+      }
     }
+
+    loadExercises();
   </script>
 </body>
 </html>

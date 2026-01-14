@@ -246,8 +246,8 @@
     const actions = [
       {
         key: "workouts",
-        label: "Тренировки",
-        desc: "Силовые, кардио и кроссфит."
+        label: "Упражнения",
+        desc: "База упражнений: зал и кроссфит."
       },
       {
         key: "programs",

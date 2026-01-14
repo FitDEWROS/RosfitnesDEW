@@ -942,6 +942,175 @@ app.post('/api/admin/programs', async (req, res) => {
   }
 });
 
+// === Admin: update training program ===
+app.put('/api/admin/programs/:slug', async (req, res) => {
+  try {
+    const auth = await requireAdmin(req.body?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const currentSlug = req.params.slug;
+    if (!currentSlug) return res.status(400).json({ ok: false, error: 'missing_slug' });
+
+    const existingProgram = await prisma.trainingProgram.findUnique({
+      where: { slug: currentSlug },
+      select: { id: true, slug: true }
+    });
+    if (!existingProgram) {
+      return res.status(404).json({ ok: false, error: 'not_found' });
+    }
+
+    const payload = req.body?.program || {};
+    const title = cleanString(payload.title);
+    const type = cleanString(payload.type).toLowerCase();
+    const trainerId = payload.trainerId ? Number(payload.trainerId) : null;
+    let trainer = null;
+
+    if (trainerId) {
+      if (!Number.isInteger(trainerId)) {
+        return res.status(400).json({ ok: false, error: 'invalid_trainer_id' });
+      }
+      trainer = await prisma.user.findUnique({
+        where: { id: trainerId },
+        select: { first_name: true, last_name: true, username: true, role: true }
+      });
+      if (!trainer || trainer.role !== 'trainer') {
+        return res.status(400).json({ ok: false, error: 'trainer_not_found' });
+      }
+    }
+
+    if (!title) {
+      return res.status(400).json({ ok: false, error: 'missing_title' });
+    }
+    if (!['gym', 'crossfit'].includes(type)) {
+      return res.status(400).json({ ok: false, error: 'invalid_type' });
+    }
+
+    const slugSource = cleanString(payload.slug) || title;
+    const nextSlug = slugify(slugSource);
+    if (nextSlug !== currentSlug) {
+      const duplicate = await prisma.trainingProgram.findUnique({ where: { slug: nextSlug } });
+      if (duplicate) {
+        return res.status(409).json({ ok: false, error: 'slug_exists', slug: nextSlug });
+      }
+    }
+
+    const weeks = Array.isArray(payload.weeks) ? payload.weeks : [];
+    if (!weeks.length) {
+      return res.status(400).json({ ok: false, error: 'no_weeks' });
+    }
+
+    const errors = [];
+    const weeksData = weeks.map((week, weekIndex) => {
+      const weekTitle = optionalString(week?.title) || `Неделя ${weekIndex + 1}`;
+      const workouts = Array.isArray(week?.workouts) ? week.workouts : [];
+      if (!workouts.length) {
+        errors.push(`Неделя ${weekIndex + 1}: добавьте хотя бы одну тренировку.`);
+      }
+
+      const workoutsData = workouts.map((workout, workoutIndex) => {
+        const workoutTitle = cleanString(workout?.title);
+        if (!workoutTitle) {
+          errors.push(`Неделя ${weekIndex + 1}: заполните название тренировки ${workoutIndex + 1}.`);
+        }
+        const exercises = Array.isArray(workout?.exercises) ? workout.exercises : [];
+        if (!exercises.length) {
+          errors.push(`Неделя ${weekIndex + 1}: тренировка ${workoutIndex + 1} должна содержать упражнения.`);
+        }
+
+        const exercisesData = exercises.map((exercise, exerciseIndex) => {
+          const exerciseTitle = cleanString(exercise?.title);
+          if (!exerciseTitle) {
+            errors.push(`Неделя ${weekIndex + 1}: тренировка ${workoutIndex + 1}, упражнение ${exerciseIndex + 1} - нет названия.`);
+          }
+          return {
+            order: exerciseIndex + 1,
+            label: optionalString(exercise?.label),
+            title: exerciseTitle || `Упражнение ${exerciseIndex + 1}`,
+            details: optionalString(exercise?.details),
+            description: optionalString(exercise?.description),
+            videoUrl: optionalString(exercise?.videoUrl)
+          };
+        });
+
+        return {
+          index: workoutIndex + 1,
+          title: workoutTitle || `Тренировка ${workoutIndex + 1}`,
+          description: optionalString(workout?.description),
+          exercises: { create: exercisesData }
+        };
+      });
+
+      return {
+        index: weekIndex + 1,
+        title: weekTitle,
+        workouts: { create: workoutsData }
+      };
+    });
+
+    if (errors.length) {
+      return res.status(400).json({ ok: false, error: 'validation_failed', details: errors });
+    }
+
+    const weeksCount = weeks.length;
+    const trainerName = trainer
+      ? [trainer.first_name, trainer.last_name].filter(Boolean).join(' ') || trainer.username
+      : null;
+    const authorName = optionalString(payload.authorName) || trainerName || 'Тестов Тест Тестович';
+    const authorRole = optionalString(payload.authorRole) || 'Тренер Fit Dew';
+
+    const updated = await prisma.trainingProgram.update({
+      where: { slug: currentSlug },
+      data: {
+        slug: nextSlug,
+        title,
+        type,
+        subtitle: optionalString(payload.subtitle),
+        summary: optionalString(payload.summary),
+        description: optionalString(payload.description),
+        level: optionalString(payload.level),
+        gender: optionalString(payload.gender),
+        frequency: optionalString(payload.frequency),
+        weeksCount,
+        coverImage: optionalString(payload.coverImage),
+        authorUserId: trainer?.id || null,
+        authorName,
+        authorRole,
+        authorAvatar: optionalString(payload.authorAvatar),
+        weeks: {
+          deleteMany: {},
+          create: weeksData
+        }
+      }
+    });
+
+    res.json({ ok: true, program: { id: updated.id, slug: updated.slug } });
+  } catch (e) {
+    console.error('[api/admin/programs:update] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: delete training program ===
+app.delete('/api/admin/programs/:slug', async (req, res) => {
+  try {
+    const initData = req.body?.initData || req.query?.initData;
+    const auth = await requireAdmin(initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const slug = req.params.slug;
+    if (!slug) return res.status(400).json({ ok: false, error: 'missing_slug' });
+
+    await prisma.trainingProgram.delete({ where: { slug } });
+    res.json({ ok: true });
+  } catch (e) {
+    if (e?.code === 'P2025') {
+      return res.status(404).json({ ok: false, error: 'not_found' });
+    }
+    console.error('[api/admin/programs:delete] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
 // === Admin: trainers list ===
 app.get('/api/admin/trainers', async (req, res) => {
   try {
@@ -1037,6 +1206,19 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
     res.json({ ok: true, exercise: updated });
   } catch (e) {
     console.error('[api/admin/exercises:put] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Exercises (public) ===
+app.get('/api/exercises', async (req, res) => {
+  try {
+    const exercises = await prisma.exercise.findMany({
+      orderBy: { updatedAt: 'desc' }
+    });
+    res.json({ ok: true, exercises });
+  } catch (e) {
+    console.error('[api/exercises:get] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });

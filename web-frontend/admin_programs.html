@@ -386,6 +386,28 @@
       gap: 14px;
     }
 
+    .repeat-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .repeat-row label {
+      display: grid;
+      gap: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .repeat-row select {
+      width: 100%;
+    }
+
     .week-card {
       padding: 16px;
       border-radius: 20px;
@@ -644,8 +666,8 @@
     <section class="section-card" id="formCard" hidden>
       <div class="section-head">
         <div>
-          <span class="section-eyebrow">Новая программа</span>
-          <h2 class="section-title">Создание программы</h2>
+          <span class="section-eyebrow" id="formModeLabel">Новая программа</span>
+          <h2 class="section-title" id="formTitle">Создание программы</h2>
         </div>
         <div class="section-actions">
           <button class="btn-outline" id="resetForm" type="button">Очистить</button>
@@ -771,6 +793,7 @@
       <div id="weeksContainer" class="stack"></div>
 
       <div class="actions">
+        <button class="btn-outline" id="deleteProgram" type="button" hidden>Удалить программу</button>
         <button class="btn-primary" id="saveProgram" type="button">Сохранить программу</button>
       </div>
       <div class="status-line" id="formStatus"></div>
@@ -868,6 +891,8 @@
       const exerciseCard = document.getElementById("exerciseCard");
       const weeksContainer = document.getElementById("weeksContainer");
       const formStatus = document.getElementById("formStatus");
+      const formModeLabel = document.getElementById("formModeLabel");
+      const formTitle = document.getElementById("formTitle");
       const programList = document.getElementById("programList");
       const exerciseList = document.getElementById("exerciseList");
 
@@ -899,6 +924,7 @@
       const slugAuto = document.getElementById("slugAuto");
       const resetForm = document.getElementById("resetForm");
       const saveProgram = document.getElementById("saveProgram");
+      const deleteProgram = document.getElementById("deleteProgram");
       const reloadPrograms = document.getElementById("reloadPrograms");
       const reloadExercises = document.getElementById("reloadExercises");
       const resetExercise = document.getElementById("resetExercise");
@@ -907,6 +933,7 @@
       let currentExerciseId = null;
       let exerciseLibrary = [];
       let trainerList = [];
+      let editingSlug = null;
 
       const setStatus = (message, ok) => {
         formStatus.textContent = message;
@@ -930,6 +957,14 @@
         exerciseCard.hidden = !ok;
         if (saveProgram) saveProgram.disabled = !ok;
         if (saveExercise) saveExercise.disabled = !ok;
+      };
+
+      const setEditMode = (slug) => {
+        editingSlug = slug || null;
+        if (formModeLabel) formModeLabel.textContent = editingSlug ? "Редактирование" : "Новая программа";
+        if (formTitle) formTitle.textContent = editingSlug ? "Редактирование программы" : "Создание программы";
+        if (saveProgram) saveProgram.textContent = editingSlug ? "Обновить программу" : "Сохранить программу";
+        if (deleteProgram) deleteProgram.hidden = !editingSlug;
       };
 
       const translitMap = {
@@ -1129,6 +1164,15 @@
             Название недели
             <input type="text" data-week-title placeholder="Неделя 1">
           </label>
+          <div class="repeat-row">
+            <label>
+              Повторить неделю
+              <select data-repeat-source>
+                <option value="">Повторить неделю...</option>
+              </select>
+            </label>
+            <button class="btn-outline" data-action="repeat-week" type="button">Повторить</button>
+          </div>
           <div class="stack" data-workouts></div>
           <div class="section-actions">
             <button class="btn-outline" data-action="add-workout" type="button">+ Тренировка</button>
@@ -1166,6 +1210,103 @@
             });
           });
         });
+        refreshRepeatOptions();
+      };
+
+      const refreshRepeatOptions = () => {
+        const weekCards = Array.from(weeksContainer.querySelectorAll("[data-week]"));
+        const titles = weekCards.map((weekCard, idx) => {
+          const title = weekCard.querySelector("[data-week-title]")?.value.trim();
+          return title || `Неделя ${idx + 1}`;
+        });
+
+        weekCards.forEach((weekCard, idx) => {
+          const select = weekCard.querySelector("[data-repeat-source]");
+          if (!select) return;
+          const currentIndex = idx + 1;
+          const currentValue = select.value;
+          const options = titles
+            .map((title, titleIdx) => {
+              const index = titleIdx + 1;
+              if (index === currentIndex) return "";
+              return `<option value="${index}">Неделя ${index}: ${title}</option>`;
+            })
+            .filter(Boolean)
+            .join("");
+          select.innerHTML = `<option value="">Повторить неделю...</option>${options}`;
+          if (currentValue && currentValue !== String(currentIndex)) {
+            select.value = currentValue;
+          }
+        });
+      };
+
+      const extractWeekData = (weekCard) => {
+        const weekTitle = weekCard.querySelector("[data-week-title]")?.value.trim() || "";
+        const workouts = [];
+        const workoutCards = Array.from(weekCard.querySelectorAll("[data-workout]"));
+        workoutCards.forEach((workoutCard) => {
+          const title = workoutCard.querySelector("[data-workout-title]")?.value.trim() || "";
+          const description = workoutCard.querySelector("[data-workout-desc]")?.value.trim() || "";
+          const exercises = [];
+          const exerciseCards = Array.from(workoutCard.querySelectorAll("[data-exercise]"));
+          exerciseCards.forEach((exerciseCard) => {
+            const selectId = exerciseCard.querySelector("[data-ex-select]")?.value || "";
+            exercises.push({
+              selectId,
+              label: exerciseCard.querySelector("[data-ex-label]")?.value.trim() || "",
+              title: exerciseCard.querySelector("[data-ex-title]")?.value.trim() || "",
+              details: exerciseCard.querySelector("[data-ex-details]")?.value.trim() || "",
+              description: exerciseCard.querySelector("[data-ex-description]")?.value.trim() || "",
+              videoUrl: exerciseCard.querySelector("[data-ex-video]")?.value.trim() || ""
+            });
+          });
+          workouts.push({ title, description, exercises });
+        });
+        return { title: weekTitle, workouts };
+      };
+
+      const applyWeekData = (weekCard, data) => {
+        const weekTitle = weekCard.querySelector("[data-week-title]");
+        if (weekTitle) weekTitle.value = data.title || "";
+        const workoutsContainer = weekCard.querySelector("[data-workouts]");
+        if (!workoutsContainer) return;
+        workoutsContainer.innerHTML = "";
+
+        (data.workouts || []).forEach((workout) => {
+          const workoutCard = createWorkoutCard();
+          const workoutTitle = workoutCard.querySelector("[data-workout-title]");
+          const workoutDesc = workoutCard.querySelector("[data-workout-desc]");
+          if (workoutTitle) workoutTitle.value = workout.title || "";
+          if (workoutDesc) workoutDesc.value = workout.description || "";
+          const exercisesContainer = workoutCard.querySelector("[data-exercises]");
+          exercisesContainer.innerHTML = "";
+          (workout.exercises || []).forEach((exercise) => {
+            const exerciseCard = createExerciseCard();
+            const select = exerciseCard.querySelector("[data-ex-select]");
+            if (select && exercise.selectId) select.value = exercise.selectId;
+            const exLabel = exerciseCard.querySelector("[data-ex-label]");
+            const exTitle = exerciseCard.querySelector("[data-ex-title]");
+            const exDetails = exerciseCard.querySelector("[data-ex-details]");
+            const exDescription = exerciseCard.querySelector("[data-ex-description]");
+            const exVideo = exerciseCard.querySelector("[data-ex-video]");
+            if (exLabel) exLabel.value = exercise.label || "";
+            if (exTitle) exTitle.value = exercise.title || "";
+            if (exDetails) exDetails.value = exercise.details || "";
+            if (exDescription) exDescription.value = exercise.description || "";
+            if (exVideo) exVideo.value = exercise.videoUrl || "";
+            exercisesContainer.appendChild(exerciseCard);
+          });
+          workoutsContainer.appendChild(workoutCard);
+        });
+
+        if (!workoutsContainer.querySelector("[data-workout]")) {
+          const workoutCard = createWorkoutCard();
+          workoutsContainer.appendChild(workoutCard);
+          workoutCard.querySelector("[data-exercises]")?.appendChild(createExerciseCard());
+        }
+
+        renumber();
+        refreshExerciseSelects();
       };
 
       const generatePlanStructure = () => {
@@ -1275,6 +1416,7 @@
       };
 
       const clearForm = () => {
+        setEditMode(null);
         programTitle.value = "";
         programSlug.value = "";
         programSubtitle.value = "";
@@ -1315,7 +1457,8 @@
               </div>
             </div>
             <div class="section-actions">
-              <button class="btn-outline" type="button" data-load-slug="${program.slug}">Загрузить</button>
+              <button class="btn-outline" type="button" data-load-slug="${program.slug}">Редактировать</button>
+              <button class="btn-ghost" type="button" data-delete-slug="${program.slug}">Удалить</button>
             </div>
           `;
           programList.appendChild(item);
@@ -1405,9 +1548,46 @@
             renumber();
           }
           refreshExerciseSelects();
+          setEditMode(program.slug);
           setStatus("Программа загружена в форму.", true);
         } catch (err) {
           console.warn("load program failed", err);
+        }
+      };
+
+      const deleteProgramBySlug = async (slug) => {
+        if (!slug) return;
+        if (!apiBase) {
+          setStatus("Не найден API_BASE. Проверь env.js.", false);
+          return;
+        }
+        if (!initData) {
+          setStatus("Нет initData. Открой админку внутри Telegram.", false);
+          return;
+        }
+        const ok = confirm(`Удалить программу "${slug}"?`);
+        if (!ok) return;
+
+        setStatus("Удаляем программу...", null);
+        try {
+          const res = await fetch(`${apiBase}/api/admin/programs/${encodeURIComponent(slug)}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData })
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json?.ok) {
+            setStatus("Не удалось удалить программу.", false);
+            return;
+          }
+          if (editingSlug === slug) {
+            clearForm();
+          }
+          await loadPrograms();
+          setStatus("Программа удалена.", true);
+        } catch (err) {
+          console.error(err);
+          setStatus("Ошибка сети при удалении программы.", false);
         }
       };
 
@@ -1439,6 +1619,26 @@
           if (action === "remove-week") {
             actionBtn.closest("[data-week]")?.remove();
             renumber();
+            return;
+          }
+          if (action === "repeat-week") {
+            const targetWeek = actionBtn.closest("[data-week]");
+            if (!targetWeek) return;
+            const select = targetWeek.querySelector("[data-repeat-source]");
+            const sourceIndex = Number(select?.value);
+            if (!Number.isInteger(sourceIndex) || sourceIndex < 1) {
+              setStatus("Выбери неделю для повтора.", false);
+              return;
+            }
+            const weekCards = Array.from(weeksContainer.querySelectorAll("[data-week]"));
+            const sourceWeek = weekCards[sourceIndex - 1];
+            if (!sourceWeek) {
+              setStatus("Неделя для повтора не найдена.", false);
+              return;
+            }
+            const data = extractWeekData(sourceWeek);
+            applyWeekData(targetWeek, data);
+            setStatus(`Неделя ${weekCards.indexOf(targetWeek) + 1} повторяет неделю ${sourceIndex}.`, true);
             return;
           }
           if (action === "add-workout") {
@@ -1478,6 +1678,11 @@
           loadProgramIntoForm(loadBtn.dataset.loadSlug);
         }
 
+        const deleteBtn = event.target.closest("[data-delete-slug]");
+        if (deleteBtn) {
+          deleteProgramBySlug(deleteBtn.dataset.deleteSlug);
+        }
+
         const editBtn = event.target.closest("[data-ex-edit]");
         if (editBtn) {
           const id = Number(editBtn.dataset.exEdit);
@@ -1509,6 +1714,12 @@
       });
 
       resetForm?.addEventListener("click", () => clearForm());
+
+      deleteProgram?.addEventListener("click", () => {
+        if (editingSlug) {
+          deleteProgramBySlug(editingSlug);
+        }
+      });
 
       resetExercise?.addEventListener("click", () => clearExerciseForm());
 
@@ -1582,10 +1793,14 @@
         }
 
         saveProgram.disabled = true;
-        setStatus("Сохраняем программу...", null);
+        const isEditing = Boolean(editingSlug);
+        setStatus(isEditing ? "Обновляем программу..." : "Сохраняем программу...", null);
         try {
-          const res = await fetch(`${apiBase}/api/admin/programs`, {
-            method: "POST",
+          const url = isEditing
+            ? `${apiBase}/api/admin/programs/${encodeURIComponent(editingSlug)}`
+            : `${apiBase}/api/admin/programs`;
+          const res = await fetch(url, {
+            method: isEditing ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ initData, program })
           });
@@ -1597,7 +1812,11 @@
             return;
           }
           programSlug.value = json.program?.slug || programSlug.value;
-          setStatus("Программа сохранена.", true);
+          if (isEditing) {
+            editingSlug = json.program?.slug || editingSlug;
+            setEditMode(editingSlug);
+          }
+          setStatus(isEditing ? "Программа обновлена." : "Программа сохранена.", true);
           await loadPrograms();
         } catch (err) {
           console.error(err);
