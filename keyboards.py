@@ -2,18 +2,38 @@ from aiogram.types import (
     ReplyKeyboardMarkup, KeyboardButton,
     InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 )
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 import os
 
-APP_URL = os.getenv("APP_URL")
-if not APP_URL:
+APP_URL_RAW = os.getenv("APP_URL")
+if not APP_URL_RAW:
     raise RuntimeError("Не задан APP_URL в .env")
 
-def _build_admin_url(app_url: str) -> str:
-    if app_url.endswith(".html"):
-        return f"{app_url.rsplit('/', 1)[0]}/admin_programs.html"
-    return f"{app_url.rstrip('/')}/admin_programs.html"
+APP_VERSION = os.getenv("APP_VERSION", "20260115")
 
-ADMIN_URL = os.getenv("ADMIN_URL") or _build_admin_url(APP_URL)
+def _with_version(url: str, version: str) -> str:
+    if not version:
+        return url
+    parts = urlsplit(url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query["v"] = version
+    new_query = urlencode(query, doseq=True)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
+
+def _build_admin_url(app_url: str) -> str:
+    parts = urlsplit(app_url)
+    path = parts.path or "/"
+    if path.endswith(".html"):
+        base_path = path.rsplit("/", 1)[0]
+    else:
+        base_path = path.rstrip("/")
+    admin_path = f"{base_path}/admin_programs.html"
+    return urlunsplit((parts.scheme, parts.netloc, admin_path, "", ""))
+
+ADMIN_URL_RAW = os.getenv("ADMIN_URL") or _build_admin_url(APP_URL_RAW)
+
+APP_URL = _with_version(APP_URL_RAW, APP_VERSION)
+ADMIN_URL = _with_version(ADMIN_URL_RAW, APP_VERSION)
 
 
 

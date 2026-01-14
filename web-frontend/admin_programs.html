@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="env.js"></script>
+  <script src="env.js?v=20260115"></script>
 
   <style>
     :root {
@@ -840,7 +840,26 @@
       const params = new URLSearchParams(window.location.search);
       const API_BASE = window.ENV?.API_BASE || "";
       const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
-      const initData = tg?.initData || params.get("initData") || "";
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+
+        return p.toString();
+      };
+
+      const initData = tg?.initData || params.get("initData") || buildInitData() || "";
 
       const accessStatus = document.getElementById("accessStatus");
       const accessMessage = document.getElementById("accessMessage");
