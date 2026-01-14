@@ -950,9 +950,9 @@
         if (!trainerSelect) return;
         const current = trainerSelect.value;
         const options = trainers.map((trainer) => (
-          `<option value=\"${trainer.id}\">${formatTrainerName(trainer)}</option>`
+          `<option value="${trainer.id}">${formatTrainerName(trainer)}</option>`
         ));
-        trainerSelect.innerHTML = `<option value=\"\">Не выбран</option>${options.join(\"\")}`;
+        trainerSelect.innerHTML = `<option value="">Не выбран</option>${options.join("")}`;
         if (current) trainerSelect.value = current;
       };
 
@@ -971,13 +971,13 @@
 
       const refreshExerciseSelects = () => {
         const options = [
-          `<option value=\"\">Выбрать из архива</option>`,
+          `<option value="">Выбрать из архива</option>`,
           ...exerciseLibrary.map((exercise) => (
-            `<option value=\"${exercise.id}\">${exercise.title}</option>`
+            `<option value="${exercise.id}">${exercise.title}</option>`
           ))
-        ].join(\"\");
+        ].join("");
 
-        document.querySelectorAll(\"[data-ex-select]\").forEach((select) => {
+        document.querySelectorAll("[data-ex-select]").forEach((select) => {
           const current = select.value;
           select.innerHTML = options;
           if (current) select.value = current;
@@ -985,15 +985,25 @@
       };
 
       const renderExerciseList = (exercises) => {
-        exerciseList.innerHTML = \"\";
+        exerciseList.innerHTML = "";
         if (!exercises.length) {
-          exerciseList.innerHTML = \"<p class='muted'>Архив упражнений пуст.</p>\";
+          exerciseList.innerHTML = "<p class='muted'>Архив упражнений пуст.</p>";
           return;
         }
         exercises.forEach((exercise) => {
-          const item = document.createElement(\"div\");
-          item.className = \"exercise-item\";
-          item.innerHTML = `\n            <div class=\"exercise-meta\">\n              <strong>${exercise.title}</strong>\n              <span class=\"muted\">${exercise.videoUrl ? \"Есть видео\" : \"Без видео\"}</span>\n            </div>\n            <div class=\"exercise-actions\">\n              <button class=\"btn-outline\" type=\"button\" data-ex-edit=\"${exercise.id}\">Редактировать</button>\n            </div>\n          `;\n          exerciseList.appendChild(item);\n        });
+          const item = document.createElement("div");
+          item.className = "exercise-item";
+          item.innerHTML = `
+            <div class="exercise-meta">
+              <strong>${exercise.title}</strong>
+              <span class="muted">${exercise.videoUrl ? "Есть видео" : "Без видео"}</span>
+            </div>
+            <div class="exercise-actions">
+              <button class="btn-outline" type="button" data-ex-edit="${exercise.id}">Редактировать</button>
+            </div>
+          `;
+          exerciseList.appendChild(item);
+        });
       };
 
       const loadExercises = async () => {
@@ -1006,17 +1016,17 @@
           renderExerciseList(exerciseLibrary);
           refreshExerciseSelects();
         } catch (err) {
-          console.warn(\"exercises load failed\", err);
+          console.warn("exercises load failed", err);
         }
       };
 
       const clearExerciseForm = () => {
         currentExerciseId = null;
-        exerciseTitle.value = \"\";
-        exerciseDescription.value = \"\";
-        exerciseVideo.value = \"\";
-        saveExercise.textContent = \"Сохранить упражнение\";
-        setExerciseStatus(\"\", null);
+        exerciseTitle.value = "";
+        exerciseDescription.value = "";
+        exerciseVideo.value = "";
+        saveExercise.textContent = "Сохранить упражнение";
+        setExerciseStatus("", null);
       };
 
       const createExerciseCard = () => {
