@@ -53,10 +53,7 @@ def client_kb(has_tariff: bool = False, is_admin: bool = False) -> ReplyKeyboard
         ]
     if is_admin:
         rows.append([
-            KeyboardButton(
-                text="Управление программами",
-                web_app=WebAppInfo(url=ADMIN_URL)
-            )
+            KeyboardButton(text="Управление программами")  # текст, открытие через inline web_app
         ])
 
     return ReplyKeyboardMarkup(
@@ -116,6 +113,19 @@ def app_inline_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="🚀 Открыть приложение",
                     web_app=WebAppInfo(url=APP_URL)
+                )
+            ]
+        ]
+    )
+
+
+def admin_inline_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🧰 Открыть админку",
+                    web_app=WebAppInfo(url=ADMIN_URL)
                 )
             ]
         ]
