@@ -53,6 +53,10 @@
       box-sizing: border-box;
     }
 
+    [hidden] {
+      display: none !important;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -242,6 +246,19 @@
       font-size: 0.75rem;
       letter-spacing: 0.16em;
       text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .inline-group {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 140px;
+      gap: 10px;
+    }
+
+    .help-text {
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+      text-transform: none;
       color: var(--muted);
     }
 
@@ -591,6 +608,10 @@
         grid-template-columns: 1fr;
       }
 
+      .inline-group {
+        grid-template-columns: 1fr;
+      }
+
       .section-head {
         flex-direction: column;
         align-items: flex-start;
@@ -679,15 +700,24 @@
         </label>
         <label>
           Частота
-          <input id="programFrequency" type="text" placeholder="3 трен/нед">
+          <div class="inline-group">
+            <input id="programFrequencyValue" type="number" min="1" placeholder="3">
+            <select id="programFrequencyUnit">
+              <option value="трен/нед">трен/нед</option>
+              <option value="трен/мес">трен/мес</option>
+              <option value="трен/год">трен/год</option>
+            </select>
+          </div>
         </label>
         <label>
-          Недель
-          <input id="programWeeksCount" type="number" min="1" readonly>
+          Недель (авто)
+          <input id="programWeeksCount" type="number" min="1" readonly placeholder="Авто">
+          <span class="help-text">Берется из плана ниже.</span>
         </label>
         <label>
-          CoverImage ключ
-          <input id="programCover" type="text" placeholder="crossfit-amber">
+          Обложка (ключ/URL)
+          <input id="programCover" type="text" placeholder="crossfit-amber или https://...">
+          <span class="help-text">Необязательно. Можно оставить пустым.</span>
         </label>
         <label class="full">
           Тренер (из базы)
@@ -829,7 +859,8 @@
       const programDescription = document.getElementById("programDescription");
       const programLevel = document.getElementById("programLevel");
       const programGender = document.getElementById("programGender");
-      const programFrequency = document.getElementById("programFrequency");
+      const programFrequencyValue = document.getElementById("programFrequencyValue");
+      const programFrequencyUnit = document.getElementById("programFrequencyUnit");
       const programWeeksCount = document.getElementById("programWeeksCount");
       const programCover = document.getElementById("programCover");
       const trainerSelect = document.getElementById("trainerSelect");
@@ -878,6 +909,8 @@
         formCard.hidden = !ok;
         listCard.hidden = !ok;
         exerciseCard.hidden = !ok;
+        if (saveProgram) saveProgram.disabled = !ok;
+        if (saveExercise) saveExercise.disabled = !ok;
       };
 
       const translitMap = {
@@ -1143,6 +1176,8 @@
 
       const collectProgram = () => {
         const type = document.querySelector("input[name='programType']:checked")?.value || "gym";
+        const freqValue = programFrequencyValue.value.trim();
+        const freqUnit = programFrequencyUnit.value || "трен/нед";
         const program = {
           title: programTitle.value.trim(),
           slug: programSlug.value.trim(),
@@ -1152,7 +1187,7 @@
           description: programDescription.value.trim(),
           level: programLevel.value.trim(),
           gender: programGender.value.trim(),
-          frequency: programFrequency.value.trim(),
+          frequency: freqValue ? `${freqValue} ${freqUnit}` : "",
           coverImage: programCover.value.trim(),
           trainerId: trainerSelect.value,
           authorName: programAuthorName.value.trim(),
@@ -1218,7 +1253,8 @@
         programDescription.value = "";
         programLevel.value = "";
         programGender.value = "";
-        programFrequency.value = "";
+        programFrequencyValue.value = "";
+        programFrequencyUnit.value = "трен/нед";
         programCover.value = "";
         trainerSelect.value = "";
         programAuthorName.value = "Тестов Тест Тестович";
@@ -1285,7 +1321,17 @@
           programDescription.value = program.description || "";
           programLevel.value = program.level || "";
           programGender.value = program.gender || "";
-          programFrequency.value = program.frequency || "";
+          const freqRaw = (program.frequency || "").trim();
+          const freqMatch = freqRaw.match(/^(\d+)\s*(.*)$/);
+          if (freqMatch) {
+            programFrequencyValue.value = freqMatch[1];
+            const unitValue = freqMatch[2].trim();
+            const units = Array.from(programFrequencyUnit.options).map((opt) => opt.value);
+            programFrequencyUnit.value = units.includes(unitValue) ? unitValue : "трен/нед";
+          } else {
+            programFrequencyValue.value = "";
+            programFrequencyUnit.value = "трен/нед";
+          }
           programCover.value = program.coverImage || "";
           programAuthorName.value = program.authorName || "Тестов Тест Тестович";
           programAuthorRole.value = program.authorRole || "Тренер Fit Dew";
@@ -1578,4 +1624,3 @@
   </script>
 </body>
 </html>
-
