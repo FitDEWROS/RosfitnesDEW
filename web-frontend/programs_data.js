@@ -12,7 +12,7 @@
       frequency: "3 трен/нед",
       weeksCount: 4,
       coverImage: "crossfit-amber",
-      authorName: "Виктор Ярославский",
+      authorName: "Тестов Тест Тестович",
       authorRole: "Тренер Fit Dew",
       authorAvatar: null,
       weeks: [

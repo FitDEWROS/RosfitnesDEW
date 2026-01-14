@@ -177,39 +177,28 @@
       color: var(--muted);
     }
 
-    .type-toggle {
+    .mode-row {
       display: flex;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.06);
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .mode-pill {
       border-radius: 999px;
-      padding: 6px;
-      border: 1px solid var(--card-border);
-    }
-
-    html.light .type-toggle {
-      background: rgba(0, 0, 0, 0.04);
-    }
-
-    .type-btn {
-      flex: 1;
-      border: none;
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-family: var(--font-title);
-      font-size: 0.75rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      cursor: pointer;
-      color: var(--muted);
-      background: transparent;
-      transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-    }
-
-    .type-btn.is-active {
+      padding: 6px 14px;
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       color: #1b1b1b;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
       box-shadow: 0 10px 18px rgba(243, 213, 139, 0.3);
-      transform: translateY(-1px);
+    }
+
+    .mode-note {
+      font-size: 0.85rem;
+      color: var(--muted);
     }
 
     .program-list {
@@ -386,9 +375,9 @@
 
     <section class="filter-card">
       <div class="filter-title">Тип программы</div>
-      <div class="type-toggle" id="typeToggle">
-        <button class="type-btn" data-type="gym" type="button">Зал</button>
-        <button class="type-btn" data-type="crossfit" type="button">Кроссфит</button>
+      <div class="mode-row">
+        <span class="mode-pill" id="modeLabel">КРОССФИТ</span>
+        <span class="mode-note">Сменить можно на главной.</span>
       </div>
     </section>
 
@@ -403,13 +392,13 @@
       const fallback = window.PROGRAMS_FALLBACK || [];
 
       const params = new URLSearchParams(window.location.search);
-      const typeToggle = document.getElementById("typeToggle");
+      const modeLabel = document.getElementById("modeLabel");
       const programList = document.getElementById("programList");
       const emptyState = document.getElementById("emptyState");
       const backBtn = document.getElementById("backBtn");
 
-      const normalizeType = (value) => (value === "gym" || value === "crossfit" ? value : "crossfit");
-      const storedMode = normalizeType(localStorage.getItem("training_mode"));
+      const normalizeType = (value) => (value === "gym" || value === "crossfit" ? value : "gym");
+      const storedMode = normalizeType(localStorage.getItem("training_mode") || "gym");
       const initialType = normalizeType(params.get("type") || storedMode);
 
       if (backBtn) {
@@ -420,9 +409,7 @@
 
       const setActiveType = (type) => {
         localStorage.setItem("training_mode", type);
-        typeToggle.querySelectorAll(".type-btn").forEach((btn) => {
-          btn.classList.toggle("is-active", btn.dataset.type === type);
-        });
+        if (modeLabel) modeLabel.textContent = type === "gym" ? "ЗАЛ" : "КРОССФИТ";
       };
 
       const getCoachInitials = (name) => {
@@ -502,13 +489,6 @@
         const programs = await loadPrograms(type);
         renderPrograms(programs);
       };
-
-      typeToggle.querySelectorAll(".type-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const type = normalizeType(btn.dataset.type);
-          applyType(type);
-        });
-      });
 
       applyType(initialType);
 

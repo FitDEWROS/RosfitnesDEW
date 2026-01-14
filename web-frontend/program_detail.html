@@ -454,9 +454,9 @@
         tagContainer.innerHTML = tags.map((tag) => `<span class="tag">${tag}</span>`).join("");
 
         const stats = [
-          program.frequency || "3 ????/???",
-          program.weeksCount ? `${program.weeksCount} ??????` : "????",
-          program.level || "???????"
+          program.frequency || "3 трен/нед",
+          program.weeksCount ? `${program.weeksCount} недель` : "План",
+          program.level || "Новички"
         ];
         byId("heroStats").innerHTML = stats.map((stat) => `<span class="stat-chip">${stat}</span>`).join("");
 
