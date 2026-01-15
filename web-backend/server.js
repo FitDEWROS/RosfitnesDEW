@@ -1161,6 +1161,9 @@ app.post('/api/admin/exercises', async (req, res) => {
 
     const payload = req.body?.exercise || {};
     const title = cleanString(payload.title);
+    const typeRaw = cleanString(payload.type);
+    const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
+    const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'общая') : null;
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });
     }
@@ -1168,6 +1171,8 @@ app.post('/api/admin/exercises', async (req, res) => {
     const created = await prisma.exercise.create({
       data: {
         title,
+        type: normalizedType,
+        muscle,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
       }
@@ -1192,6 +1197,9 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
 
     const payload = req.body?.exercise || {};
     const title = cleanString(payload.title);
+    const typeRaw = cleanString(payload.type);
+    const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
+    const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'общая') : null;
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });
     }
@@ -1200,6 +1208,8 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
       where: { id },
       data: {
         title,
+        type: normalizedType,
+        muscle,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
       }
@@ -1215,7 +1225,10 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
 // === Exercises (public) ===
 app.get('/api/exercises', async (req, res) => {
   try {
+    const typeRaw = cleanString(req.query?.type);
+    const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : typeRaw === 'gym' ? 'gym' : '';
     const exercises = await prisma.exercise.findMany({
+      where: normalizedType ? { type: normalizedType } : undefined,
       orderBy: { updatedAt: 'desc' }
     });
     res.json({ ok: true, exercises });

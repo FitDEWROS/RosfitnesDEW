@@ -99,6 +99,8 @@ model TrainingProgram {
 model Exercise {
   id          Int      @id @default(autoincrement())
   title       String
+  type        String   @default("gym")
+  muscle      String?
   description String?
   videoUrl    String?
   createdAt   DateTime @default(now())

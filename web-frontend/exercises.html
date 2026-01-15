@@ -313,7 +313,7 @@
     const loadExercises = async () => {
       if (!apiBase) return;
       try {
-        const res = await fetch(`${apiBase}/api/exercises`);
+        const res = await fetch(`${apiBase}/api/exercises?type=gym`);
         const json = await res.json().catch(() => ({}));
         if (!json?.ok || !Array.isArray(json.exercises)) return;
         exerciseLibrary = json.exercises;

@@ -876,7 +876,7 @@
     const loadExercises = async () => {
       if (!apiBase) return;
       try {
-        const res = await fetch(`${apiBase}/api/exercises`);
+        const res = await fetch(`${apiBase}/api/exercises?type=crossfit`);
         const json = await res.json().catch(() => ({}));
         if (json?.ok && Array.isArray(json.exercises)) {
           renderExercises(json.exercises);

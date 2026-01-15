@@ -828,6 +828,17 @@
           Название упражнения
           <input id="exerciseTitle" type="text" placeholder="Оверхед присед">
         </label>
+        <label>
+          Тип
+          <select id="exerciseType">
+            <option value="gym" selected>Зал</option>
+            <option value="crossfit">Кроссфит</option>
+          </select>
+        </label>
+        <label class="full">
+          Мышца (для зала)
+          <input id="exerciseMuscle" type="text" placeholder="Общая">
+        </label>
         <label class="full">
           Описание
           <textarea id="exerciseDescription" placeholder="Техника выполнения..."></textarea>
@@ -917,6 +928,8 @@
       const generatePlan = document.getElementById("generatePlan");
 
       const exerciseTitle = document.getElementById("exerciseTitle");
+      const exerciseType = document.getElementById("exerciseType");
+      const exerciseMuscle = document.getElementById("exerciseMuscle");
       const exerciseDescription = document.getElementById("exerciseDescription");
       const exerciseVideo = document.getElementById("exerciseVideo");
       const exerciseStatus = document.getElementById("exerciseStatus");
@@ -945,6 +958,15 @@
         exerciseStatus.textContent = message;
         exerciseStatus.classList.toggle("ok", Boolean(ok));
         exerciseStatus.classList.toggle("bad", ok === false);
+      };
+
+      const syncExerciseType = () => {
+        if (!exerciseType || !exerciseMuscle) return;
+        const isGym = exerciseType.value !== "crossfit";
+        exerciseMuscle.disabled = !isGym;
+        if (!isGym) {
+          exerciseMuscle.value = "";
+        }
       };
 
       const setAccess = (ok, message) => {
@@ -1045,12 +1067,15 @@
           return;
         }
         exercises.forEach((exercise) => {
+          const typeLabel = exercise.type === "crossfit" ? "Кроссфит" : "Зал";
+          const muscleLabel = exercise.type === "gym" && exercise.muscle ? ` - ${exercise.muscle}` : "";
+          const videoLabel = exercise.videoUrl ? "Есть видео" : "Без видео";
           const item = document.createElement("div");
           item.className = "exercise-item";
           item.innerHTML = `
             <div class="exercise-meta">
               <strong>${exercise.title}</strong>
-              <span class="muted">${exercise.videoUrl ? "Есть видео" : "Без видео"}</span>
+              <span class="muted">${typeLabel}${muscleLabel} - ${videoLabel}</span>
             </div>
             <div class="exercise-actions">
               <button class="btn-outline" type="button" data-ex-edit="${exercise.id}">Редактировать</button>
@@ -1077,10 +1102,13 @@
       const clearExerciseForm = () => {
         currentExerciseId = null;
         exerciseTitle.value = "";
+        if (exerciseType) exerciseType.value = "gym";
+        if (exerciseMuscle) exerciseMuscle.value = "";
         exerciseDescription.value = "";
         exerciseVideo.value = "";
         saveExercise.textContent = "Сохранить упражнение";
         setExerciseStatus("", null);
+        syncExerciseType();
       };
 
       const createExerciseCard = () => {
@@ -1690,10 +1718,13 @@
           if (!exercise) return;
           currentExerciseId = id;
           exerciseTitle.value = exercise.title || "";
+          if (exerciseType) exerciseType.value = exercise.type || "gym";
+          if (exerciseMuscle) exerciseMuscle.value = exercise.muscle || "";
           exerciseDescription.value = exercise.description || "";
           exerciseVideo.value = exercise.videoUrl || "";
           saveExercise.textContent = "Сохранить изменения";
           setExerciseStatus("Редактирование упражнения.", true);
+          syncExerciseType();
         }
       });
 
@@ -1722,6 +1753,8 @@
       });
 
       resetExercise?.addEventListener("click", () => clearExerciseForm());
+      exerciseType?.addEventListener("change", syncExerciseType);
+      syncExerciseType();
 
       saveExercise?.addEventListener("click", async () => {
         if (!apiBase) {
@@ -1735,6 +1768,8 @@
 
         const payload = {
           title: exerciseTitle.value.trim(),
+          type: exerciseType?.value || "gym",
+          muscle: exerciseMuscle?.value.trim() || "",
           description: exerciseDescription.value.trim(),
           videoUrl: exerciseVideo.value.trim()
         };
