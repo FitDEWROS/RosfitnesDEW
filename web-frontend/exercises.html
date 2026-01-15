@@ -18,7 +18,7 @@
 <body>
   <div class="wrap">
     <header class="header header--split">
-      <button id="btnBackNav" class="nav-btn">← Назад</button>
+      <button id="btnBackNav" class="back-btn" type="button">Назад</button>
       <div class="view-toggle" role="tablist" aria-label="Вид страницы">
         <button class="view-toggle-btn is-active" data-view="map" role="tab" aria-selected="true">Силуэт</button>
         <button class="view-toggle-btn" data-view="list" role="tab" aria-selected="false">Список</button>
@@ -274,19 +274,19 @@
         const card = document.createElement("button");
         card.type = "button";
         card.className = "exercise-card";
-        const letter = (exercise.title || "?").slice(0, 1);
+        const letter = (exercise.title || "У").slice(0, 1);
         const hasVideo = Boolean(exercise.videoUrl);
         const previewUrl = exercise.videoUrl && !isYandexPublicLink(exercise.videoUrl) ? exercise.videoUrl : "";
         card.innerHTML = `
           <div class="thumb">
             <div class="thumb-placeholder">${letter}</div>
             <video class="thumb-video" muted playsinline preload="metadata"></video>
-            <div class="thumb-overlay"><span class="play-icon">▶</span></div>
-            <span class="thumb-chip">${hasVideo ? "Зал??" : "Зал Зал??"}</span>
+            <div class="thumb-overlay"><span class="play-icon">&#9654;</span></div>
+            <span class="thumb-chip">${hasVideo ? "Видео" : "Без видео"}</span>
           </div>
           <div class="card-body">
-            <h3>${exercise.title || "Упражнения"}</h3>
-            <div class="card-hint">ЗалЗал? ЗалЗал??</div>
+            <h3>${exercise.title || "Упражнение"}</h3>
+            <div class="card-hint">Открыть описание</div>
           </div>
         `;
         const previewEl = card.querySelector(".thumb-video");
@@ -484,8 +484,16 @@
 
     const setViewMode = (mode) => {
       const isList = mode === "list";
-      if (mapView) mapView.hidden = isList;
-      if (listView) listView.hidden = !isList;
+      if (mapView) {
+        mapView.hidden = isList;
+        mapView.classList.toggle("is-hidden", isList);
+        mapView.setAttribute("aria-hidden", isList ? "true" : "false");
+      }
+      if (listView) {
+        listView.hidden = !isList;
+        listView.classList.toggle("is-hidden", !isList);
+        listView.setAttribute("aria-hidden", isList ? "false" : "true");
+      }
       viewButtons.forEach((btn) => {
         const active = btn.dataset.view === mode;
         btn.classList.toggle("is-active", active);
