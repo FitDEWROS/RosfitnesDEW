@@ -16,8 +16,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="env.js"></script>
-  <script src="programs_data.js"></script>
+  <script src="env.js?v=20260115"></script>
+  <script src="programs_data.js?v=20260115"></script>
 
   <style>
     :root {
@@ -341,6 +341,42 @@
       place-items: center;
     }
 
+    .fullscreen-btn {
+      position: absolute;
+      top: 10px;
+      right: 54px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .video-text {
+      display: grid;
+      gap: 12px;
+    }
+
+    .desc-block strong {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .desc-block div {
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
     @media (max-width: 520px) {
       .workout-screen { padding-left: 14px; padding-right: 14px; }
       .exercise-item { grid-template-columns: 36px 1fr; }
@@ -371,10 +407,11 @@
 
   <div id="videoModal" class="modal" aria-hidden="true">
     <div class="video-modal" role="dialog" aria-modal="true">
+      <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">⛶</button>
       <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">&times;</button>
       <video id="exerciseVideo" controls playsinline></video>
       <h3 class="video-title" id="videoTitle"></h3>
-      <p class="video-text" id="videoDesc"></p>
+      <div class="video-text" id="videoDesc"></div>
       <p class="video-note" id="videoNote">Видео пока не добавлено.</p>
     </div>
   </div>
@@ -399,6 +436,7 @@
       const videoDesc = byId("videoDesc");
       const videoNote = byId("videoNote");
       const closeVideo = byId("closeVideo");
+      const fullscreenBtn = byId("fullscreenVideo");
       let currentVideoRequest = 0;
 
       const isYandexPublicLink = (url) => {
@@ -441,6 +479,52 @@
         videoNote.appendChild(link);
       };
 
+      const escapeHtml = (value) => (
+        String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;")
+      );
+
+      const formatText = (value) => escapeHtml(value).replace(/\n/g, "<br>");
+
+      const splitDescription = (raw) => {
+        const text = String(raw || "").replace(/\r\n/g, "\n").trim();
+        if (!text) return { how: "", tip: "" };
+        const tipRegex = /(?:^|\n)\s*Совет\s*:/i;
+        const tipMatch = text.match(tipRegex);
+        let how = text;
+        let tip = "";
+        if (tipMatch && typeof tipMatch.index === "number") {
+          how = text.slice(0, tipMatch.index);
+          tip = text.slice(tipMatch.index).replace(tipRegex, "");
+        }
+        how = how.replace(/Как\s+выполнять\s*:/i, "").trim();
+        tip = tip.replace(/Совет\s*:/i, "").trim();
+        if (!how && !tip) {
+          how = text;
+        }
+        return { how, tip };
+      };
+
+      const buildDescriptionHtml = (raw) => {
+        const sections = splitDescription(raw);
+        const howText = sections.how || raw || "-";
+        const tipText = sections.tip || "-";
+        return `
+          <div class="desc-block">
+            <strong>Как выполнять:</strong>
+            <div>${formatText(howText)}</div>
+          </div>
+          <div class="desc-block">
+            <strong>Совет:</strong>
+            <div>${formatText(tipText)}</div>
+          </div>
+        `;
+      };
+
       if (backBtn) {
         backBtn.addEventListener("click", () => {
           if (slug) {
@@ -456,9 +540,11 @@
         currentVideoRequest += 1;
         const requestId = currentVideoRequest;
         const title = exercise?.title || "Упражнение";
-        const description = exercise?.description || exercise?.details || "Описание появится позже.";
+        const description = exercise?.description || exercise?.details || "";
         videoTitle.textContent = title;
-        videoDesc.textContent = description;
+        if (videoDesc) {
+          videoDesc.innerHTML = buildDescriptionHtml(description || "Описание появится позже.");
+        }
 
         if (videoEl) {
           videoEl.pause();
@@ -467,14 +553,14 @@
         }
         if (videoNote) {
           videoNote.style.display = "block";
-          videoNote.textContent = "???????? ?????...";
+          videoNote.textContent = "Загружаем видео...";
         }
 
         videoModal.classList.add("show");
         videoModal.setAttribute("aria-hidden", "false");
 
         if (!exercise?.videoUrl) {
-          if (videoNote) videoNote.textContent = "????? ???? ?? ?????????.";
+          if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
           return;
         }
 
@@ -486,7 +572,7 @@
           videoEl.style.display = "block";
           videoEl.onerror = () => {
             if (requestId != currentVideoRequest) return;
-            showVideoLink(resolvedUrl, "?? ????? ???????????? ? ??????????.");
+            showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
           };
           videoEl.onloadeddata = () => {
             if (requestId != currentVideoRequest) return;
@@ -497,13 +583,28 @@
           if (playAttempt && typeof playAttempt.catch === "function") {
             playAttempt.catch(() => {
               if (requestId != currentVideoRequest) return;
-              showVideoLink(resolvedUrl, "?? ??????? ???????? ?????.");
+              showVideoLink(resolvedUrl, "Не удалось запустить видео.");
             });
           }
         } else {
-          showVideoLink(exercise.videoUrl, "?? ??????? ????????? ?????.");
+          showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
         }
       };
+
+      const openFullscreen = () => {
+        if (!videoEl) return;
+        if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
+        if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
+        if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
+        if (videoEl.msRequestFullscreen) return videoEl.msRequestFullscreen();
+      };
+
+      if (fullscreenBtn) {
+        fullscreenBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          openFullscreen();
+        });
+      }
 
       const closeVideoModal = () => {
         if (!videoModal) return;
@@ -513,6 +614,9 @@
         if (videoEl) {
           videoEl.pause();
           videoEl.removeAttribute("src");
+        }
+        if (videoNote) {
+          videoNote.textContent = "";
         }
       };
 

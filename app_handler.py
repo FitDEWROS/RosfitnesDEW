@@ -5,10 +5,13 @@ from reg import db as reg_db
 
 router = Router()
 
+def _text_contains(text: str, needle: str) -> bool:
+    return isinstance(text, str) and needle in text.casefold()
+
 # Ловим Reply-кнопку «Приложение» (с эмодзи или без) и отвечаем Inline-кнопкой
 from helpers import send_temp  # <-- добавь импорт
 
-@router.message(F.text.func(lambda t: t and "Приложение" in t))
+@router.message(F.text.func(lambda t: _text_contains(t, "приложение")))
 async def send_app_button(message: Message):
     # Удалить сообщение пользователя в личке Telegram нельзя (обычное ограничение),
     # поэтому просто даём «временный» ответ и авто-удаляем его через 10 сек.
@@ -20,7 +23,7 @@ async def send_app_button(message: Message):
     )
 
 
-@router.message(F.text.func(lambda t: t and "Управление программами" in t))
+@router.message(F.text.func(lambda t: _text_contains(t, "управление программами")))
 async def send_admin_button(message: Message):
     user = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
     is_admin = bool(user and getattr(user, "role", None) == "admin")

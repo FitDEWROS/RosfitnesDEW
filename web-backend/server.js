@@ -554,8 +554,10 @@ const PROGRAM_SEED = [
     ]
   }
 ];
+PROGRAM_SEED.length = 0;
 
 async function ensureProgramSeed() {
+  if (!PROGRAM_SEED.length) return;
   await prisma.trainingProgram.updateMany({
     where: { authorName: 'Виктор Ярославский' },
     data: { authorName: 'Тестов Тест Тестович' }

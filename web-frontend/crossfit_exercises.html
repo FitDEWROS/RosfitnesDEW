@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RosApp — Кроссфит упражнения</title>
+  <title>Fit Dew - Упражнения</title>
 
   <!-- 🧩 Шрифты -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -108,19 +108,13 @@
       box-shadow: 0 0 10px rgba(59,130,246,0.25);
     }
 
-    .brand-mini {
+    .header-title {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .brand-mini lottie-player {
-      width: 42px;
-      height: 42px;
-      filter: drop-shadow(0 0 6px rgba(139,92,246,0.7));
+      display: grid;
+      gap: 2px;
+      text-align: center;
     }
 
     .app-title {
@@ -473,20 +467,188 @@
     .close {
       background: rgba(255, 255, 255, 0.08);
     }
+
+    .header-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .cf-main {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .exercise-card {
+      padding: 0;
+      text-align: left;
+      border-radius: 22px;
+      overflow: hidden;
+      display: grid;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 12px 14px 16px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .card-hint {
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .thumb {
+      height: 180px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .thumb-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .thumb-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 2.4rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+      color: #f6f2e7;
+      background: linear-gradient(135deg, rgba(243, 213, 139, 0.55), rgba(143, 208, 197, 0.4));
+      transition: opacity 0.3s ease;
+    }
+
+    .exercise-card.has-preview .thumb-video { opacity: 1; }
+    .exercise-card.has-preview .thumb-placeholder { opacity: 0; }
+
+    .thumb-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 12px;
+      pointer-events: none;
+    }
+
+    .play-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 1.1rem;
+    }
+
+    .thumb-chip {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    html.light .thumb-chip {
+      background: rgba(0, 0, 0, 0.12);
+      color: #1b1b1b;
+      border-color: rgba(0, 0, 0, 0.12);
+    }
+
+    .modal {
+      align-items: flex-end;
+      padding: 16px;
+    }
+
+    .video-modal {
+      width: min(560px, 96vw);
+      margin-bottom: env(safe-area-inset-bottom);
+      max-height: 86vh;
+      overflow-y: auto;
+      transform: translateY(28px);
+      opacity: 0;
+      animation: none;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .modal.show .video-modal {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .video-modal video {
+      max-height: 48vh;
+    }
+
+    .video-desc {
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .desc-block strong {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .desc-block div {
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .fullscreen-btn {
+      position: absolute;
+      top: 8px;
+      right: 54px;
+      font-size: 18px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
   </style>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
   <script src="env.js?v=20260115"></script>
 </head>
 
 <body class="page-crossfit">
   <!-- Шапка вынесена наружу, чтобы убрать белые края -->
   <header class="cf-header">
-    <button id="backBtn" class="nav-btn">← Назад</button>
-    <div class="brand-mini">
-      <lottie-player src="Avocado.json" background="transparent" speed="1" loop autoplay></lottie-player>
-      <span class="app-title">RosApp</span>
+    <button id="backBtn" class="nav-btn">&#8592; Назад</button>
+    <div class="header-title">
+      <span class="header-eyebrow">Упражнения</span>
+      <span class="app-title">Кроссфит</span>
     </div>
   </header>
 
@@ -494,12 +656,13 @@
     <main class="cf-main" id="exerciseList" aria-live="polite"></main>
   </div>
 
-  <div id="videoModal" class="modal">
-    <div class="video-modal">
+  <div id="videoModal" class="modal" aria-hidden="true">
+    <div class="video-modal" role="dialog" aria-modal="true">
+      <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">⛶</button>
       <span class="close" id="closeVideo">&times;</span>
       <video id="exerciseVideo" controls playsinline></video>
       <h3 id="videoTitle"></h3>
-      <p id="videoDesc"></p>
+      <div id="videoDesc" class="video-desc"></div>
       <p id="videoNote" class="video-note"></p>
     </div>
   </div>
@@ -518,6 +681,7 @@
     const videoTitle = document.getElementById("videoTitle");
     const videoDesc = document.getElementById("videoDesc");
     const videoNote = document.getElementById("videoNote");
+    const fullscreenBtn = document.getElementById("fullscreenVideo");
     let currentVideoRequest = 0;
 
     const isYandexPublicLink = (url) => {
@@ -560,6 +724,52 @@
       videoNote.appendChild(link);
     };
 
+    const escapeHtml = (value) => (
+      String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+    );
+
+    const formatText = (value) => escapeHtml(value).replace(/\n/g, "<br>");
+
+    const splitDescription = (raw) => {
+      const text = String(raw || "").replace(/\r\n/g, "\n").trim();
+      if (!text) return { how: "", tip: "" };
+      const tipRegex = /(?:^|\n)\s*Совет\s*:/i;
+      const tipMatch = text.match(tipRegex);
+      let how = text;
+      let tip = "";
+      if (tipMatch && typeof tipMatch.index === "number") {
+        how = text.slice(0, tipMatch.index);
+        tip = text.slice(tipMatch.index).replace(tipRegex, "");
+      }
+      how = how.replace(/Как\s+выполнять\s*:/i, "").trim();
+      tip = tip.replace(/Совет\s*:/i, "").trim();
+      if (!how && !tip) {
+        how = text;
+      }
+      return { how, tip };
+    };
+
+    const buildDescriptionHtml = (raw) => {
+      const sections = splitDescription(raw);
+      const howText = sections.how || raw || "-";
+      const tipText = sections.tip || "-";
+      return `
+        <div class="desc-block">
+          <strong>Как выполнять:</strong>
+          <div>${formatText(howText)}</div>
+        </div>
+        <div class="desc-block">
+          <strong>Совет:</strong>
+          <div>${formatText(tipText)}</div>
+        </div>
+      `;
+    };
+
     const renderExercises = (items) => {
       if (!list) return;
       list.innerHTML = "";
@@ -568,21 +778,42 @@
         return;
       }
       items.forEach((exercise, i) => {
-      const card = document.createElement("div");
-      card.className = "exercise-card";
-      const letter = (exercise.title || "У").slice(0, 1);
-      card.innerHTML = `
-        <div class="thumb">
-          <div class="thumb-letter">${letter}</div>
-          <div class="overlay">▶</div>
-        </div>
-        <h3>${exercise.title || "Упражнение"}</h3>
-        <p>${exercise.description || "Описание появится позже."}</p>
-      `;
-      card.addEventListener("click", () => openVideoModal(exercise));
-      list.appendChild(card);
-      setTimeout(() => { card.style.opacity = 1; card.style.transform = "translateY(0)"; }, 100 * i);
-    });
+        const card = document.createElement("div");
+        card.className = "exercise-card";
+        const letter = (exercise.title || "У").slice(0, 1);
+        const hasVideo = Boolean(exercise.videoUrl);
+        const previewUrl = exercise.videoUrl && !isYandexPublicLink(exercise.videoUrl) ? exercise.videoUrl : "";
+
+        card.innerHTML = `
+          <div class="thumb">
+            <div class="thumb-placeholder">${letter}</div>
+            <video class="thumb-video" muted playsinline preload="metadata"></video>
+            <div class="thumb-overlay"><span class="play-icon">▶</span></div>
+            <span class="thumb-chip">${hasVideo ? "Видео" : "Без видео"}</span>
+          </div>
+          <div class="card-body">
+            <h3>${exercise.title || "Упражнение"}</h3>
+            <div class="card-hint">Открыть описание</div>
+          </div>
+        `;
+
+        const previewEl = card.querySelector(".thumb-video");
+        if (previewEl && previewUrl) {
+          previewEl.src = previewUrl;
+          previewEl.addEventListener("loadeddata", () => {
+            card.classList.add("has-preview");
+          });
+          previewEl.addEventListener("error", () => {
+            previewEl.removeAttribute("src");
+          });
+        } else if (previewEl) {
+          previewEl.remove();
+        }
+
+        card.addEventListener("click", () => openVideoModal(exercise));
+        list.appendChild(card);
+        setTimeout(() => { card.style.opacity = 1; card.style.transform = "translateY(0)"; }, 100 * i);
+      });
     };
 
     const loadExercises = async () => {
@@ -607,7 +838,9 @@
       currentVideoRequest += 1;
       const requestId = currentVideoRequest;
       if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
-      if (videoDesc) videoDesc.textContent = exercise?.description || "";
+      if (videoDesc) {
+        videoDesc.innerHTML = buildDescriptionHtml(exercise?.description || "");
+      }
       if (videoEl) {
         videoEl.pause();
         videoEl.removeAttribute("src");
@@ -618,6 +851,7 @@
         videoNote.textContent = "Загружаем видео...";
       }
       videoModal.classList.add("show");
+      videoModal.setAttribute("aria-hidden", "false");
 
       if (!exercise?.videoUrl) {
         if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
@@ -651,6 +885,21 @@
       }
     };
 
+    const openFullscreen = () => {
+      if (!videoEl) return;
+      if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
+      if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
+      if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
+      if (videoEl.msRequestFullscreen) return videoEl.msRequestFullscreen();
+    };
+
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openFullscreen();
+      });
+    }
+
     document.getElementById("closeVideo").addEventListener("click", closeModal);
     window.addEventListener("click", (e) => {
       const modal = document.getElementById("videoModal");
@@ -660,6 +909,7 @@
     function closeModal() {
       if (videoModal) {
         videoModal.classList.remove("show");
+        videoModal.setAttribute("aria-hidden", "true");
       }
       if (videoEl) {
         videoEl.pause();
