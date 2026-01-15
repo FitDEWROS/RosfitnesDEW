@@ -625,6 +625,80 @@
       flex-wrap: wrap;
     }
 
+    .wizard-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .wizard-step {
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+    }
+
+    .wizard-step .wizard-index {
+      font-family: var(--font-title);
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      color: inherit;
+    }
+
+    .wizard-step .wizard-label {
+      color: inherit;
+    }
+
+    .wizard-step.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      border-color: transparent;
+      color: #1b1b1b;
+      transform: translateY(-1px);
+    }
+
+    .wizard-panel {
+      display: none;
+      gap: 16px;
+    }
+
+    .wizard-panel.active {
+      display: grid;
+      animation: panelFade 0.3s ease;
+    }
+
+    .wizard-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .wizard-spacer {
+      flex: 1;
+    }
+
+    @keyframes panelFade {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     @media (max-width: 720px) {
       .form-grid {
         grid-template-columns: 1fr;
@@ -645,6 +719,15 @@
 
       .actions {
         justify-content: flex-start;
+      }
+
+      .wizard-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .wizard-spacer {
+        display: none;
       }
     }
   </style>
@@ -685,127 +768,164 @@
         </div>
       </div>
 
-      <div class="type-row">
-        <span class="field-label">Тип программы</span>
-        <div class="pill-group">
-          <label class="pill">
-            <input type="radio" name="programType" value="gym" checked>
-            <span>Зал</span>
-          </label>
-          <label class="pill">
-            <input type="radio" name="programType" value="crossfit">
-            <span>Кроссфит</span>
-          </label>
-        </div>
+      <div class="wizard-steps" role="tablist" aria-label="Шаги создания программы">
+        <button class="wizard-step active" data-step="1" type="button" aria-selected="true">
+          <span class="wizard-index">01</span>
+          <span class="wizard-label">Параметры</span>
+        </button>
+        <button class="wizard-step" data-step="2" type="button" aria-selected="false">
+          <span class="wizard-index">02</span>
+          <span class="wizard-label">Структура</span>
+        </button>
+        <button class="wizard-step" data-step="3" type="button" aria-selected="false">
+          <span class="wizard-index">03</span>
+          <span class="wizard-label">Наполнение</span>
+        </button>
       </div>
 
-      <div class="form-grid">
-        <label>
-          Название программы
-          <input id="programTitle" type="text" placeholder="Например: Программа на все тело">
-        </label>
-        <label>
-          Слаг (URL)
-          <div class="slug-field">
-            <input id="programSlug" type="text" placeholder="crossfit-busy-fullbody">
-            <button class="btn-ghost" id="slugAuto" type="button">Авто</button>
+      <div class="wizard-panel active" data-step-panel="1">
+        <div class="type-row">
+          <span class="field-label">Тип программы</span>
+          <div class="pill-group">
+            <label class="pill">
+              <input type="radio" name="programType" value="gym" checked>
+              <span>Зал</span>
+            </label>
+            <label class="pill">
+              <input type="radio" name="programType" value="crossfit">
+              <span>Кроссфит</span>
+            </label>
           </div>
-        </label>
-        <label>
-          Подзаголовок
-          <input id="programSubtitle" type="text" placeholder="Для самых занятых">
-        </label>
-        <label>
-          Краткое описание
-          <input id="programSummary" type="text" placeholder="3 тренировки в неделю, весь функционал">
-        </label>
-        <label class="full">
-          Полное описание
-          <textarea id="programDescription" placeholder="Опишите программу подробнее..."></textarea>
-        </label>
-        <label>
-          Уровень
-          <input id="programLevel" type="text" placeholder="Новички">
-        </label>
-        <label>
-          Пол
-          <input id="programGender" type="text" placeholder="Универсальная">
-        </label>
-        <label>
-          Частота
-          <div class="inline-group">
-            <input id="programFrequencyValue" type="number" min="1" placeholder="3">
-            <select id="programFrequencyUnit">
-              <option value="трен/нед">трен/нед</option>
-              <option value="трен/мес">трен/мес</option>
-              <option value="трен/год">трен/год</option>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            Название программы
+            <input id="programTitle" type="text" placeholder="Например: Программа на все тело">
+          </label>
+          <label>
+            Слаг (URL)
+            <div class="slug-field">
+              <input id="programSlug" type="text" placeholder="crossfit-busy-fullbody">
+              <button class="btn-ghost" id="slugAuto" type="button">Авто</button>
+            </div>
+          </label>
+          <label>
+            Подзаголовок
+            <input id="programSubtitle" type="text" placeholder="Для самых занятых">
+          </label>
+          <label>
+            Краткое описание
+            <input id="programSummary" type="text" placeholder="3 тренировки в неделю, весь функционал">
+          </label>
+          <label class="full">
+            Полное описание
+            <textarea id="programDescription" placeholder="Опишите программу подробнее..."></textarea>
+          </label>
+          <label>
+            Уровень
+            <input id="programLevel" type="text" placeholder="Новички">
+          </label>
+          <label>
+            Пол
+            <input id="programGender" type="text" placeholder="Универсальная">
+          </label>
+          <label>
+            Частота
+            <div class="inline-group">
+              <input id="programFrequencyValue" type="number" min="1" placeholder="3">
+              <select id="programFrequencyUnit">
+                <option value="трен/нед">трен/нед</option>
+                <option value="трен/мес">трен/мес</option>
+                <option value="трен/год">трен/год</option>
+              </select>
+            </div>
+          </label>
+          <label>
+            Недель (авто)
+            <input id="programWeeksCount" type="number" min="1" readonly placeholder="Авто">
+            <span class="help-text">Берется из плана ниже.</span>
+          </label>
+          <label>
+            Обложка (ключ/URL)
+            <input id="programCover" type="text" placeholder="crossfit-amber или https://...">
+            <span class="help-text">Необязательно. Можно оставить пустым.</span>
+          </label>
+          <label class="full">
+            Тренер (из базы)
+            <select id="trainerSelect">
+              <option value="">Не выбран</option>
             </select>
+          </label>
+          <label>
+            Автор
+            <input id="programAuthorName" type="text" value="Тестов Тест Тестович">
+          </label>
+          <label>
+            Роль автора
+            <input id="programAuthorRole" type="text" value="Тренер Fit Dew">
+          </label>
+          <label class="full">
+            Avatar URL (опционально)
+            <input id="programAuthorAvatar" type="text" placeholder="https://...">
+          </label>
+        </div>
+
+        <div class="note-box">
+          <strong>Видео</strong>
+          <span>Используй публичные ссылки Яндекс.Диска (поделись файлом). Вставляй ссылку на файл в упражнении.</span>
+        </div>
+      </div>
+
+      <div class="wizard-panel" data-step-panel="2">
+        <div class="section-head compact">
+          <div>
+            <span class="section-eyebrow">Структура</span>
+            <h3 class="section-title">Недели и тренировки</h3>
           </div>
-        </label>
-        <label>
-          Недель (авто)
-          <input id="programWeeksCount" type="number" min="1" readonly placeholder="Авто">
-          <span class="help-text">Берется из плана ниже.</span>
-        </label>
-        <label>
-          Обложка (ключ/URL)
-          <input id="programCover" type="text" placeholder="crossfit-amber или https://...">
-          <span class="help-text">Необязательно. Можно оставить пустым.</span>
-        </label>
-        <label class="full">
-          Тренер (из базы)
-          <select id="trainerSelect">
-            <option value="">Не выбран</option>
-          </select>
-        </label>
-        <label>
-          Автор
-          <input id="programAuthorName" type="text" value="Тестов Тест Тестович">
-        </label>
-        <label>
-          Роль автора
-          <input id="programAuthorRole" type="text" value="Тренер Fit Dew">
-        </label>
-        <label class="full">
-          Avatar URL (опционально)
-          <input id="programAuthorAvatar" type="text" placeholder="https://...">
-        </label>
-      </div>
-
-      <div class="note-box">
-        <strong>Видео</strong>
-        <span>Используй публичные ссылки Яндекс.Диска (поделись файлом). Вставляй ссылку на файл в упражнении.</span>
-      </div>
-
-      <div class="section-divider"></div>
-
-      <div class="section-head compact">
-        <div>
-          <span class="section-eyebrow">Структура</span>
-          <h3 class="section-title">Недели, тренировки, упражнения</h3>
         </div>
-        <div class="section-actions">
-          <button class="btn-outline" data-action="add-week" type="button">+ Неделя</button>
+
+        <div class="plan-grid">
+          <label>
+            Недель
+            <input id="planWeeks" type="number" min="1" value="4">
+          </label>
+          <label>
+            Тренировок в неделе
+            <input id="planWorkouts" type="number" min="1" value="2">
+          </label>
+          <button class="btn-outline" id="generatePlan" type="button">Сгенерировать план</button>
+        </div>
+
+        <div class="note-box">
+          <strong>Совет</strong>
+          <span>Сначала задай базовую сетку или добавляй недели вручную. Затем переходи к шагу 3 и заполняй упражнения.</span>
         </div>
       </div>
 
-      <div class="plan-grid">
-        <label>
-          Недель
-          <input id="planWeeks" type="number" min="1" value="4">
-        </label>
-        <label>
-          Тренировок в неделе
-          <input id="planWorkouts" type="number" min="1" value="2">
-        </label>
-        <button class="btn-outline" id="generatePlan" type="button">Сгенерировать план</button>
+      <div class="wizard-panel" data-step-panel="3">
+        <div class="section-head compact">
+          <div>
+            <span class="section-eyebrow">Наполнение</span>
+            <h3 class="section-title">Недели, тренировки, упражнения</h3>
+          </div>
+          <div class="section-actions">
+            <button class="btn-outline" data-action="add-week" type="button">+ Неделя</button>
+          </div>
+        </div>
+
+        <div id="weeksContainer" class="stack"></div>
+
+        <div class="actions">
+          <button class="btn-outline" id="deleteProgram" type="button" hidden>Удалить программу</button>
+          <button class="btn-primary" id="saveProgram" type="button">Сохранить программу</button>
+        </div>
       </div>
 
-      <div id="weeksContainer" class="stack"></div>
-
-      <div class="actions">
-        <button class="btn-outline" id="deleteProgram" type="button" hidden>Удалить программу</button>
-        <button class="btn-primary" id="saveProgram" type="button">Сохранить программу</button>
+      <div class="wizard-actions">
+        <button class="btn-ghost" id="wizardPrev" type="button">Назад</button>
+        <div class="wizard-spacer"></div>
+        <button class="btn-outline" id="wizardNext" type="button">К структуре</button>
       </div>
       <div class="status-line" id="formStatus"></div>
     </section>
@@ -890,10 +1010,16 @@
       const saveProgram = document.getElementById("saveProgram");
       const deleteProgram = document.getElementById("deleteProgram");
       const reloadPrograms = document.getElementById("reloadPrograms");
+      const wizardSteps = Array.from(document.querySelectorAll("[data-step]"));
+      const wizardPanels = Array.from(document.querySelectorAll("[data-step-panel]"));
+      const wizardPrev = document.getElementById("wizardPrev");
+      const wizardNext = document.getElementById("wizardNext");
 
       let exerciseLibrary = [];
       let trainerList = [];
       let editingSlug = null;
+      const maxWizardStep = 3;
+      let wizardStep = 1;
 
       const setStatus = (message, ok) => {
         formStatus.textContent = message;
@@ -917,6 +1043,26 @@
         if (formTitle) formTitle.textContent = editingSlug ? "Редактирование программы" : "Создание программы";
         if (saveProgram) saveProgram.textContent = editingSlug ? "Обновить программу" : "Сохранить программу";
         if (deleteProgram) deleteProgram.hidden = !editingSlug;
+      };
+
+      const setWizardStep = (nextStep) => {
+        const step = Math.min(Math.max(nextStep, 1), maxWizardStep);
+        wizardStep = step;
+        wizardSteps.forEach((btn) => {
+          const btnStep = Number(btn.dataset.step);
+          const isActive = btnStep === step;
+          btn.classList.toggle("active", isActive);
+          btn.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+        wizardPanels.forEach((panel) => {
+          const panelStep = Number(panel.dataset.stepPanel);
+          panel.classList.toggle("active", panelStep === step);
+        });
+        if (wizardPrev) wizardPrev.disabled = step === 1;
+        if (wizardNext) {
+          wizardNext.disabled = step === maxWizardStep;
+          wizardNext.textContent = step === 1 ? "К структуре" : step === 2 ? "К наполнению" : "Готово";
+        }
       };
 
       const translitMap = {
@@ -1262,6 +1408,7 @@
         renumber();
         refreshExerciseSelects();
         setStatus("План создан.", true);
+        setWizardStep(3);
       };
 
       const collectProgram = () => {
@@ -1357,6 +1504,7 @@
         weeksContainer.innerHTML = "";
         addDefaultWeek();
         setStatus("", null);
+        setWizardStep(1);
       };
 
       const renderProgramList = (programs) => {
@@ -1469,6 +1617,7 @@
           }
           refreshExerciseSelects();
           setEditMode(program.slug);
+          setWizardStep(3);
           setStatus("Программа загружена в форму.", true);
         } catch (err) {
           console.warn("load program failed", err);
@@ -1605,6 +1754,22 @@
 
       });
 
+      wizardSteps.forEach((stepBtn) => {
+        stepBtn.addEventListener("click", () => {
+          const step = Number(stepBtn.dataset.step);
+          if (!Number.isFinite(step)) return;
+          setWizardStep(step);
+        });
+      });
+
+      wizardPrev?.addEventListener("click", () => {
+        setWizardStep(wizardStep - 1);
+      });
+
+      wizardNext?.addEventListener("click", () => {
+        setWizardStep(wizardStep + 1);
+      });
+
       slugAuto?.addEventListener("click", () => {
         programSlug.value = slugify(programTitle.value.trim());
       });
@@ -1691,6 +1856,8 @@
       });
 
       reloadPrograms?.addEventListener("click", () => loadPrograms());
+
+      setWizardStep(1);
 
       const checkAccess = async () => {
         if (!apiBase) {
