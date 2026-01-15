@@ -426,8 +426,8 @@
     .action-card {
       position: relative;
       border-radius: 22px;
-      padding: 16px;
-      min-height: 120px;
+      padding: 16px 16px 46px;
+      min-height: 132px;
       background: #1a1a1d;
       color: #ffffff;
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -441,15 +441,16 @@
     .action-card::after {
       content: ">";
       position: absolute;
-      right: 12px;
-      top: 12px;
-      width: 30px;
-      height: 30px;
+      right: 16px;
+      bottom: 14px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.12);
       display: grid;
       place-items: center;
       font-weight: 700;
+      font-size: 0.85rem;
     }
 
     .action-card:hover {
