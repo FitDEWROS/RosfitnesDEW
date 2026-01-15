@@ -315,7 +315,25 @@
 
 
 
-  </style>
+      .cf-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      justify-content: initial;
+    }
+
+    .header-title {
+      position: static;
+      transform: none;
+      justify-self: center;
+      padding: 0 12px;
+      line-height: 1.05;
+    }
+
+    .header-spacer {
+      width: 86px;
+      height: 1px;
+    }
+</style>
   <style>
     :root {
       --bg: #0f0f10;
@@ -640,6 +658,27 @@
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="env.js?v=20260115"></script>
+  <style>
+    .cf-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      justify-content: initial;
+    }
+
+    .header-title {
+      position: static;
+      transform: none;
+      justify-self: center;
+      padding: 0 12px;
+      line-height: 1.05;
+      text-align: center;
+    }
+
+    .header-spacer {
+      width: 86px;
+      height: 1px;
+    }
+  </style>
 </head>
 
 <body class="page-crossfit">
@@ -650,7 +689,9 @@
       <span class="header-eyebrow">Упражнения</span>
       <span class="app-title">Кроссфит</span>
     </div>
-  </header>
+  
+    <div class="header-spacer" aria-hidden="true"></div>
+</header>
 
   <div class="wrap">
     <main class="cf-main" id="exerciseList" aria-live="polite"></main>

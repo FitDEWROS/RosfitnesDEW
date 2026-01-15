@@ -46,6 +46,7 @@
 
     body {
       margin: 0;
+      overflow-x: hidden;
       min-height: 100vh;
       background: var(--bg);
       color: var(--text);
@@ -143,6 +144,8 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .week-nav {
@@ -165,14 +168,23 @@
 
     .week-days {
       flex: 1;
+      min-width: 0;
       display: grid;
       grid-auto-flow: column;
       grid-auto-columns: minmax(46px, 1fr);
       gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .week-days::-webkit-scrollbar {
+      display: none;
     }
 
     .week-day {
       border: 1px solid var(--card-border);
+      scroll-snap-align: center;
       background: rgba(255, 255, 255, 0.06);
       border-radius: 14px;
       padding: 8px 6px;
@@ -229,6 +241,7 @@
 
     .calendar-card {
       background: var(--card);
+      min-width: 0;
       border: 1px solid var(--card-border);
       border-radius: var(--radius-lg);
       padding: 16px;
@@ -694,7 +707,8 @@
       .diary-header h1 { font-size: 1.5rem; }
       .form-grid.three { grid-template-columns: 1fr; }
       .week-strip { gap: 6px; }
-      .week-days { grid-auto-columns: minmax(42px, 1fr); }
+      .week-nav { width: 30px; height: 30px; border-radius: 9px; }
+      .week-days { grid-auto-columns: minmax(38px, 1fr); }
       .calendar-day { height: 34px; font-size: 0.8rem; }
       .chart-svg { height: 100px; }
     }
