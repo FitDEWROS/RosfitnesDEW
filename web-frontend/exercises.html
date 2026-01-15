@@ -367,10 +367,25 @@
       const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
       if (requestId !== currentVideoRequest) return;
 
-      if (resolvedUrl) {
+      if (resolvedUrl && videoEl) {
         videoEl.src = resolvedUrl;
         videoEl.style.display = "block";
-        if (videoNote) videoNote.style.display = "none";
+        videoEl.onerror = () => {
+          if (requestId !== currentVideoRequest) return;
+          showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
+        };
+        videoEl.onloadeddata = () => {
+          if (requestId !== currentVideoRequest) return;
+          if (videoNote) videoNote.style.display = "none";
+        };
+        videoEl.load();
+        const playAttempt = videoEl.play();
+        if (playAttempt && typeof playAttempt.catch === "function") {
+          playAttempt.catch(() => {
+            if (requestId !== currentVideoRequest) return;
+            showVideoLink(resolvedUrl, "Не удалось запустить видео.");
+          });
+        }
       } else {
         showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
       }
