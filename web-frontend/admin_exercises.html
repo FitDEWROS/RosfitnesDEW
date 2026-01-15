@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fit Dew - Админка</title>
+  <title>Fit Dew - Библиотека упражнений</title>
 
   <script>
     (function() {
@@ -519,6 +519,10 @@
       flex-wrap: wrap;
     }
 
+    .nav-actions {
+      justify-content: flex-start;
+    }
+
     .status-line {
       min-height: 20px;
       font-size: 0.9rem;
@@ -644,66 +648,21 @@
       }
     }
   </style>
-
   <style>
-    .action-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
+    .nav-actions {
+      justify-content: flex-start;
     }
-
-    .action-card {
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: 18px;
-      background: var(--card);
-      color: var(--text);
-      text-align: left;
-      display: grid;
-      gap: 8px;
-      cursor: pointer;
-      box-shadow: var(--shadow);
-      transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
-    }
-
-    .action-card:disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
-      box-shadow: none;
-    }
-
-    .action-card:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 20px 35px rgba(0, 0, 0, 0.35);
-      border-color: rgba(243, 213, 139, 0.45);
-    }
-
-    .action-title {
-      font-family: var(--font-title);
-      font-size: 1rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .action-desc {
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.5;
-    }
-  </style>
-
-</head>
-
+  </style></head>
 
 <body>
-  <div class="admin-screen" data-page="home">
+  <div class="admin-screen" data-page="exercises">
     <header class="page-header">
       <div class="header-top">
         <span class="eyebrow">Админка</span>
         <span class="status-pill" id="accessStatus">Проверяем доступ...</span>
       </div>
-      <h1 class="page-title">Панель управления</h1>
-      <p class="page-subtitle">Выбери раздел для работы с программами и упражнениями.</p>
+      <h1 class="page-title">Библиотека упражнений</h1>
+      <p class="page-subtitle">Добавляй упражнения, видео, тип (зал/кроссфит) и мышцу для зала.</p>
     </header>
 
     <section class="section-card" id="accessCard">
@@ -711,23 +670,65 @@
       <p class="muted" id="accessMessage">Проверяем права администратора...</p>
     </section>
 
-    <section class="section-card" id="actionCard" hidden>
+    <section class="section-card">
+      <div class="actions nav-actions">
+        <button class="btn-outline" id="goHome" type="button">Назад</button>
+        <button class="btn-outline" id="goPrograms" type="button">Программы</button>
+      </div>
+    </section>
+
+    <section class="section-card" id="exerciseCard" hidden>
       <div class="section-head compact">
         <div>
-          <span class="section-eyebrow">Разделы</span>
-          <h2 class="section-title">Что открыть</h2>
+          <span class="section-eyebrow">Архив</span>
+          <h2 class="section-title">Создание упражнения</h2>
+        </div>
+        <div class="section-actions">
+          <button class="btn-outline" id="reloadExercises" type="button">Обновить</button>
         </div>
       </div>
-      <div class="action-grid">
-        <button class="action-card" id="openPrograms" type="button">
-          <span class="action-title">Создание программ</span>
-          <span class="action-desc">Собери план по неделям и тренировкам, выбери упражнения из архива.</span>
-        </button>
-        <button class="action-card" id="openExercises" type="button">
-          <span class="action-title">Библиотека упражнений</span>
-          <span class="action-desc">Добавляй видео, описание, тип (зал/кроссфит) и мышцу для зала.</span>
-        </button>
+
+      <div class="form-grid">
+        <label>
+          Название упражнения
+          <input id="exerciseTitle" type="text" placeholder="Оверхед присед">
+        </label>
+        <label>
+          Тип
+          <select id="exerciseType">
+            <option value="gym" selected>Зал</option>
+            <option value="crossfit">Кроссфит</option>
+          </select>
+        </label>
+        <label class="full">
+          Мышца (для зала)
+          <input id="exerciseMuscle" type="text" placeholder="Общая">
+        </label>
+        <label class="full">
+          Описание
+          <textarea id="exerciseDescription" placeholder="Техника выполнения..."></textarea>
+        </label>
+        <label class="full">
+          Видео (Яндекс.Диск)
+          <input id="exerciseVideo" type="url" placeholder="https://disk.yandex.ru/...">
+        </label>
       </div>
+
+      <div class="actions">
+        <button class="btn-outline" id="resetExercise" type="button">Очистить</button>
+        <button class="btn-primary" id="saveExercise" type="button">Сохранить упражнение</button>
+      </div>
+      <div class="status-line" id="exerciseStatus"></div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-head compact">
+        <div>
+          <span class="section-eyebrow">Список</span>
+          <h3 class="section-title">Упражнения в архиве</h3>
+        </div>
+      </div>
+      <div class="stack" id="exerciseList"></div>
     </section>
   </div>
 
@@ -759,35 +760,189 @@
       const initData = tg?.initData || params.get("initData") || buildInitData() || "";
       const accessStatus = document.getElementById("accessStatus");
       const accessMessage = document.getElementById("accessMessage");
-      const actionCard = document.getElementById("actionCard");
-      const openPrograms = document.getElementById("openPrograms");
-      const openExercises = document.getElementById("openExercises");
+      const exerciseCard = document.getElementById("exerciseCard");
+      const exerciseList = document.getElementById("exerciseList");
+
+      const goHome = document.getElementById("goHome");
+      const goPrograms = document.getElementById("goPrograms");
+
+      const exerciseTitle = document.getElementById("exerciseTitle");
+      const exerciseType = document.getElementById("exerciseType");
+      const exerciseMuscle = document.getElementById("exerciseMuscle");
+      const exerciseDescription = document.getElementById("exerciseDescription");
+      const exerciseVideo = document.getElementById("exerciseVideo");
+      const exerciseStatus = document.getElementById("exerciseStatus");
+      const reloadExercises = document.getElementById("reloadExercises");
+      const resetExercise = document.getElementById("resetExercise");
+      const saveExercise = document.getElementById("saveExercise");
+
+      let currentExerciseId = null;
+      let exerciseLibrary = [];
 
       const setAccess = (ok, message) => {
         accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
         accessStatus.classList.toggle("ok", ok);
         accessStatus.classList.toggle("bad", !ok);
         accessMessage.textContent = message;
-        if (actionCard) actionCard.hidden = !ok;
-        if (openPrograms) openPrograms.disabled = !ok;
-        if (openExercises) openExercises.disabled = !ok;
+        if (exerciseCard) exerciseCard.hidden = !ok;
+        if (saveExercise) saveExercise.disabled = !ok;
+      };
+
+      const setExerciseStatus = (message, ok) => {
+        if (!exerciseStatus) return;
+        exerciseStatus.textContent = message;
+        exerciseStatus.classList.toggle("ok", Boolean(ok));
+        exerciseStatus.classList.toggle("bad", ok === false);
+      };
+
+      const syncExerciseType = () => {
+        if (!exerciseType || !exerciseMuscle) return;
+        const isGym = exerciseType.value !== "crossfit";
+        exerciseMuscle.disabled = !isGym;
+        if (!isGym) {
+          exerciseMuscle.value = "";
+        }
+      };
+
+      const renderExerciseList = (exercises) => {
+        if (!exerciseList) return;
+        exerciseList.innerHTML = "";
+        if (!exercises.length) {
+          exerciseList.innerHTML = "<p class='muted'>Архив упражнений пуст.</p>";
+          return;
+        }
+        exercises.forEach((exercise) => {
+          const typeLabel = exercise.type === "crossfit" ? "Кроссфит" : "Зал";
+          const muscleLabel = exercise.type === "gym" && exercise.muscle ? ` - ${exercise.muscle}` : "";
+          const videoLabel = exercise.videoUrl ? "Есть видео" : "Без видео";
+          const item = document.createElement("div");
+          item.className = "exercise-item";
+          item.innerHTML = `
+            <div class="exercise-meta">
+              <strong>${exercise.title}</strong>
+              <span class="muted">${typeLabel}${muscleLabel} - ${videoLabel}</span>
+            </div>
+            <div class="exercise-actions">
+              <button class="btn-outline" type="button" data-ex-edit="${exercise.id}">Редактировать</button>
+            </div>
+          `;
+          exerciseList.appendChild(item);
+        });
+      };
+
+      const loadExercises = async () => {
+        if (!apiBase || !initData) return;
+        try {
+          const res = await fetch(`${apiBase}/api/admin/exercises?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok || !Array.isArray(json.exercises)) return;
+          exerciseLibrary = json.exercises;
+          renderExerciseList(exerciseLibrary);
+        } catch (err) {
+          console.warn("exercises load failed", err);
+        }
+      };
+
+      const clearExerciseForm = () => {
+        currentExerciseId = null;
+        if (exerciseTitle) exerciseTitle.value = "";
+        if (exerciseType) exerciseType.value = "gym";
+        if (exerciseMuscle) exerciseMuscle.value = "";
+        if (exerciseDescription) exerciseDescription.value = "";
+        if (exerciseVideo) exerciseVideo.value = "";
+        if (saveExercise) saveExercise.textContent = "Сохранить упражнение";
+        setExerciseStatus("", null);
+        syncExerciseType();
       };
 
       const buildUrl = (path) => (
         initData ? `${path}?initData=${encodeURIComponent(initData)}` : path
       );
 
-      if (openPrograms) {
-        openPrograms.addEventListener("click", () => {
-          window.location.href = buildUrl("admin_program_create.html");
-        });
-      }
+      goHome?.addEventListener("click", () => {
+        window.location.href = buildUrl("admin_programs.html");
+      });
 
-      if (openExercises) {
-        openExercises.addEventListener("click", () => {
-          window.location.href = buildUrl("admin_exercises.html");
-        });
-      }
+      goPrograms?.addEventListener("click", () => {
+        window.location.href = buildUrl("admin_program_create.html");
+      });
+
+      exerciseType?.addEventListener("change", syncExerciseType);
+      resetExercise?.addEventListener("click", () => clearExerciseForm());
+      reloadExercises?.addEventListener("click", () => loadExercises());
+
+      exerciseList?.addEventListener("click", (event) => {
+        const editBtn = event.target.closest("[data-ex-edit]");
+        if (!editBtn) return;
+        const id = Number(editBtn.dataset.exEdit);
+        const exercise = exerciseLibrary.find((item) => item.id === id);
+        if (!exercise) return;
+        currentExerciseId = id;
+        if (exerciseTitle) exerciseTitle.value = exercise.title || "";
+        if (exerciseType) exerciseType.value = exercise.type || "gym";
+        if (exerciseMuscle) exerciseMuscle.value = exercise.muscle || "";
+        if (exerciseDescription) exerciseDescription.value = exercise.description || "";
+        if (exerciseVideo) exerciseVideo.value = exercise.videoUrl || "";
+        if (saveExercise) saveExercise.textContent = "Сохранить изменения";
+        setExerciseStatus("Редактирование упражнения.", true);
+        syncExerciseType();
+      });
+
+      saveExercise?.addEventListener("click", async () => {
+        if (!apiBase) {
+          setExerciseStatus("Не найден API_BASE. Проверь env.js.", false);
+          return;
+        }
+        if (!initData) {
+          setExerciseStatus("Нет initData. Открой админку внутри Telegram.", false);
+          return;
+        }
+
+        const payload = {
+          title: exerciseTitle?.value.trim() || "",
+          type: exerciseType?.value || "gym",
+          muscle: exerciseMuscle?.value.trim() || "",
+          description: exerciseDescription?.value.trim() || "",
+          videoUrl: exerciseVideo?.value.trim() || ""
+        };
+
+        if (!payload.title) {
+          setExerciseStatus("Заполни название упражнения.", false);
+          return;
+        }
+
+        saveExercise.disabled = true;
+        setExerciseStatus("Сохраняем упражнение...", null);
+
+        try {
+          const url = currentExerciseId
+            ? `${apiBase}/api/admin/exercises/${currentExerciseId}`
+            : `${apiBase}/api/admin/exercises`;
+          const method = currentExerciseId ? "PUT" : "POST";
+
+          const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, exercise: payload })
+          });
+
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json?.ok) {
+            setExerciseStatus("Не удалось сохранить упражнение.", false);
+            saveExercise.disabled = false;
+            return;
+          }
+
+          clearExerciseForm();
+          await loadExercises();
+          setExerciseStatus("Упражнение сохранено.", true);
+        } catch (err) {
+          console.error(err);
+          setExerciseStatus("Ошибка сети при сохранении упражнения.", false);
+        } finally {
+          saveExercise.disabled = false;
+        }
+      });
 
       const checkAccess = async () => {
         if (!apiBase) {
@@ -810,13 +965,16 @@
             setAccess(false, "Доступ закрыт. Нужна роль admin.");
             return;
           }
-          setAccess(true, "Доступ подтвержден. Можно работать в админке.");
+          setAccess(true, "Доступ подтвержден. Можно работать с упражнениями.");
+          clearExerciseForm();
+          await loadExercises();
         } catch (err) {
           console.error(err);
           setAccess(false, "Ошибка сети при проверке доступа.");
         }
       };
 
+      syncExerciseType();
       checkAccess();
 
       try {
