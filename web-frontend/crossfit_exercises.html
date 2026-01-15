@@ -333,6 +333,22 @@
       width: 86px;
       height: 1px;
     }
+
+
+    .back-btn {
+      width: fit-content;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
+    }
 </style>
   <style>
     :root {
@@ -684,7 +700,7 @@
 <body class="page-crossfit">
   <!-- Шапка вынесена наружу, чтобы убрать белые края -->
   <header class="cf-header">
-    <button id="backBtn" class="nav-btn">&#8592; Назад</button>
+    <button id="backBtn" class="back-btn" type="button">?????</button>
     <div class="header-title">
       <span class="header-eyebrow">Упражнения</span>
       <span class="app-title">Кроссфит</span>

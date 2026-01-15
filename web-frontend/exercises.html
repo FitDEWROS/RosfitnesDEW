@@ -48,12 +48,12 @@
       </div>
 
       <section id="listView" class="exercise-list-view" hidden>
-                <div class="list-head">
+                        <div class="list-head">
           <div class="list-title-group">
-            <span class="header-eyebrow">??????????</span>
-            <h3 class="list-title">???</h3>
+            <span class="header-eyebrow">Упражнения</span>
+            <h3 class="list-title">Зал</h3>
           </div>
-          <span class="muted list-subtitle">??????? ??????????</span>
+          <span class="muted list-subtitle">Каталог упражнений</span>
         </div>
         <div class="exercise-list" id="exerciseList"></div>
         <div class="empty-state" id="exerciseEmpty" hidden>Пока нет упражнений.</div>
@@ -63,7 +63,7 @@
 
   <div id="videoModal" class="modal" aria-hidden="true">
     <div class="video-modal" role="dialog" aria-modal="true">
-      <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="?? ???? ?????">?</button>
+      <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">⛶</button>
       <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">&times;</button>
       <video id="exerciseVideo" controls playsinline></video>
       <h3 class="video-title" id="videoTitle"></h3>
@@ -281,12 +281,12 @@
           <div class="thumb">
             <div class="thumb-placeholder">${letter}</div>
             <video class="thumb-video" muted playsinline preload="metadata"></video>
-            <div class="thumb-overlay"><span class="play-icon">?</span></div>
-            <span class="thumb-chip">${hasVideo ? "?????" : "??? ?????"}</span>
+            <div class="thumb-overlay"><span class="play-icon">▶</span></div>
+            <span class="thumb-chip">${hasVideo ? "Зал??" : "Зал Зал??"}</span>
           </div>
           <div class="card-body">
-            <h3>${exercise.title || "??????????"}</h3>
-            <div class="card-hint">??????? ????????</div>
+            <h3>${exercise.title || "Упражнения"}</h3>
+            <div class="card-hint">ЗалЗал? ЗалЗал??</div>
           </div>
         `;
         const previewEl = card.querySelector(".thumb-video");
@@ -348,7 +348,7 @@
       return null;
     };
 
-    const showVideoLink = (href, message) => {
+        const showVideoLink = (href, message) => {
       if (!videoNote) return;
       videoNote.innerHTML = "";
       if (message) {
@@ -365,6 +365,7 @@
       link.textContent = "Открыть видео";
       videoNote.appendChild(link);
     };
+
     const escapeHtml = (value) => (
       String(value || "")
         .replace(/&/g, "&amp;")
@@ -379,7 +380,7 @@
     const splitDescription = (raw) => {
       const text = String(raw || "").replace(/\r\n/g, "\n").trim();
       if (!text) return { how: "", tip: "" };
-      const tipRegex = /(?:^|\n)\s*?????\s*:/i;
+      const tipRegex = /(?:^|\n)\s*Совет\s*:/i;
       const tipMatch = text.match(tipRegex);
       let how = text;
       let tip = "";
@@ -387,8 +388,8 @@
         how = text.slice(0, tipMatch.index);
         tip = text.slice(tipMatch.index).replace(tipRegex, "");
       }
-      how = how.replace(/???\s+?????????\s*:/i, "").trim();
-      tip = tip.replace(/?????\s*:/i, "").trim();
+      how = how.replace(/Как\s+выполнять\s*:/i, "").trim();
+      tip = tip.replace(/Совет\s*:/i, "").trim();
       if (!how && !tip) {
         how = text;
       }
@@ -401,22 +402,21 @@
       const tipText = sections.tip || "-";
       return `
         <div class="desc-block">
-          <strong>??? ?????????:</strong>
+          <strong>Как выполнять:</strong>
           <div>${formatText(howText)}</div>
         </div>
         <div class="desc-block">
-          <strong>?????:</strong>
+          <strong>Совет:</strong>
           <div>${formatText(tipText)}</div>
         </div>
       `;
     };
 
-
     const openVideo = async (exercise) => {
       if (!videoModal) return;
       currentVideoRequest += 1;
       const requestId = currentVideoRequest;
-      if (videoTitle) videoTitle.textContent = exercise?.title || "??????????";
+      if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
       if (videoDesc) {
         videoDesc.innerHTML = buildDescriptionHtml(exercise?.description || "");
       }
@@ -427,14 +427,14 @@
       }
       if (videoNote) {
         videoNote.style.display = "block";
-        videoNote.textContent = "????????? ?????...";
+        videoNote.textContent = "Загружаем видео...";
       }
 
       videoModal.classList.add("show");
       videoModal.setAttribute("aria-hidden", "false");
 
       if (!exercise?.videoUrl) {
-        if (videoNote) videoNote.textContent = "????? ???? ?? ?????????.";
+        if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
         return;
       }
 
@@ -446,7 +446,7 @@
         videoEl.style.display = "block";
         videoEl.onerror = () => {
           if (requestId !== currentVideoRequest) return;
-          showVideoLink(resolvedUrl, "????? ?? ??????????????? ? ??????????.");
+          showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
         };
         videoEl.onloadeddata = () => {
           if (requestId !== currentVideoRequest) return;
@@ -457,28 +457,13 @@
         if (playAttempt && typeof playAttempt.catch === "function") {
           playAttempt.catch(() => {
             if (requestId !== currentVideoRequest) return;
-            showVideoLink(resolvedUrl, "?? ??????? ????????? ?????.");
+            showVideoLink(resolvedUrl, "Не удалось запустить видео.");
           });
         }
       } else {
-        showVideoLink(exercise.videoUrl, "?? ??????? ????????? ?????.");
+        showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
       }
     };
-
-    const openFullscreen = () => {
-      if (!videoEl) return;
-      if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
-      if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
-      if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
-      if (videoEl.msRequestFullscreen) return videoEl.msRequestFullscreen();
-    };
-
-    if (fullscreenBtn) {
-      fullscreenBtn.addEventListener("click", (event) => {
-        event.stopPropagation();
-        openFullscreen();
-      });
-    }
     const closeVideoModal = () => {
       if (!videoModal) return;
       currentVideoRequest += 1;
