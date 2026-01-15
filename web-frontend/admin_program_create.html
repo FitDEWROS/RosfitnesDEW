@@ -798,6 +798,24 @@
           </div>
         </div>
 
+        <div class="type-row">
+          <span class="field-label">Доступ по тарифам</span>
+          <div class="pill-group">
+            <label class="pill">
+              <input type="checkbox" name="programTariff" value="Базовый" checked>
+              <span>Базовый</span>
+            </label>
+            <label class="pill">
+              <input type="checkbox" name="programTariff" value="Выгодный" checked>
+              <span>Выгодный</span>
+            </label>
+            <label class="pill">
+              <input type="checkbox" name="programTariff" value="Максимум" checked>
+              <span>Максимум</span>
+            </label>
+          </div>
+        </div>
+
         <div class="form-grid">
           <label>
             Название программы
@@ -998,6 +1016,7 @@
       const programAuthorName = document.getElementById("programAuthorName");
       const programAuthorRole = document.getElementById("programAuthorRole");
       const programAuthorAvatar = document.getElementById("programAuthorAvatar");
+      const tariffInputs = Array.from(document.querySelectorAll("input[name='programTariff']"));
 
       const planWeeks = document.getElementById("planWeeks");
       const planWorkouts = document.getElementById("planWorkouts");
@@ -1062,6 +1081,28 @@
         if (wizardNext) {
           wizardNext.disabled = step === maxWizardStep;
           wizardNext.textContent = step === 1 ? "К структуре" : step === 2 ? "К наполнению" : "Готово";
+        }
+      };
+
+      const getSelectedTariffs = () => (
+        tariffInputs
+          .filter((input) => input.checked)
+          .map((input) => input.value)
+      );
+
+      const setSelectedTariffs = (tariffs) => {
+        const list = Array.isArray(tariffs) ? tariffs.map((item) => String(item).trim()) : [];
+        const picked = new Set(list.filter(Boolean));
+        let hasAny = false;
+        tariffInputs.forEach((input) => {
+          const checked = picked.has(input.value);
+          input.checked = checked;
+          if (checked) hasAny = true;
+        });
+        if (!hasAny) {
+          tariffInputs.forEach((input) => {
+            input.checked = true;
+          });
         }
       };
 
@@ -1413,12 +1454,14 @@
 
       const collectProgram = () => {
         const type = document.querySelector("input[name='programType']:checked")?.value || "gym";
+        const tariffs = getSelectedTariffs();
         const freqValue = programFrequencyValue.value.trim();
         const freqUnit = programFrequencyUnit.value || "трен/нед";
         const program = {
           title: programTitle.value.trim(),
           slug: programSlug.value.trim(),
           type,
+          tariffs,
           subtitle: programSubtitle.value.trim(),
           summary: programSummary.value.trim(),
           description: programDescription.value.trim(),
@@ -1435,6 +1478,7 @@
 
         const errors = [];
         if (!program.title) errors.push("Заполни название программы.");
+        if (!tariffs.length) errors.push("Выбери хотя бы один тариф.");
 
         const weekCards = Array.from(weeksContainer.querySelectorAll("[data-week]"));
         if (!weekCards.length) errors.push("Добавь хотя бы одну неделю.");
@@ -1501,6 +1545,7 @@
         planWeeks.value = "4";
         planWorkouts.value = "2";
         document.querySelector("input[name='programType'][value='gym']").checked = true;
+        setSelectedTariffs(["Базовый", "Выгодный", "Максимум"]);
         weeksContainer.innerHTML = "";
         addDefaultWeek();
         setStatus("", null);
@@ -1579,6 +1624,7 @@
           trainerSelect.value = program.authorUserId ? String(program.authorUserId) : "";
           const typeInput = document.querySelector(`input[name='programType'][value='${program.type}']`);
           if (typeInput) typeInput.checked = true;
+          setSelectedTariffs(program.tariffs);
 
           planWeeks.value = program.weeks?.length || "";
           const firstWeekWorkouts = program.weeks?.[0]?.workouts?.length || "";

@@ -346,6 +346,39 @@
       const emptyState = document.getElementById("emptyState");
       const backBtn = document.getElementById("backBtn");
 
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+
+        return p.toString();
+      };
+
+      const fetchUserTariff = async () => {
+        if (!API_BASE || !tg) return "";
+        const initData = buildInitData();
+        if (!initData) return "";
+        try {
+          const res = await fetch(`${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          return json?.profile?.tariffName || "";
+        } catch (err) {
+          console.warn("Tariff fetch failed:", err);
+          return "";
+        }
+      };
+
       const normalizeType = (value) => (value === "gym" || value === "crossfit" ? value : "gym");
       const storedMode = normalizeType(localStorage.getItem("training_mode") || "gym");
       const initialType = normalizeType(params.get("type") || storedMode);
@@ -415,10 +448,12 @@
         });
       };
 
-      const loadPrograms = async (type) => {
+      const loadPrograms = async (type, tariff) => {
         if (API_BASE) {
           try {
-            const res = await fetch(`${API_BASE}/api/programs?type=${encodeURIComponent(type)}`);
+            const query = new URLSearchParams({ type });
+            if (tariff) query.set("tariff", tariff);
+            const res = await fetch(`${API_BASE}/api/programs?${query.toString()}`);
             const json = await res.json().catch(() => ({}));
             if (json?.ok && Array.isArray(json.programs)) {
               return json.programs;
@@ -428,12 +463,18 @@
           }
         }
 
-        return fallback.filter((item) => item.type === type);
+        const filtered = fallback.filter((item) => item.type === type);
+        if (!tariff) return filtered;
+        return filtered.filter((item) => {
+          const list = Array.isArray(item.tariffs) ? item.tariffs : [];
+          return !list.length || list.includes(tariff);
+        });
       };
 
       const applyType = async (type) => {
         localStorage.setItem("training_mode", type);
-        const programs = await loadPrograms(type);
+        const tariff = await fetchUserTariff();
+        const programs = await loadPrograms(type, tariff);
         renderPrograms(programs);
       };
 

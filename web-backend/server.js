@@ -382,6 +382,20 @@ function optionalString(value) {
   return trimmed ? trimmed : null;
 }
 
+const ALLOWED_TARIFFS = ['Базовый', 'Выгодный', 'Максимум'];
+
+function normalizeTariffs(value) {
+  if (!Array.isArray(value)) return [];
+  const unique = new Set();
+  value.forEach((item) => {
+    const cleaned = cleanString(item);
+    if (ALLOWED_TARIFFS.includes(cleaned)) {
+      unique.add(cleaned);
+    }
+  });
+  return Array.from(unique);
+}
+
 async function requireAdmin(initData) {
   const parsed = parseInitData(initData);
   if (!parsed.ok) return parsed;
@@ -823,6 +837,7 @@ app.post('/api/admin/programs', async (req, res) => {
     const payload = req.body?.program || {};
     const title = cleanString(payload.title);
     const type = cleanString(payload.type).toLowerCase();
+    const tariffs = normalizeTariffs(payload.tariffs);
     const trainerId = payload.trainerId ? Number(payload.trainerId) : null;
     let trainer = null;
 
@@ -844,6 +859,9 @@ app.post('/api/admin/programs', async (req, res) => {
     }
     if (!['gym', 'crossfit'].includes(type)) {
       return res.status(400).json({ ok: false, error: 'invalid_type' });
+    }
+    if (!tariffs.length) {
+      return res.status(400).json({ ok: false, error: 'missing_tariffs' });
     }
 
     const slugSource = cleanString(payload.slug) || title;
@@ -929,6 +947,7 @@ app.post('/api/admin/programs', async (req, res) => {
         frequency: optionalString(payload.frequency),
         weeksCount,
         coverImage: optionalString(payload.coverImage),
+        tariffs,
         authorUserId: trainer?.id || null,
         authorName,
         authorRole,
@@ -964,6 +983,7 @@ app.put('/api/admin/programs/:slug', async (req, res) => {
     const payload = req.body?.program || {};
     const title = cleanString(payload.title);
     const type = cleanString(payload.type).toLowerCase();
+    const tariffs = normalizeTariffs(payload.tariffs);
     const trainerId = payload.trainerId ? Number(payload.trainerId) : null;
     let trainer = null;
 
@@ -985,6 +1005,9 @@ app.put('/api/admin/programs/:slug', async (req, res) => {
     }
     if (!['gym', 'crossfit'].includes(type)) {
       return res.status(400).json({ ok: false, error: 'invalid_type' });
+    }
+    if (!tariffs.length) {
+      return res.status(400).json({ ok: false, error: 'missing_tariffs' });
     }
 
     const slugSource = cleanString(payload.slug) || title;
@@ -1074,6 +1097,7 @@ app.put('/api/admin/programs/:slug', async (req, res) => {
         frequency: optionalString(payload.frequency),
         weeksCount,
         coverImage: optionalString(payload.coverImage),
+        tariffs,
         authorUserId: trainer?.id || null,
         authorName,
         authorRole,
@@ -1243,7 +1267,17 @@ app.get('/api/programs', async (req, res) => {
   try {
     await ensureProgramSeed();
     const type = req.query.type;
-    const where = type && ['gym', 'crossfit'].includes(type) ? { type } : {};
+    const tariff = cleanString(req.query.tariff);
+    const where = {};
+    if (type && ['gym', 'crossfit'].includes(type)) {
+      where.type = type;
+    }
+    if (tariff && ALLOWED_TARIFFS.includes(tariff)) {
+      where.OR = [
+        { tariffs: { has: tariff } },
+        { tariffs: { isEmpty: true } }
+      ];
+    }
 
     const programs = await prisma.trainingProgram.findMany({
       where,
@@ -1259,6 +1293,7 @@ app.get('/api/programs', async (req, res) => {
         frequency: true,
         weeksCount: true,
         coverImage: true,
+        tariffs: true,
         authorUserId: true,
         authorName: true,
         authorRole: true,

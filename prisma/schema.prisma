@@ -78,6 +78,7 @@ model TrainingProgram {
   slug        String               @unique
   title       String
   type        TrainingProgramType
+  tariffs     String[]             @default([])
   subtitle    String?
   summary     String?
   description String?
