@@ -339,8 +339,7 @@
       gap: 8px;
     }
 
-    .modal-close,
-    .fullscreen-btn {
+    .modal-close {
       position: static;
       border: none;
       border-radius: 999px;
@@ -414,7 +413,6 @@
       <div class="video-text" id="videoDesc"></div>
       <p class="video-note" id="videoNote">Видео пока не добавлено.</p>
       <div class="video-actions">
-        <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">Полный экран</button>
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
     </div>
@@ -441,7 +439,6 @@
       const videoDesc = byId("videoDesc");
       const videoNote = byId("videoNote");
       const closeVideo = byId("closeVideo");
-      const fullscreenBtn = byId("fullscreenVideo");
       let currentVideoRequest = 0;
       let currentVideoUrl = "";
 
@@ -530,47 +527,6 @@
           </div>
         `;
       };
-
-      const openExternalVideo = (href) => {
-        if (!href) return;
-        if (tg?.openLink) {
-          tg.openLink(href, { try_instant_view: false });
-        } else {
-          window.open(href, "_blank", "noopener");
-        }
-      };
-
-      const openFullscreen = async () => {
-        if (!videoEl) return;
-        let opened = false;
-        try {
-          if (document.fullscreenEnabled && videoEl.requestFullscreen) {
-            const res = videoEl.requestFullscreen();
-            if (res && typeof res.then === "function") await res;
-            opened = true;
-          } else if (videoEl.webkitEnterFullscreen) {
-            videoEl.webkitEnterFullscreen();
-            opened = true;
-          } else if (videoEl.webkitRequestFullscreen) {
-            videoEl.webkitRequestFullscreen();
-            opened = true;
-          } else if (videoEl.msRequestFullscreen) {
-            videoEl.msRequestFullscreen();
-            opened = true;
-          }
-        } catch (_) {}
-
-        if (!opened && isAndroid) {
-          openExternalVideo(currentVideoUrl);
-        }
-      };
-
-      if (fullscreenBtn) {
-        fullscreenBtn.addEventListener("click", (event) => {
-          event.stopPropagation();
-          openFullscreen();
-        });
-      }
 
       if (backBtn) {
         backBtn.addEventListener("click", () => {

@@ -813,7 +813,6 @@ html.light .exercise-card {
   gap: 8px;
 }
 
-.fullscreen-btn,
 .modal-close {
   position: static;
   border: none;
