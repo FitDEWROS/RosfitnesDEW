@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RosApp вЂ” РЈРїСЂР°Р¶РЅРµРЅРёСЏ</title>
 
@@ -54,11 +55,9 @@
             <h3 class="list-title">Р—Р°Р»</h3>
           </div>
           <span class="muted list-subtitle">РљР°С‚Р°Р»РѕРі СѓРїСЂР°Р¶РЅРµРЅРёР№</span>
-          <div class="density-toggle" role="group" aria-label="Columns">
-            <span class="density-label">Cols</span>
-            <button class="density-btn" type="button" data-cols="1">1</button>
-            <button class="density-btn is-active" type="button" data-cols="2">2</button>
-            <button class="density-btn" type="button" data-cols="4">4</button>
+          <div class="density-toggle" role="group" aria-label="Колонки">
+            <span class="density-label">Колонки</span>
+            <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
           </div>
         </div>
         <div class="exercise-list" id="exerciseList" data-cols="2"></div>
@@ -74,8 +73,8 @@
       <div class="video-desc" id="videoDesc"></div>
       <p class="video-note" id="videoNote">Р’РёРґРµРѕ РїРѕРєР° РЅРµ РґРѕР±Р°РІР»РµРЅРѕ.</p>
       <div class="video-actions">
-        <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="?????? ?????">?????? ?????</button>
-        <button class="modal-close" id="closeVideo" type="button" aria-label="???????">???????</button>
+        <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">Полный экран</button>
+        <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
 
     </div>
@@ -110,25 +109,28 @@
     const videoNote = document.getElementById("videoNote");
     const fullscreenBtn = document.getElementById("fullscreenVideo");
     const closeVideo = document.getElementById("closeVideo");
-    const densityButtons = document.querySelectorAll(".density-btn");
+    const densityButton = document.querySelector(".density-btn");
+    const densityOrder = ["1", "2", "4"];
 
     const applyDensity = (cols) => {
       if (!exerciseList) return;
       exerciseList.dataset.cols = cols;
-      densityButtons.forEach((btn) => {
-        btn.classList.toggle("is-active", btn.dataset.cols === cols);
-      });
+      if (densityButton) {
+        densityButton.dataset.cols = cols;
+        densityButton.textContent = cols;
+        densityButton.setAttribute("aria-label", `Колонки: ${cols}`);
+      }
     };
 
-    if (exerciseList && densityButtons.length) {
+    if (exerciseList && densityButton) {
       const savedCols = localStorage.getItem("exercise_cols") || "2";
       applyDensity(savedCols);
-      densityButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const cols = btn.dataset.cols || "2";
-          localStorage.setItem("exercise_cols", cols);
-          applyDensity(cols);
-        });
+      densityButton.addEventListener("click", () => {
+        const current = densityButton.dataset.cols || "2";
+        const idx = densityOrder.indexOf(current);
+        const next = densityOrder[(idx + 1) % densityOrder.length];
+        localStorage.setItem("exercise_cols", next);
+        applyDensity(next);
       });
     }
 
@@ -476,9 +478,16 @@
         videoEl.style.display = "block";
         videoEl.onerror = () => {
           if (requestId !== currentVideoRequest) return;
-          showVideoLink(resolvedUrl, "Р’РёРґРµРѕ РЅРµ РІРѕСЃРїСЂРѕРёР·РІРѕРґРёС‚СЃСЏ РІ РїСЂРёР»РѕР¶РµРЅРёРё.");
+          showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
         };
         videoEl.onloadeddata = () => {
+          if (requestId !== currentVideoRequest) return;
+          if (videoNote) {
+            videoNote.style.display = "block";
+            videoNote.textContent = "Нажмите на видео, чтобы запустить.";
+          }
+        };
+        videoEl.onplaying = () => {
           if (requestId !== currentVideoRequest) return;
           if (videoNote) videoNote.style.display = "none";
         };
@@ -487,11 +496,11 @@
         if (playAttempt && typeof playAttempt.catch === "function") {
           playAttempt.catch(() => {
             if (requestId !== currentVideoRequest) return;
-            showVideoLink(resolvedUrl, "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ РІРёРґРµРѕ.");
+            showVideoLink(resolvedUrl, "Нажмите на видео или откройте по ссылке.");
           });
         }
       } else {
-        showVideoLink(exercise.videoUrl, "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РІРёРґРµРѕ.");
+        showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
       }
     };
     const closeVideoModal = () => {

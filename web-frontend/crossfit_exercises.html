@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fit Dew - Упражнения</title>
 
@@ -159,8 +160,8 @@
       height: 26px;
       padding: 0 8px;
       font-size: 0.75rem;
-      color: var(--text);
-      background: transparent;
+      color: #1b1b1b;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       cursor: pointer;
     }
 
@@ -789,9 +790,7 @@
     <div class="list-actions">
       <div class="density-toggle" role="group" aria-label="Колонки">
         <span class="density-label">Колонки</span>
-        <button class="density-btn" type="button" data-cols="1">1</button>
-        <button class="density-btn is-active" type="button" data-cols="2">2</button>
-        <button class="density-btn" type="button" data-cols="4">4</button>
+        <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
       </div>
     </div>
     <main class="cf-main" id="exerciseList" aria-live="polite" data-cols="2"></main>
@@ -804,8 +803,8 @@
       <div id="videoDesc" class="video-desc"></div>
       <p id="videoNote" class="video-note"></p>
       <div class="video-actions">
-        <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="?????? ?????">?????? ?????</button>
-        <button class="modal-close" id="closeVideo" type="button" aria-label="???????">???????</button>
+        <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">Полный экран</button>
+        <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
 
     </div>
@@ -820,7 +819,8 @@
     const API_BASE = window.ENV?.API_BASE || "";
     const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
     const list = document.getElementById("exerciseList");
-    const densityButtons = document.querySelectorAll(".density-btn");
+    const densityButton = document.querySelector(".density-btn");
+    const densityOrder = ["1", "2", "4"];
     const videoModal = document.getElementById("videoModal");
     const videoEl = document.getElementById("exerciseVideo");
     const videoTitle = document.getElementById("videoTitle");
@@ -832,20 +832,22 @@
     const applyDensity = (cols) => {
       if (!list) return;
       list.dataset.cols = cols;
-      densityButtons.forEach((btn) => {
-        btn.classList.toggle("is-active", btn.dataset.cols === cols);
-      });
+      if (densityButton) {
+        densityButton.dataset.cols = cols;
+        densityButton.textContent = cols;
+        densityButton.setAttribute("aria-label", `Колонки: ${cols}`);
+      }
     };
 
-    if (list && densityButtons.length) {
+    if (list && densityButton) {
       const savedCols = localStorage.getItem("exercise_cols") || "2";
       applyDensity(savedCols);
-      densityButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const cols = btn.dataset.cols || "2";
-          localStorage.setItem("exercise_cols", cols);
-          applyDensity(cols);
-        });
+      densityButton.addEventListener("click", () => {
+        const current = densityButton.dataset.cols || "2";
+        const idx = densityOrder.indexOf(current);
+        const next = densityOrder[(idx + 1) % densityOrder.length];
+        localStorage.setItem("exercise_cols", next);
+        applyDensity(next);
       });
     }
 
@@ -1035,6 +1037,13 @@
         };
         videoEl.onloadeddata = () => {
           if (requestId !== currentVideoRequest) return;
+          if (videoNote) {
+            videoNote.style.display = "block";
+            videoNote.textContent = "Нажмите на видео, чтобы запустить.";
+          }
+        };
+        videoEl.onplaying = () => {
+          if (requestId !== currentVideoRequest) return;
           if (videoNote) videoNote.style.display = "none";
         };
         videoEl.load();
@@ -1042,7 +1051,7 @@
         if (playAttempt && typeof playAttempt.catch === "function") {
           playAttempt.catch(() => {
             if (requestId !== currentVideoRequest) return;
-            showVideoLink(resolvedUrl, "Не удалось запустить видео.");
+            showVideoLink(resolvedUrl, "Нажмите на видео или откройте по ссылке.");
           });
         }
       } else {
