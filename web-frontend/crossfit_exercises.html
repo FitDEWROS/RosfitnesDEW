@@ -798,12 +798,11 @@
 
   <div id="videoModal" class="modal" aria-hidden="true">
     <div class="video-modal" role="dialog" aria-modal="true">
-<video id="exerciseVideo" controls playsinline></video>
+<video id="exerciseVideo" controls></video>
       <h3 id="videoTitle"></h3>
       <div id="videoDesc" class="video-desc"></div>
       <p id="videoNote" class="video-note"></p>
       <div class="video-actions">
-        <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">Полный экран</button>
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
 
@@ -826,7 +825,6 @@
     const videoTitle = document.getElementById("videoTitle");
     const videoDesc = document.getElementById("videoDesc");
     const videoNote = document.getElementById("videoNote");
-    const fullscreenBtn = document.getElementById("fullscreenVideo");
     let currentVideoRequest = 0;
 
     const applyDensity = (cols) => {
@@ -937,6 +935,34 @@
       `;
     };
 
+    const setupPreview = (previewEl, card, previewUrl) => {
+      if (!previewEl || !previewUrl) return false;
+      previewEl.muted = true;
+      previewEl.playsInline = true;
+      previewEl.preload = "metadata";
+      previewEl.src = previewUrl;
+      const showPreview = () => card.classList.add("has-preview");
+      previewEl.addEventListener("loadeddata", showPreview, { once: true });
+      previewEl.addEventListener("loadedmetadata", () => {
+        if (previewEl.readyState >= 2) {
+          showPreview();
+          return;
+        }
+        try {
+          const seekTo = Math.min(0.1, (previewEl.duration || 1) / 10);
+          previewEl.currentTime = seekTo;
+        } catch (_) {}
+      }, { once: true });
+      previewEl.addEventListener("seeked", showPreview, { once: true });
+      previewEl.addEventListener("error", () => {
+        previewEl.removeAttribute("src");
+      }, { once: true });
+      try {
+        previewEl.load();
+      } catch (_) {}
+      return true;
+    };
+
     const renderExercises = (items) => {
       if (!list) return;
       list.innerHTML = "";
@@ -966,13 +992,7 @@
 
         const previewEl = card.querySelector(".thumb-video");
         if (previewEl && previewUrl) {
-          previewEl.src = previewUrl;
-          previewEl.addEventListener("loadeddata", () => {
-            card.classList.add("has-preview");
-          });
-          previewEl.addEventListener("error", () => {
-            previewEl.removeAttribute("src");
-          });
+          setupPreview(previewEl, card, previewUrl);
         } else if (previewEl) {
           previewEl.remove();
         }
