@@ -49,6 +49,24 @@
       --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
     }
 
+    html {
+      color-scheme: dark;
+    }
+
+    html.light {
+      color-scheme: light;
+    }
+
+    select option {
+      background: #1b1b1f;
+      color: #f4f1e8;
+    }
+
+    html.light select option {
+      background: #ffffff;
+      color: #1b1b1b;
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -778,6 +796,8 @@
 
       let currentExerciseId = null;
       let exerciseLibrary = [];
+      let trainerScope = "both";
+      let isTrainer = false;
 
       const setAccess = (ok, message) => {
         accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
@@ -802,6 +822,24 @@
         if (!isGym) {
           exerciseMuscle.value = "";
         }
+      };
+
+      const applyTrainerScope = () => {
+        if (!exerciseType) return;
+        if (!trainerScope || trainerScope === "both") {
+          Array.from(exerciseType.options).forEach((option) => {
+            option.disabled = false;
+          });
+          exerciseType.disabled = false;
+          return;
+        }
+        Array.from(exerciseType.options).forEach((option) => {
+          const allowed = option.value === trainerScope;
+          option.disabled = !allowed;
+          if (allowed) exerciseType.value = option.value;
+        });
+        exerciseType.disabled = false;
+        syncExerciseType();
       };
 
       const renderExerciseList = (exercises) => {
@@ -836,7 +874,10 @@
           const res = await fetch(`${apiBase}/api/admin/exercises?initData=${encodeURIComponent(initData)}`);
           const json = await res.json().catch(() => ({}));
           if (!json?.ok || !Array.isArray(json.exercises)) return;
-          exerciseLibrary = json.exercises;
+          const list = json.exercises;
+          exerciseLibrary = isTrainer && trainerScope && trainerScope !== "both"
+            ? list.filter((exercise) => exercise.type === trainerScope)
+            : list;
           renderExerciseList(exerciseLibrary);
         } catch (err) {
           console.warn("exercises load failed", err);
@@ -846,12 +887,15 @@
       const clearExerciseForm = () => {
         currentExerciseId = null;
         if (exerciseTitle) exerciseTitle.value = "";
-        if (exerciseType) exerciseType.value = "gym";
+        if (exerciseType) {
+          exerciseType.value = trainerScope && trainerScope !== "both" ? trainerScope : "gym";
+        }
         if (exerciseMuscle) exerciseMuscle.value = "";
         if (exerciseDescription) exerciseDescription.value = "";
         if (exerciseVideo) exerciseVideo.value = "";
         if (saveExercise) saveExercise.textContent = "Сохранить упражнение";
         setExerciseStatus("", null);
+        applyTrainerScope();
         syncExerciseType();
       };
 
@@ -877,6 +921,10 @@
         const id = Number(editBtn.dataset.exEdit);
         const exercise = exerciseLibrary.find((item) => item.id === id);
         if (!exercise) return;
+        if (isTrainer && trainerScope && trainerScope !== "both" && exercise.type !== trainerScope) {
+          setExerciseStatus("У тебя нет прав редактировать упражнение другого типа.", false);
+          return;
+        }
         currentExerciseId = id;
         if (exerciseTitle) exerciseTitle.value = exercise.title || "";
         if (exerciseType) exerciseType.value = exercise.type || "gym";
@@ -905,6 +953,10 @@
           description: exerciseDescription?.value.trim() || "",
           videoUrl: exerciseVideo?.value.trim() || ""
         };
+
+        if (isTrainer && trainerScope && trainerScope !== "both") {
+          payload.type = trainerScope;
+        }
 
         if (!payload.title) {
           setExerciseStatus("Заполни название упражнения.", false);
@@ -961,12 +1013,23 @@
             return;
           }
           const role = json?.profile?.role || "user";
-          if (role !== "admin") {
-            setAccess(false, "Доступ закрыт. Нужна роль admin.");
+          trainerScope = json?.profile?.trainerScope || "both";
+          isTrainer = role === "trainer";
+          if (role !== "admin" && role !== "trainer") {
+            setAccess(false, "Доступ закрыт. Нужна роль admin или trainer.");
             return;
           }
-          setAccess(true, "Доступ подтвержден. Можно работать с упражнениями.");
+          const scopeLabel = trainerScope === "crossfit"
+            ? "Кроссфит"
+            : trainerScope === "gym"
+              ? "Зал"
+              : "Зал + Кроссфит";
+          const accessText = isTrainer
+            ? `Доступ подтвержден. Роль: тренер (${scopeLabel}).`
+            : "Доступ подтвержден. Можно работать с упражнениями.";
+          setAccess(true, accessText);
           clearExerciseForm();
+          if (isTrainer) applyTrainerScope();
           await loadExercises();
         } catch (err) {
           console.error(err);

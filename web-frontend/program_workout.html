@@ -429,6 +429,7 @@
       const params = new URLSearchParams(window.location.search);
       const slug = params.get("slug");
       const workoutId = params.get("workout");
+      const isAndroid = /Android/i.test(navigator.userAgent);
 
       const byId = (id) => document.getElementById(id);
       const backBtn = byId("backBtn");
@@ -442,6 +443,7 @@
       const closeVideo = byId("closeVideo");
       const fullscreenBtn = byId("fullscreenVideo");
       let currentVideoRequest = 0;
+      let currentVideoUrl = "";
 
       const isYandexPublicLink = (url) => {
         try {
@@ -529,27 +531,45 @@
         `;
       };
 
-      const canFullscreen = () => Boolean(
-        videoEl && (videoEl.requestFullscreen || videoEl.webkitEnterFullscreen || videoEl.webkitRequestFullscreen || videoEl.msRequestFullscreen)
-      );
+      const openExternalVideo = (href) => {
+        if (!href) return;
+        if (tg?.openLink) {
+          tg.openLink(href, { try_instant_view: false });
+        } else {
+          window.open(href, "_blank", "noopener");
+        }
+      };
 
-      const openFullscreen = () => {
+      const openFullscreen = async () => {
         if (!videoEl) return;
-        if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
-        if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
-        if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
-        if (videoEl.msRequestFullscreen) return videoEl.msRequestFullscreen();
+        let opened = false;
+        try {
+          if (document.fullscreenEnabled && videoEl.requestFullscreen) {
+            const res = videoEl.requestFullscreen();
+            if (res && typeof res.then === "function") await res;
+            opened = true;
+          } else if (videoEl.webkitEnterFullscreen) {
+            videoEl.webkitEnterFullscreen();
+            opened = true;
+          } else if (videoEl.webkitRequestFullscreen) {
+            videoEl.webkitRequestFullscreen();
+            opened = true;
+          } else if (videoEl.msRequestFullscreen) {
+            videoEl.msRequestFullscreen();
+            opened = true;
+          }
+        } catch (_) {}
+
+        if (!opened && isAndroid) {
+          openExternalVideo(currentVideoUrl);
+        }
       };
 
       if (fullscreenBtn) {
-        if (!canFullscreen()) {
-          fullscreenBtn.style.display = "none";
-        } else {
-          fullscreenBtn.addEventListener("click", (event) => {
-            event.stopPropagation();
-            openFullscreen();
-          });
-        }
+        fullscreenBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          openFullscreen();
+        });
       }
 
       if (backBtn) {
@@ -587,12 +607,15 @@
         videoModal.setAttribute("aria-hidden", "false");
 
         if (!exercise?.videoUrl) {
+          currentVideoUrl = "";
           if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
           return;
         }
 
+        currentVideoUrl = exercise.videoUrl || "";
         const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
         if (requestId != currentVideoRequest) return;
+        currentVideoUrl = resolvedUrl || exercise.videoUrl || "";
 
         if (resolvedUrl && videoEl) {
           videoEl.src = resolvedUrl;
@@ -621,6 +644,7 @@
       const closeVideoModal = () => {
         if (!videoModal) return;
         currentVideoRequest += 1;
+        currentVideoUrl = "";
         videoModal.classList.remove("show");
         videoModal.setAttribute("aria-hidden", "true");
         if (videoEl) {

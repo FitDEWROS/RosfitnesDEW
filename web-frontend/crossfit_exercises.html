@@ -816,6 +816,7 @@
       document.documentElement.classList.toggle("light", theme === "light");
     })();
 
+    const tg = window.Telegram?.WebApp || null;
     const API_BASE = window.ENV?.API_BASE || "";
     const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
     const list = document.getElementById("exerciseList");
@@ -827,7 +828,9 @@
     const videoDesc = document.getElementById("videoDesc");
     const videoNote = document.getElementById("videoNote");
     const fullscreenBtn = document.getElementById("fullscreenVideo");
+    const isAndroid = /Android/i.test(navigator.userAgent);
     let currentVideoRequest = 0;
+    let currentVideoUrl = "";
 
     const applyDensity = (cols) => {
       if (!list) return;
@@ -851,27 +854,45 @@
       });
     }
 
-    const canFullscreen = () => Boolean(
-      videoEl && (videoEl.requestFullscreen || videoEl.webkitEnterFullscreen || videoEl.webkitRequestFullscreen || videoEl.msRequestFullscreen)
-    );
+    const openExternalVideo = (href) => {
+      if (!href) return;
+      if (tg?.openLink) {
+        tg.openLink(href, { try_instant_view: false });
+      } else {
+        window.open(href, "_blank", "noopener");
+      }
+    };
 
-    const openFullscreen = () => {
+    const openFullscreen = async () => {
       if (!videoEl) return;
-      if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
-      if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
-      if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
-      if (videoEl.msRequestFullscreen) return videoEl.msRequestFullscreen();
+      let opened = false;
+      try {
+        if (document.fullscreenEnabled && videoEl.requestFullscreen) {
+          const res = videoEl.requestFullscreen();
+          if (res && typeof res.then === "function") await res;
+          opened = true;
+        } else if (videoEl.webkitEnterFullscreen) {
+          videoEl.webkitEnterFullscreen();
+          opened = true;
+        } else if (videoEl.webkitRequestFullscreen) {
+          videoEl.webkitRequestFullscreen();
+          opened = true;
+        } else if (videoEl.msRequestFullscreen) {
+          videoEl.msRequestFullscreen();
+          opened = true;
+        }
+      } catch (_) {}
+
+      if (!opened && isAndroid) {
+        openExternalVideo(currentVideoUrl);
+      }
     };
 
     if (fullscreenBtn) {
-      if (!canFullscreen()) {
-        fullscreenBtn.style.display = "none";
-      } else {
-        fullscreenBtn.addEventListener("click", (event) => {
-          event.stopPropagation();
-          openFullscreen();
-        });
-      }
+      fullscreenBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openFullscreen();
+      });
     }
 
     const isYandexPublicLink = (url) => {
@@ -963,9 +984,11 @@
     const setupPreview = (previewEl, card, previewUrl) => {
       if (!previewEl || !previewUrl) return false;
       let primed = false;
-      const isAndroid = /Android/i.test(navigator.userAgent);
+      let ready = false;
       const showPreview = () => {
-        if (previewEl.videoWidth > 0 && previewEl.videoHeight > 0) {
+        if (ready) return;
+        if (previewEl.videoWidth > 0 && previewEl.videoHeight > 0 && previewEl.currentTime > 0) {
+          ready = true;
           card.classList.add("has-preview");
         }
       };
@@ -976,26 +999,26 @@
         previewEl.muted = true;
         previewEl.playsInline = true;
         previewEl.preload = "metadata";
-        previewEl.src = previewUrl;
+        const src = previewUrl.includes("#") ? previewUrl : `${previewUrl}#t=0.1`;
+        previewEl.src = src;
 
-        const trySeek = () => {
-          if (previewEl.readyState >= 2) {
-            showPreview();
-            return;
-          }
+        previewEl.addEventListener("loadedmetadata", () => {
           try {
             const seekTo = Math.min(0.1, (previewEl.duration || 1) / 10);
             previewEl.currentTime = seekTo;
           } catch (_) {}
-        };
-
-        previewEl.addEventListener("loadeddata", showPreview, { once: true });
-        previewEl.addEventListener("loadedmetadata", trySeek, { once: true });
-        previewEl.addEventListener("seeked", showPreview, { once: true });
+          if (previewEl.requestVideoFrameCallback) {
+            previewEl.requestVideoFrameCallback(() => {
+              previewEl.pause();
+              showPreview();
+            });
+          }
+        }, { once: true });
         previewEl.addEventListener("timeupdate", () => {
           previewEl.pause();
           showPreview();
         }, { once: true });
+        previewEl.addEventListener("seeked", showPreview, { once: true });
         previewEl.addEventListener("error", () => {
           previewEl.removeAttribute("src");
         }, { once: true });
@@ -1009,6 +1032,13 @@
             }
           }
         } catch (_) {}
+
+        setTimeout(() => {
+          if (!ready) {
+            previewEl.removeAttribute("src");
+            previewEl.load();
+          }
+        }, 1500);
       };
 
       if ("IntersectionObserver" in window) {
@@ -1106,12 +1136,15 @@
       videoModal.setAttribute("aria-hidden", "false");
 
       if (!exercise?.videoUrl) {
+        currentVideoUrl = "";
         if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
         return;
       }
 
+      currentVideoUrl = exercise.videoUrl || "";
       const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
       if (requestId !== currentVideoRequest) return;
+      currentVideoUrl = resolvedUrl || exercise.videoUrl || "";
 
       if (resolvedUrl && videoEl) {
         videoEl.src = resolvedUrl;
@@ -1155,6 +1188,7 @@
         videoModal.classList.remove("show");
         videoModal.setAttribute("aria-hidden", "true");
       }
+      currentVideoUrl = "";
       if (videoEl) {
         videoEl.pause();
         videoEl.removeAttribute("src");

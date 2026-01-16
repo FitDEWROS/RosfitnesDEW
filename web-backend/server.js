@@ -235,7 +235,8 @@ app.get('/api/user', async (req, res) => {
           heightCm: true,
           weightKg: true,
           age: true,
-          role: true
+          role: true,
+          trainerScope: true
         }
       });
       console.log('[api/user] dbUser:', dbUser);
@@ -250,7 +251,8 @@ app.get('/api/user', async (req, res) => {
       heightCm: dbUser?.heightCm ?? null,
       weightKg: dbUser?.weightKg ?? null,
       age: dbUser?.age ?? null,
-      role: dbUser?.role || 'user'
+      role: dbUser?.role || 'user',
+      trainerScope: normalizeTrainerScope(dbUser?.trainerScope)
     };
 
     console.log(`[api/user] profile for ${tg_id}:`, profile);
@@ -396,6 +398,12 @@ function normalizeTariffs(value) {
   return Array.from(unique);
 }
 
+const TRAINER_SCOPES = ['gym', 'crossfit', 'both'];
+
+function normalizeTrainerScope(value) {
+  return TRAINER_SCOPES.includes(value) ? value : 'both';
+}
+
 async function requireAdmin(initData) {
   const parsed = parseInitData(initData);
   if (!parsed.ok) return parsed;
@@ -410,6 +418,29 @@ async function requireAdmin(initData) {
   }
 
   return { ok: true, tg_id: parsed.tg_id };
+}
+
+async function requireStaff(initData) {
+  const parsed = parseInitData(initData);
+  if (!parsed.ok) return parsed;
+
+  const user = await prisma.user.findUnique({
+    where: { tg_id: Number(parsed.tg_id) },
+    select: { id: true, role: true, trainerScope: true, first_name: true, last_name: true, username: true }
+  });
+
+  if (!user || !['admin', 'trainer'].includes(user.role)) {
+    return { ok: false, status: 403, error: 'forbidden' };
+  }
+
+  return {
+    ok: true,
+    tg_id: parsed.tg_id,
+    userId: user.id,
+    role: user.role,
+    trainerScope: normalizeTrainerScope(user.trainerScope),
+    user
+  };
 }
 
 const PROGRAM_SEED = [
@@ -831,7 +862,7 @@ app.post('/api/mode', async (req, res) => {
 // === Admin: create training program ===
 app.post('/api/admin/programs', async (req, res) => {
   try {
-    const auth = await requireAdmin(req.body?.initData);
+    const auth = await requireStaff(req.body?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
 
     const payload = req.body?.program || {};
@@ -859,6 +890,12 @@ app.post('/api/admin/programs', async (req, res) => {
     }
     if (!['gym', 'crossfit'].includes(type)) {
       return res.status(400).json({ ok: false, error: 'invalid_type' });
+    }
+    if (auth.role === 'trainer') {
+      const scope = normalizeTrainerScope(auth.trainerScope);
+      if (scope !== 'both' && type !== scope) {
+        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+      }
     }
     if (!tariffs.length) {
       return res.status(400).json({ ok: false, error: 'missing_tariffs' });
@@ -966,7 +1003,7 @@ app.post('/api/admin/programs', async (req, res) => {
 // === Admin: update training program ===
 app.put('/api/admin/programs/:slug', async (req, res) => {
   try {
-    const auth = await requireAdmin(req.body?.initData);
+    const auth = await requireStaff(req.body?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
 
     const currentSlug = req.params.slug;
@@ -974,7 +1011,7 @@ app.put('/api/admin/programs/:slug', async (req, res) => {
 
     const existingProgram = await prisma.trainingProgram.findUnique({
       where: { slug: currentSlug },
-      select: { id: true, slug: true }
+      select: { id: true, slug: true, type: true }
     });
     if (!existingProgram) {
       return res.status(404).json({ ok: false, error: 'not_found' });
@@ -1005,6 +1042,15 @@ app.put('/api/admin/programs/:slug', async (req, res) => {
     }
     if (!['gym', 'crossfit'].includes(type)) {
       return res.status(400).json({ ok: false, error: 'invalid_type' });
+    }
+    if (auth.role === 'trainer') {
+      const scope = normalizeTrainerScope(auth.trainerScope);
+      if (scope !== 'both' && existingProgram.type !== scope) {
+        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+      }
+      if (scope !== 'both' && type !== scope) {
+        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+      }
     }
     if (!tariffs.length) {
       return res.status(400).json({ ok: false, error: 'missing_tariffs' });
@@ -1120,11 +1166,25 @@ app.put('/api/admin/programs/:slug', async (req, res) => {
 app.delete('/api/admin/programs/:slug', async (req, res) => {
   try {
     const initData = req.body?.initData || req.query?.initData;
-    const auth = await requireAdmin(initData);
+    const auth = await requireStaff(initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
 
     const slug = req.params.slug;
     if (!slug) return res.status(400).json({ ok: false, error: 'missing_slug' });
+
+    if (auth.role === 'trainer') {
+      const existingProgram = await prisma.trainingProgram.findUnique({
+        where: { slug },
+        select: { type: true }
+      });
+      if (!existingProgram) {
+        return res.status(404).json({ ok: false, error: 'not_found' });
+      }
+      const scope = normalizeTrainerScope(auth.trainerScope);
+      if (scope !== 'both' && existingProgram.type !== scope) {
+        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+      }
+    }
 
     await prisma.trainingProgram.delete({ where: { slug } });
     res.json({ ok: true });
@@ -1140,8 +1200,22 @@ app.delete('/api/admin/programs/:slug', async (req, res) => {
 // === Admin: trainers list ===
 app.get('/api/admin/trainers', async (req, res) => {
   try {
-    const auth = await requireAdmin(req.query?.initData);
+    const auth = await requireStaff(req.query?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    if (auth.role === 'trainer') {
+      const trainer = auth.user;
+      return res.json({
+        ok: true,
+        trainers: trainer ? [{
+          id: trainer.id,
+          first_name: trainer.first_name,
+          last_name: trainer.last_name,
+          username: trainer.username,
+          trainerScope: normalizeTrainerScope(trainer.trainerScope)
+        }] : []
+      });
+    }
 
     const trainers = await prisma.user.findMany({
       where: { role: 'trainer' },
@@ -1150,7 +1224,8 @@ app.get('/api/admin/trainers', async (req, res) => {
         id: true,
         first_name: true,
         last_name: true,
-        username: true
+        username: true,
+        trainerScope: true
       }
     });
 
@@ -1164,10 +1239,19 @@ app.get('/api/admin/trainers', async (req, res) => {
 // === Admin: exercise library ===
 app.get('/api/admin/exercises', async (req, res) => {
   try {
-    const auth = await requireAdmin(req.query?.initData);
+    const auth = await requireStaff(req.query?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
 
+    const where = {};
+    if (auth.role === 'trainer') {
+      const scope = normalizeTrainerScope(auth.trainerScope);
+      if (scope !== 'both') {
+        where.type = scope;
+      }
+    }
+
     const exercises = await prisma.exercise.findMany({
+      where,
       orderBy: { updatedAt: 'desc' }
     });
 
@@ -1180,13 +1264,19 @@ app.get('/api/admin/exercises', async (req, res) => {
 
 app.post('/api/admin/exercises', async (req, res) => {
   try {
-    const auth = await requireAdmin(req.body?.initData);
+    const auth = await requireStaff(req.body?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
 
     const payload = req.body?.exercise || {};
     const title = cleanString(payload.title);
     const typeRaw = cleanString(payload.type);
     const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
+    if (auth.role === 'trainer') {
+      const scope = normalizeTrainerScope(auth.trainerScope);
+      if (scope !== 'both' && normalizedType !== scope) {
+        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+      }
+    }
     const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'общая') : null;
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });
@@ -1211,7 +1301,7 @@ app.post('/api/admin/exercises', async (req, res) => {
 
 app.put('/api/admin/exercises/:id', async (req, res) => {
   try {
-    const auth = await requireAdmin(req.body?.initData);
+    const auth = await requireStaff(req.body?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
 
     const id = Number(req.params.id);
@@ -1223,6 +1313,22 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
     const title = cleanString(payload.title);
     const typeRaw = cleanString(payload.type);
     const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
+    if (auth.role === 'trainer') {
+      const scope = normalizeTrainerScope(auth.trainerScope);
+      if (scope !== 'both' && normalizedType !== scope) {
+        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+      }
+      const existing = await prisma.exercise.findUnique({
+        where: { id },
+        select: { type: true }
+      });
+      if (!existing) {
+        return res.status(404).json({ ok: false, error: 'not_found' });
+      }
+      if (scope !== 'both' && existing.type !== scope) {
+        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+      }
+    }
     const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'общая') : null;
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });

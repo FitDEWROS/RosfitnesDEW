@@ -49,6 +49,24 @@
       --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
     }
 
+    html {
+      color-scheme: dark;
+    }
+
+    html.light {
+      color-scheme: light;
+    }
+
+    select option {
+      background: #1b1b1f;
+      color: #f4f1e8;
+    }
+
+    html.light select option {
+      background: #ffffff;
+      color: #1b1b1b;
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -1017,6 +1035,7 @@
       const programAuthorRole = document.getElementById("programAuthorRole");
       const programAuthorAvatar = document.getElementById("programAuthorAvatar");
       const tariffInputs = Array.from(document.querySelectorAll("input[name='programTariff']"));
+      const programTypeInputs = Array.from(document.querySelectorAll("input[name='programType']"));
 
       const planWeeks = document.getElementById("planWeeks");
       const planWorkouts = document.getElementById("planWorkouts");
@@ -1037,6 +1056,8 @@
       let exerciseLibrary = [];
       let trainerList = [];
       let editingSlug = null;
+      let trainerScope = "both";
+      let isTrainer = false;
       const maxWizardStep = 3;
       let wizardStep = 1;
 
@@ -1054,6 +1075,23 @@
         formCard.hidden = !ok;
         listCard.hidden = !ok;
         if (saveProgram) saveProgram.disabled = !ok;
+      };
+
+      const applyTrainerScope = () => {
+        if (!programTypeInputs.length) return;
+        if (!trainerScope || trainerScope === "both") {
+          programTypeInputs.forEach((input) => {
+            input.disabled = false;
+          });
+          refreshExerciseSelects();
+          return;
+        }
+        programTypeInputs.forEach((input) => {
+          const allowed = input.value === trainerScope;
+          input.disabled = !allowed;
+          if (allowed) input.checked = true;
+        });
+        refreshExerciseSelects();
       };
 
       const setEditMode = (slug) => {
@@ -1163,9 +1201,13 @@
       };
 
       const refreshExerciseSelects = () => {
+        const currentType = document.querySelector("input[name='programType']:checked")?.value || "gym";
+        const filtered = exerciseLibrary.filter((exercise) => (
+          !exercise?.type || exercise.type === currentType
+        ));
         const options = [
           `<option value="">Выбрать из архива</option>`,
-          ...exerciseLibrary.map((exercise) => (
+          ...filtered.map((exercise) => (
             `<option value="${exercise.id}">${exercise.title}</option>`
           ))
         ].join("");
@@ -1176,6 +1218,14 @@
           if (current) select.value = current;
         });
       };
+
+      if (programTypeInputs.length) {
+        programTypeInputs.forEach((input) => {
+          input.addEventListener("change", () => {
+            refreshExerciseSelects();
+          });
+        });
+      }
 
       const loadExercises = async () => {
         if (!apiBase || !initData) return;
@@ -1544,12 +1594,23 @@
         programAuthorAvatar.value = "";
         planWeeks.value = "4";
         planWorkouts.value = "2";
-        document.querySelector("input[name='programType'][value='gym']").checked = true;
+        const defaultType = trainerScope && trainerScope !== "both" ? trainerScope : "gym";
+        const typeInput = document.querySelector(`input[name='programType'][value='${defaultType}']`);
+        if (typeInput) {
+          typeInput.checked = true;
+        } else {
+          document.querySelector("input[name='programType'][value='gym']").checked = true;
+        }
         setSelectedTariffs(["Базовый", "Выгодный", "Максимум"]);
         weeksContainer.innerHTML = "";
         addDefaultWeek();
         setStatus("", null);
         setWizardStep(1);
+        if (isTrainer) {
+          applyTrainerScope();
+        } else {
+          refreshExerciseSelects();
+        }
       };
 
       const renderProgramList = (programs) => {
@@ -1578,13 +1639,18 @@
         });
       };
 
+      const filterProgramsByScope = (programs) => {
+        if (!isTrainer || !trainerScope || trainerScope === "both") return programs;
+        return programs.filter((program) => program.type === trainerScope);
+      };
+
       const loadPrograms = async () => {
         if (!apiBase) return;
         try {
           const res = await fetch(`${apiBase}/api/programs`);
           const json = await res.json().catch(() => ({}));
           if (json?.ok && Array.isArray(json.programs)) {
-            renderProgramList(json.programs);
+            renderProgramList(filterProgramsByScope(json.programs));
           }
         } catch (err) {
           console.warn("programs load failed", err);
@@ -1598,6 +1664,10 @@
           const json = await res.json().catch(() => ({}));
           if (!json?.ok || !json.program) return;
           const program = json.program;
+          if (isTrainer && trainerScope && trainerScope !== "both" && program.type !== trainerScope) {
+            setStatus("У тебя нет прав редактировать программу другого типа.", false);
+            return;
+          }
 
           programTitle.value = program.title || "";
           programSlug.value = program.slug || "";
@@ -1922,12 +1992,25 @@
             return;
           }
           const role = json?.profile?.role || "user";
-          if (role !== "admin") {
-            setAccess(false, "Доступ закрыт. Нужна роль admin.");
+          trainerScope = json?.profile?.trainerScope || "both";
+          isTrainer = role === "trainer";
+          if (role !== "admin" && role !== "trainer") {
+            setAccess(false, "Доступ закрыт. Нужна роль admin или trainer.");
             return;
           }
-          setAccess(true, "Доступ подтвержден. Можно создавать программы.");
+          const scopeLabel = trainerScope === "crossfit"
+            ? "Кроссфит"
+            : trainerScope === "gym"
+              ? "Зал"
+              : "Зал + Кроссфит";
+          const accessText = isTrainer
+            ? `Доступ подтвержден. Роль: тренер (${scopeLabel}).`
+            : "Доступ подтвержден. Можно создавать программы.";
+          setAccess(true, accessText);
           clearForm();
+          if (isTrainer) {
+            applyTrainerScope();
+          }
           await loadTrainers();
           await loadExercises();
           await loadPrograms();

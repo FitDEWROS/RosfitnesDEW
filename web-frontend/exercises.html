@@ -95,6 +95,7 @@
     window.addEventListener("popstate", () => window.location.href = "index.html");
     history.pushState({ page: "exercises" }, "", window.location.href);
 
+    const tg = window.Telegram?.WebApp || null;
     const API_BASE = window.ENV?.API_BASE || "";
     const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
     const mapView = document.getElementById("mapView");
@@ -111,6 +112,7 @@
     const closeVideo = document.getElementById("closeVideo");
     const densityButton = document.querySelector(".density-btn");
     const densityOrder = ["1", "2", "4"];
+    const isAndroid = /Android/i.test(navigator.userAgent);
 
     const applyDensity = (cols) => {
       if (!exerciseList) return;
@@ -134,27 +136,45 @@
       });
     }
 
-    const canFullscreen = () => Boolean(
-      videoEl && (videoEl.requestFullscreen || videoEl.webkitEnterFullscreen || videoEl.webkitRequestFullscreen || videoEl.msRequestFullscreen)
-    );
+    const openExternalVideo = (href) => {
+      if (!href) return;
+      if (tg?.openLink) {
+        tg.openLink(href, { try_instant_view: false });
+      } else {
+        window.open(href, "_blank", "noopener");
+      }
+    };
 
-    const openFullscreen = () => {
+    const openFullscreen = async () => {
       if (!videoEl) return;
-      if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
-      if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
-      if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
-      if (videoEl.msRequestFullscreen) return videoEl.msRequestFullscreen();
+      let opened = false;
+      try {
+        if (document.fullscreenEnabled && videoEl.requestFullscreen) {
+          const res = videoEl.requestFullscreen();
+          if (res && typeof res.then === "function") await res;
+          opened = true;
+        } else if (videoEl.webkitEnterFullscreen) {
+          videoEl.webkitEnterFullscreen();
+          opened = true;
+        } else if (videoEl.webkitRequestFullscreen) {
+          videoEl.webkitRequestFullscreen();
+          opened = true;
+        } else if (videoEl.msRequestFullscreen) {
+          videoEl.msRequestFullscreen();
+          opened = true;
+        }
+      } catch (_) {}
+
+      if (!opened && isAndroid) {
+        openExternalVideo(currentVideoUrl);
+      }
     };
 
     if (fullscreenBtn) {
-      if (!canFullscreen()) {
-        fullscreenBtn.style.display = "none";
-      } else {
-        fullscreenBtn.addEventListener("click", (event) => {
-          event.stopPropagation();
-          openFullscreen();
-        });
-      }
+      fullscreenBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openFullscreen();
+      });
     }
 
     /* === ⚙️ Основная логика === */
@@ -169,6 +189,7 @@
     let exerciseLibrary = [];
     let lastGroup = null;
     let currentVideoRequest = 0;
+    let currentVideoUrl = "";
 
     btnDebug.onclick = () => {
       debugMode = !debugMode;
@@ -191,46 +212,41 @@
     btnBack.onclick  = () => setView(false);
 
     const muscleKeywords = {
-      abs: ["пресс", "скруч", "планк", "кор"],
-      chest: ["жим", "груд", "отжим", "сведение"],
+      traps: ["трапец", "трап", "шраг"],
+      chest: ["груд", "жим", "отжим", "сведение"],
+      delts: ["дельт", "плеч", "развод", "жим"],
       biceps: ["бицепс", "сгиб", "подъем", "подъём"],
-      delts: ["плеч", "дельт", "жим гант", "развод"],
-      forearm: ["предплеч", "кист"],
-      obliques: ["кос", "вращ", "русск"],
+      forearm: ["предплеч", "кист", "хват"],
+      abs: ["пресс", "скруч", "планк", "кор"],
       quads: ["квадриц", "присед", "выпад", "жим ног"],
-      calves: ["икр", "носок"],
-      traps: ["трап", "шраг"],
-      rearDelts: ["задн", "развод", "тяг", "лицу"],
-      lats: ["широч", "тяга", "подтяг"],
+      adductors: ["привод", "сведение", "внутр"],
+      tibialis: ["передн", "голен", "берц", "тибиал"],
+      upperBack: ["верх спин", "ромб", "лопат", "тяга горизонт", "сведение лопат"],
       triceps: ["трицепс", "разгиб", "француз"],
-      erectors: ["разгиб", "гиперэкст"],
+      lats: ["широч", "подтяг", "тяга верхн", "тяга к поясу"],
+      erectors: ["поясниц", "нижн спин", "гиперэкст", "разгиб"],
       glutes: ["ягод", "мост", "таз"],
-      hams: ["бедр", "румын", "сгиб"],
-      adductors: ["привод", "сведение"],
-      hipFlexors: ["сгиб", "бедра"],
-      tibialis: ["берц", "носк"]
+      hams: ["хамстр", "задн бедр", "румын", "сгиб"],
+      calves: ["икр", "носок"]
     };
 
     const GROUPS = {
-      abs: ["abs-1","abs-2","abs-3","abs-4","abs-5","abs-6","abs-7","abs-8"],
-      chest: ["chest-1","chest-2"],
-      biceps: ["biceps-left-1","biceps-left-2","biceps-right-1","biceps-right-2"],
-      delts: ["delts-left","delts-right"],
-      forearm: ["forearm-left-1","forearm-left-2","forearm-left-3","forearm-right-1","forearm-right-2","forearm-right-3"],
-      obliques: ["obliques-left-1","obliques-left-2","obliques-left-3","obliques-left-4","obliques-left-5",
-                 "obliques-right-1","obliques-right-2","obliques-right-3","obliques-right-4","obliques-right-5"],
-      quads: ["quads-left","quads-right"],
-      calves: ["calves-left","calves-right"],
-      triceps: ["triceps-left","triceps-right"],
-      rearDelts: ["rear-delts-left","rear-delts-right"],
-      lats: ["lats-left","lats-right"],
-      glutes: ["glutes-left","glutes-right"],
-      hams: ["hams-left","hams-right"],
-      traps: ["traps"],
-      erectors: ["erectors"],
-      adductors: ["adductors-left","adductors-right"],
-      hipFlexors: ["hip-flexors-left","hip-flexors-right"],
-      tibialis: ["tibialis-left","tibialis-right"]
+      traps: ["traps-left", "traps-right"],
+      chest: ["chest-left", "chest-right"],
+      delts: ["delts-left", "delts-right"],
+      biceps: ["biceps-left", "biceps-right"],
+      forearm: ["forearm-left", "forearm-right"],
+      abs: ["abs-1", "abs-2"],
+      quads: ["quads-left", "quads-right"],
+      adductors: ["adductors-left", "adductors-right"],
+      tibialis: ["tibialis-left", "tibialis-right"],
+      upperBack: ["upper-back-left-1", "upper-back-left-2", "upper-back-right-1", "upper-back-right-2"],
+      triceps: ["triceps-left", "triceps-right"],
+      lats: ["lats-left", "lats-right"],
+      erectors: ["lower-back-left", "lower-back-right"],
+      glutes: ["glutes-left", "glutes-right"],
+      hams: ["hams-left", "hams-right"],
+      calves: ["calves-left", "calves-right"]
     };
 
     function findGroup(id){
@@ -303,16 +319,22 @@
 
     function humanName(key){
       const map = {
-        chest:"Грудь", abs:"Пресс",
-        biceps:"Бицепсы", delts:"Дельты",
-        forearm:"Предплечья", obliques:"Косые",
-        quads:"РљРІР°РґСЂРёС†РµРїСЃС‹", calves:"РРєСЂС‹",
-        traps:"Трапеции", rearDelts:"Задние дельты",
-        lats:"Широчайшие", triceps:"Трицепсы",
-        erectors:"Разгибатели спины",
-        glutes:"Ягодицы", hams:"Бицепсы бедра",
-        adductors:"Приводящие", hipFlexors:"Сгибатели бедра",
-        tibialis:"Большеберцовые"
+        traps: "Трапециевидная мышца",
+        chest: "Большая грудная мышца",
+        delts: "Дельтовидная мышца",
+        biceps: "Двуглавая мышца плеча (бицепс)",
+        forearm: "Мышцы предплечья",
+        abs: "Прямая мышца живота",
+        quads: "Мышцы квадрицепса",
+        adductors: "Приводящая мышца",
+        tibialis: "Передняя группа мышц голени",
+        upperBack: "Мышцы верха спины",
+        triceps: "Трехглавая мышца плеча (трицепс)",
+        lats: "Широчайшая мышца спины",
+        erectors: "Мышцы низа спины",
+        glutes: "Большая ягодичная мышца",
+        hams: "Хамстринги (мышцы задней части бедра)",
+        calves: "Икроножная мышца"
       };
       return map[key] || key;
     }
@@ -320,9 +342,11 @@
     const setupPreview = (previewEl, card, previewUrl) => {
       if (!previewEl || !previewUrl) return false;
       let primed = false;
-      const isAndroid = /Android/i.test(navigator.userAgent);
+      let ready = false;
       const showPreview = () => {
-        if (previewEl.videoWidth > 0 && previewEl.videoHeight > 0) {
+        if (ready) return;
+        if (previewEl.videoWidth > 0 && previewEl.videoHeight > 0 && previewEl.currentTime > 0) {
+          ready = true;
           card.classList.add("has-preview");
         }
       };
@@ -333,26 +357,26 @@
         previewEl.muted = true;
         previewEl.playsInline = true;
         previewEl.preload = "metadata";
-        previewEl.src = previewUrl;
+        const src = previewUrl.includes("#") ? previewUrl : `${previewUrl}#t=0.1`;
+        previewEl.src = src;
 
-        const trySeek = () => {
-          if (previewEl.readyState >= 2) {
-            showPreview();
-            return;
-          }
+        previewEl.addEventListener("loadedmetadata", () => {
           try {
             const seekTo = Math.min(0.1, (previewEl.duration || 1) / 10);
             previewEl.currentTime = seekTo;
           } catch (_) {}
-        };
-
-        previewEl.addEventListener("loadeddata", showPreview, { once: true });
-        previewEl.addEventListener("loadedmetadata", trySeek, { once: true });
-        previewEl.addEventListener("seeked", showPreview, { once: true });
+          if (previewEl.requestVideoFrameCallback) {
+            previewEl.requestVideoFrameCallback(() => {
+              previewEl.pause();
+              showPreview();
+            });
+          }
+        }, { once: true });
         previewEl.addEventListener("timeupdate", () => {
           previewEl.pause();
           showPreview();
         }, { once: true });
+        previewEl.addEventListener("seeked", showPreview, { once: true });
         previewEl.addEventListener("error", () => {
           previewEl.removeAttribute("src");
         }, { once: true });
@@ -366,6 +390,13 @@
             }
           }
         } catch (_) {}
+
+        setTimeout(() => {
+          if (!ready) {
+            previewEl.removeAttribute("src");
+            previewEl.load();
+          }
+        }, 1500);
       };
 
       if ("IntersectionObserver" in window) {
@@ -551,12 +582,15 @@
       videoModal.setAttribute("aria-hidden", "false");
 
       if (!exercise?.videoUrl) {
+        currentVideoUrl = "";
         if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
         return;
       }
 
+      currentVideoUrl = exercise.videoUrl || "";
       const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
       if (requestId !== currentVideoRequest) return;
+      currentVideoUrl = resolvedUrl || exercise.videoUrl || "";
 
       if (resolvedUrl && videoEl) {
         videoEl.src = resolvedUrl;
@@ -591,6 +625,7 @@
     const closeVideoModal = () => {
       if (!videoModal) return;
       currentVideoRequest += 1;
+      currentVideoUrl = "";
       videoModal.classList.remove("show");
       videoModal.setAttribute("aria-hidden", "true");
       if (videoEl) {

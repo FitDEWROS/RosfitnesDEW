@@ -28,6 +28,7 @@ model User {
   tariffName      String?
   trainingMode    String    @default("gym")
   role            UserRole  @default(user)
+  trainerScope    TrainerScope?
   fatsecret_token FatSecretToken?
   nutritionEntries NutritionEntry[]
   authoredPrograms TrainingProgram[] @relation("TrainingProgramAuthor")
@@ -71,6 +72,12 @@ enum UserRole {
   user
   admin
   trainer
+}
+
+enum TrainerScope {
+  gym
+  crossfit
+  both
 }
 
 model TrainingProgram {
