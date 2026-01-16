@@ -798,11 +798,12 @@
 
   <div id="videoModal" class="modal" aria-hidden="true">
     <div class="video-modal" role="dialog" aria-modal="true">
-<video id="exerciseVideo" controls></video>
+<video id="exerciseVideo" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
       <h3 id="videoTitle"></h3>
       <div id="videoDesc" class="video-desc"></div>
       <p id="videoNote" class="video-note"></p>
       <div class="video-actions">
+        <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">Полный экран</button>
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
 
@@ -825,6 +826,7 @@
     const videoTitle = document.getElementById("videoTitle");
     const videoDesc = document.getElementById("videoDesc");
     const videoNote = document.getElementById("videoNote");
+    const fullscreenBtn = document.getElementById("fullscreenVideo");
     let currentVideoRequest = 0;
 
     const applyDensity = (cols) => {
@@ -847,6 +849,29 @@
         localStorage.setItem("exercise_cols", next);
         applyDensity(next);
       });
+    }
+
+    const canFullscreen = () => Boolean(
+      videoEl && (videoEl.requestFullscreen || videoEl.webkitEnterFullscreen || videoEl.webkitRequestFullscreen || videoEl.msRequestFullscreen)
+    );
+
+    const openFullscreen = () => {
+      if (!videoEl) return;
+      if (videoEl.requestFullscreen) return videoEl.requestFullscreen();
+      if (videoEl.webkitEnterFullscreen) return videoEl.webkitEnterFullscreen();
+      if (videoEl.webkitRequestFullscreen) return videoEl.webkitRequestFullscreen();
+      if (videoEl.msRequestFullscreen) return videoEl.msRequestFullscreen();
+    };
+
+    if (fullscreenBtn) {
+      if (!canFullscreen()) {
+        fullscreenBtn.style.display = "none";
+      } else {
+        fullscreenBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          openFullscreen();
+        });
+      }
     }
 
     const isYandexPublicLink = (url) => {
@@ -937,29 +962,69 @@
 
     const setupPreview = (previewEl, card, previewUrl) => {
       if (!previewEl || !previewUrl) return false;
-      previewEl.muted = true;
-      previewEl.playsInline = true;
-      previewEl.preload = "metadata";
-      previewEl.src = previewUrl;
-      const showPreview = () => card.classList.add("has-preview");
-      previewEl.addEventListener("loadeddata", showPreview, { once: true });
-      previewEl.addEventListener("loadedmetadata", () => {
-        if (previewEl.readyState >= 2) {
-          showPreview();
-          return;
+      let primed = false;
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const showPreview = () => {
+        if (previewEl.videoWidth > 0 && previewEl.videoHeight > 0) {
+          card.classList.add("has-preview");
         }
+      };
+
+      const prime = () => {
+        if (primed) return;
+        primed = true;
+        previewEl.muted = true;
+        previewEl.playsInline = true;
+        previewEl.preload = "metadata";
+        previewEl.src = previewUrl;
+
+        const trySeek = () => {
+          if (previewEl.readyState >= 2) {
+            showPreview();
+            return;
+          }
+          try {
+            const seekTo = Math.min(0.1, (previewEl.duration || 1) / 10);
+            previewEl.currentTime = seekTo;
+          } catch (_) {}
+        };
+
+        previewEl.addEventListener("loadeddata", showPreview, { once: true });
+        previewEl.addEventListener("loadedmetadata", trySeek, { once: true });
+        previewEl.addEventListener("seeked", showPreview, { once: true });
+        previewEl.addEventListener("timeupdate", () => {
+          previewEl.pause();
+          showPreview();
+        }, { once: true });
+        previewEl.addEventListener("error", () => {
+          previewEl.removeAttribute("src");
+        }, { once: true });
+
         try {
-          const seekTo = Math.min(0.1, (previewEl.duration || 1) / 10);
-          previewEl.currentTime = seekTo;
+          previewEl.load();
+          if (isAndroid) {
+            const playAttempt = previewEl.play();
+            if (playAttempt && typeof playAttempt.catch === "function") {
+              playAttempt.catch(() => {});
+            }
+          }
         } catch (_) {}
-      }, { once: true });
-      previewEl.addEventListener("seeked", showPreview, { once: true });
-      previewEl.addEventListener("error", () => {
-        previewEl.removeAttribute("src");
-      }, { once: true });
-      try {
-        previewEl.load();
-      } catch (_) {}
+      };
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              observer.disconnect();
+              prime();
+            }
+          });
+        }, { rootMargin: "200px" });
+        observer.observe(card);
+      } else {
+        prime();
+      }
+
       return true;
     };
 
