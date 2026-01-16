@@ -425,6 +425,10 @@ h1, h2, h3, h4, h5 {
   box-shadow: var(--shadow);
 }
 
+html.light .header {
+  background: var(--card);
+}
+
 .header.header--split {
   display: flex;
   align-items: center;
