@@ -1,12 +1,12 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RosApp вЂ” РЈРїСЂР°Р¶РЅРµРЅРёСЏ</title>
+  <title>RosApp — Упражнения</title>
 
-  <!-- вњ… Р•РґРёРЅРѕРµ РїРѕРґРєР»СЋС‡РµРЅРёРµ РѕР±С‰РµР№ С‚РµРјС‹ -->
+  <!-- ✅ Единое подключение общей темы -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
@@ -19,19 +19,19 @@
 <body>
   <div class="wrap">
     <header class="header header--split">
-      <button id="btnBackNav" class="back-btn" type="button">РќР°Р·Р°Рґ</button>
-      <div class="view-toggle" role="tablist" aria-label="Р’РёРґ СЃС‚СЂР°РЅРёС†С‹">
-        <button class="view-toggle-btn is-active" data-view="map" role="tab" aria-selected="true">РЎРёР»СѓСЌС‚</button>
-        <button class="view-toggle-btn" data-view="list" role="tab" aria-selected="false">РЎРїРёСЃРѕРє</button>
+      <button id="btnBackNav" class="back-btn" type="button">Назад</button>
+      <div class="view-toggle" role="tablist" aria-label="Вид страницы">
+        <button class="view-toggle-btn is-active" data-view="map" role="tab" aria-selected="true">Силуэт</button>
+        <button class="view-toggle-btn" data-view="list" role="tab" aria-selected="false">Список</button>
       </div>
     </header>
 
     <main class="muscle-wrap" aria-live="polite">
       <div id="mapView" class="map-view">
-        <div class="view-switch" role="tablist" aria-label="Р’С‹Р±РѕСЂ РІРёРґР° С‚РµР»Р°">
-          <button id="btnFront" class="active" role="tab" aria-selected="true">Р’РёРґ СЃРїРµСЂРµРґРё</button>
-          <button id="btnBack" role="tab" aria-selected="false">Р’РёРґ СЃР·Р°РґРё</button>
-          <button id="btnDebug" class="debug-toggle">Р РµР¶РёРј РѕС‚Р»Р°РґРєРё</button>
+        <div class="view-switch" role="tablist" aria-label="Выбор вида тела">
+          <button id="btnFront" class="active" role="tab" aria-selected="true">Вид спереди</button>
+          <button id="btnBack" role="tab" aria-selected="false">Вид сзади</button>
+          <button id="btnDebug" class="debug-toggle">Режим отладки</button>
         </div>
 
         <div id="frontView" class="canvas" style="display:block">
@@ -43,25 +43,25 @@
         </div>
 
         <section id="info" class="info" aria-live="polite">
-          <h3>Р’С‹Р±РµСЂРё РјС‹С€С†Сѓ</h3>
-          <p class="legend">РќР°Р¶РјРё РЅР° РѕР±Р»Р°СЃС‚СЊ РЅР° СЃРёР»СѓСЌС‚Рµ, С‡С‚РѕР±С‹ СѓРІРёРґРµС‚СЊ СѓРїСЂР°Р¶РЅРµРЅРёСЏ.</p>
+          <h3>Выбери мышцу</h3>
+          <p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>
         </section>
       </div>
 
       <section id="listView" class="exercise-list-view" hidden>
                         <div class="list-head">
           <div class="list-title-group">
-            <span class="header-eyebrow">РЈРїСЂР°Р¶РЅРµРЅРёСЏ</span>
-            <h3 class="list-title">Р—Р°Р»</h3>
+            <span class="header-eyebrow">Упражнения</span>
+            <h3 class="list-title">Зал</h3>
           </div>
-          <span class="muted list-subtitle">РљР°С‚Р°Р»РѕРі СѓРїСЂР°Р¶РЅРµРЅРёР№</span>
+          <span class="muted list-subtitle">Каталог упражнений</span>
           <div class="density-toggle" role="group" aria-label="Колонки">
             <span class="density-label">Колонки</span>
             <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
           </div>
         </div>
         <div class="exercise-list" id="exerciseList" data-cols="2"></div>
-        <div class="empty-state" id="exerciseEmpty" hidden>РџРѕРєР° РЅРµС‚ СѓРїСЂР°Р¶РЅРµРЅРёР№.</div>
+        <div class="empty-state" id="exerciseEmpty" hidden>Пока нет упражнений.</div>
       </section>
     </main>
   </div>
@@ -71,7 +71,7 @@
 <video id="exerciseVideo" controls playsinline></video>
       <h3 class="video-title" id="videoTitle"></h3>
       <div class="video-desc" id="videoDesc"></div>
-      <p class="video-note" id="videoNote">Р’РёРґРµРѕ РїРѕРєР° РЅРµ РґРѕР±Р°РІР»РµРЅРѕ.</p>
+      <p class="video-note" id="videoNote">Видео пока не добавлено.</p>
       <div class="video-actions">
         <button class="fullscreen-btn" id="fullscreenVideo" type="button" aria-label="Полный экран">Полный экран</button>
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
@@ -81,13 +81,13 @@
   </div>
 
   <script>
-    /* === рџЊ— РўРµРјР° === */
+    /* === 🌗 Тема === */
     (function() {
       const savedTheme = localStorage.getItem("theme") || "dark";
       document.documentElement.classList.toggle("light", savedTheme === "light");
     })();
 
-    /* === рџ”™ РќР°Р·Р°Рґ === */
+    /* === 🔙 Назад === */
     document.getElementById("btnBackNav").addEventListener("click", () => {
       window.location.href = "index.html";
     });
@@ -134,7 +134,7 @@
       });
     }
 
-    /* === вљ™пёЏ РћСЃРЅРѕРІРЅР°СЏ Р»РѕРіРёРєР° === */
+    /* === ⚙️ Основная логика === */
     const btnFront = document.getElementById('btnFront');
     const btnBack  = document.getElementById('btnBack');
     const btnDebug = document.getElementById('btnDebug');
@@ -150,7 +150,7 @@
     btnDebug.onclick = () => {
       debugMode = !debugMode;
       btnDebug.classList.toggle("active", debugMode);
-      btnDebug.textContent = debugMode ? "РћС‚Р»Р°РґРєР°: Р’РљР›" : "Р РµР¶РёРј РѕС‚Р»Р°РґРєРё";
+      btnDebug.textContent = debugMode ? "Отладка: ВКЛ" : "Режим отладки";
     };
 
     function setView(isFront){
@@ -160,32 +160,32 @@
       btnBack.classList.toggle('active', !isFront);
       btnFront.setAttribute('aria-selected', String(isFront));
       btnBack.setAttribute('aria-selected', String(!isFront));
-      info.innerHTML = `<h3>Р’С‹Р±РµСЂРё РјС‹С€С†Сѓ</h3>
-        <p class="legend">РќР°Р¶РјРё РЅР° РѕР±Р»Р°СЃС‚СЊ РЅР° СЃРёР»СѓСЌС‚Рµ, С‡С‚РѕР±С‹ СѓРІРёРґРµС‚СЊ СѓРїСЂР°Р¶РЅРµРЅРёСЏ.</p>`;
+      info.innerHTML = `<h3>Выбери мышцу</h3>
+        <p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>`;
     }
 
     btnFront.onclick = () => setView(true);
     btnBack.onclick  = () => setView(false);
 
     const muscleKeywords = {
-      abs: ["РїСЂРµСЃСЃ", "СЃРєСЂСѓС‡", "РїР»Р°РЅРє", "РєРѕСЂ"],
-      chest: ["Р¶РёРј", "РіСЂСѓРґ", "РѕС‚Р¶РёРј", "СЃРІРµРґРµРЅРёРµ"],
-      biceps: ["Р±РёС†РµРїСЃ", "СЃРіРёР±", "РїРѕРґСЉРµРј", "РїРѕРґСЉС‘Рј"],
-      delts: ["РїР»РµС‡", "РґРµР»СЊС‚", "Р¶РёРј РіР°РЅС‚", "СЂР°Р·РІРѕРґ"],
-      forearm: ["РїСЂРµРґРїР»РµС‡", "РєРёСЃС‚"],
-      obliques: ["РєРѕСЃ", "РІСЂР°С‰", "СЂСѓСЃСЃРє"],
-      quads: ["РєРІР°РґСЂРёС†", "РїСЂРёСЃРµРґ", "РІС‹РїР°Рґ", "Р¶РёРј РЅРѕРі"],
-      calves: ["РёРєСЂ", "РЅРѕСЃРѕРє"],
-      traps: ["С‚СЂР°Рї", "С€СЂР°Рі"],
-      rearDelts: ["Р·Р°РґРЅ", "СЂР°Р·РІРѕРґ", "С‚СЏРі", "Р»РёС†Сѓ"],
-      lats: ["С€РёСЂРѕС‡", "С‚СЏРіР°", "РїРѕРґС‚СЏРі"],
-      triceps: ["С‚СЂРёС†РµРїСЃ", "СЂР°Р·РіРёР±", "С„СЂР°РЅС†СѓР·"],
-      erectors: ["СЂР°Р·РіРёР±", "РіРёРїРµСЂСЌРєСЃС‚"],
-      glutes: ["СЏРіРѕРґ", "РјРѕСЃС‚", "С‚Р°Р·"],
-      hams: ["Р±РµРґСЂ", "СЂСѓРјС‹РЅ", "СЃРіРёР±"],
-      adductors: ["РїСЂРёРІРѕРґ", "СЃРІРµРґРµРЅРёРµ"],
-      hipFlexors: ["СЃРіРёР±", "Р±РµРґСЂР°"],
-      tibialis: ["Р±РµСЂС†", "РЅРѕСЃРє"]
+      abs: ["пресс", "скруч", "планк", "кор"],
+      chest: ["жим", "груд", "отжим", "сведение"],
+      biceps: ["бицепс", "сгиб", "подъем", "подъём"],
+      delts: ["плеч", "дельт", "жим гант", "развод"],
+      forearm: ["предплеч", "кист"],
+      obliques: ["кос", "вращ", "русск"],
+      quads: ["квадриц", "присед", "выпад", "жим ног"],
+      calves: ["икр", "носок"],
+      traps: ["трап", "шраг"],
+      rearDelts: ["задн", "развод", "тяг", "лицу"],
+      lats: ["широч", "тяга", "подтяг"],
+      triceps: ["трицепс", "разгиб", "француз"],
+      erectors: ["разгиб", "гиперэкст"],
+      glutes: ["ягод", "мост", "таз"],
+      hams: ["бедр", "румын", "сгиб"],
+      adductors: ["привод", "сведение"],
+      hipFlexors: ["сгиб", "бедра"],
+      tibialis: ["берц", "носк"]
     };
 
     const GROUPS = {
@@ -219,13 +219,13 @@
 
     const getExercisesForGroup = (groupKey) => {
       const keywords = muscleKeywords[groupKey] || [];
-      if (!keywords.length || !exerciseLibrary.length) return ["РќРµС‚ СѓРїСЂР°Р¶РЅРµРЅРёР№"];
+      if (!keywords.length || !exerciseLibrary.length) return ["Нет упражнений"];
       const results = exerciseLibrary.filter((exercise) => {
         const haystack = `${exercise.title || ""} ${exercise.description || ""}`.toLowerCase();
         return keywords.some((word) => haystack.includes(word));
       });
-      if (!results.length) return ["РќРµС‚ СѓРїСЂР°Р¶РЅРµРЅРёР№"];
-      return results.map((exercise) => exercise.title || "РЈРїСЂР°Р¶РЅРµРЅРёРµ");
+      if (!results.length) return ["Нет упражнений"];
+      return results.map((exercise) => exercise.title || "Упражнение");
     };
 
     function attachHandlers(obj){
@@ -255,8 +255,8 @@
                 g.classList.add("muscle-test");
                 const d = g.getAttribute("d") || "";
                 const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
-                const coords = match ? `X=${match[1]}, Y=${match[2]}` : "РЅРµ РЅР°Р№РґРµРЅС‹";
-                alert(`РњС‹С€С†Р°: ${gid}\n${coords}`);
+                const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
+                alert(`Мышца: ${gid}\n${coords}`);
               });
               return;
             }
@@ -280,16 +280,16 @@
 
     function humanName(key){
       const map = {
-        chest:"Р“СЂСѓРґСЊ", abs:"РџСЂРµСЃСЃ",
-        biceps:"Р‘РёС†РµРїСЃС‹", delts:"Р”РµР»СЊС‚С‹",
-        forearm:"РџСЂРµРґРїР»РµС‡СЊСЏ", obliques:"РљРѕСЃС‹Рµ",
-        quads:"РљРІР°РґСЂРёС†РµРїСЃС‹", calves:"РРєСЂС‹",
-        traps:"РўСЂР°РїРµС†РёРё", rearDelts:"Р—Р°РґРЅРёРµ РґРµР»СЊС‚С‹",
-        lats:"РЁРёСЂРѕС‡Р°Р№С€РёРµ", triceps:"РўСЂРёС†РµРїСЃС‹",
-        erectors:"Р Р°Р·РіРёР±Р°С‚РµР»Рё СЃРїРёРЅС‹",
-        glutes:"РЇРіРѕРґРёС†С‹", hams:"Р‘РёС†РµРїСЃС‹ Р±РµРґСЂР°",
-        adductors:"РџСЂРёРІРѕРґСЏС‰РёРµ", hipFlexors:"РЎРіРёР±Р°С‚РµР»Рё Р±РµРґСЂР°",
-        tibialis:"Р‘РѕР»СЊС€РµР±РµСЂС†РѕРІС‹Рµ"
+        chest:"Грудь", abs:"Пресс",
+        biceps:"Бицепсы", delts:"Дельты",
+        forearm:"Предплечья", obliques:"Косые",
+        quads:"РљРІР°РґСЂРёС†РµРїСЃС‹", calves:"РРєСЂС‹",
+        traps:"Трапеции", rearDelts:"Задние дельты",
+        lats:"Широчайшие", triceps:"Трицепсы",
+        erectors:"Разгибатели спины",
+        glutes:"Ягодицы", hams:"Бицепсы бедра",
+        adductors:"Приводящие", hipFlexors:"Сгибатели бедра",
+        tibialis:"Большеберцовые"
       };
       return map[key] || key;
     }
@@ -306,7 +306,7 @@
         const card = document.createElement("button");
         card.type = "button";
         card.className = "exercise-card";
-        const letter = (exercise.title || "РЈ").slice(0, 1);
+        const letter = (exercise.title || "У").slice(0, 1);
         const hasVideo = Boolean(exercise.videoUrl);
         const previewUrl = exercise.videoUrl && !isYandexPublicLink(exercise.videoUrl) ? exercise.videoUrl : "";
         card.innerHTML = `
@@ -314,11 +314,11 @@
             <div class="thumb-placeholder">${letter}</div>
             <video class="thumb-video" muted playsinline preload="metadata"></video>
             <div class="thumb-overlay"><span class="play-icon">&#9654;</span></div>
-            <span class="thumb-chip">${hasVideo ? "Р’РёРґРµРѕ" : "Р‘РµР· РІРёРґРµРѕ"}</span>
+            <span class="thumb-chip">${hasVideo ? "Видео" : "Без видео"}</span>
           </div>
           <div class="card-body">
-            <h3>${exercise.title || "РЈРїСЂР°Р¶РЅРµРЅРёРµ"}</h3>
-            <div class="card-hint">РћС‚РєСЂС‹С‚СЊ РѕРїРёСЃР°РЅРёРµ</div>
+            <h3>${exercise.title || "Упражнение"}</h3>
+            <div class="card-hint">Открыть описание</div>
           </div>
         `;
         const previewEl = card.querySelector(".thumb-video");
@@ -394,7 +394,7 @@
       link.target = "_blank";
       link.rel = "noopener";
       link.className = "video-link";
-      link.textContent = "РћС‚РєСЂС‹С‚СЊ РІРёРґРµРѕ";
+      link.textContent = "Открыть видео";
       videoNote.appendChild(link);
     };
 
@@ -412,7 +412,7 @@
     const splitDescription = (raw) => {
       const text = String(raw || "").replace(/\r\n/g, "\n").trim();
       if (!text) return { how: "", tip: "" };
-      const tipRegex = /(?:^|\n)\s*РЎРѕРІРµС‚\s*:/i;
+      const tipRegex = /(?:^|\n)\s*Совет\s*:/i;
       const tipMatch = text.match(tipRegex);
       let how = text;
       let tip = "";
@@ -420,8 +420,8 @@
         how = text.slice(0, tipMatch.index);
         tip = text.slice(tipMatch.index).replace(tipRegex, "");
       }
-      how = how.replace(/РљР°Рє\s+РІС‹РїРѕР»РЅСЏС‚СЊ\s*:/i, "").trim();
-      tip = tip.replace(/РЎРѕРІРµС‚\s*:/i, "").trim();
+      how = how.replace(/Как\s+выполнять\s*:/i, "").trim();
+      tip = tip.replace(/Совет\s*:/i, "").trim();
       if (!how && !tip) {
         how = text;
       }
@@ -434,11 +434,11 @@
       const tipText = sections.tip || "-";
       return `
         <div class="desc-block">
-          <strong>РљР°Рє РІС‹РїРѕР»РЅСЏС‚СЊ:</strong>
+          <strong>Как выполнять:</strong>
           <div>${formatText(howText)}</div>
         </div>
         <div class="desc-block">
-          <strong>РЎРѕРІРµС‚:</strong>
+          <strong>Совет:</strong>
           <div>${formatText(tipText)}</div>
         </div>
       `;
@@ -448,7 +448,7 @@
       if (!videoModal) return;
       currentVideoRequest += 1;
       const requestId = currentVideoRequest;
-      if (videoTitle) videoTitle.textContent = exercise?.title || "РЈРїСЂР°Р¶РЅРµРЅРёРµ";
+      if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
       if (videoDesc) {
         videoDesc.innerHTML = buildDescriptionHtml(exercise?.description || "");
       }
@@ -459,14 +459,14 @@
       }
       if (videoNote) {
         videoNote.style.display = "block";
-        videoNote.textContent = "Р—Р°РіСЂСѓР¶Р°РµРј РІРёРґРµРѕ...";
+        videoNote.textContent = "Загружаем видео...";
       }
 
       videoModal.classList.add("show");
       videoModal.setAttribute("aria-hidden", "false");
 
       if (!exercise?.videoUrl) {
-        if (videoNote) videoNote.textContent = "Р’РёРґРµРѕ РїРѕРєР° РЅРµ РґРѕР±Р°РІР»РµРЅРѕ.";
+        if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
         return;
       }
 
