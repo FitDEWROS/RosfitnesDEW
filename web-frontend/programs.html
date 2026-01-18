@@ -365,23 +365,26 @@
         return p.toString();
       };
 
-      const fetchUserTariff = async () => {
+      const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+      const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
+
+      const fetchUserProfile = async () => {
         if (!API_BASE || !tg) return "";
         const initData = buildInitData();
         if (!initData) return "";
         try {
           const res = await fetch(`${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`);
           const json = await res.json().catch(() => ({}));
-          return json?.profile?.tariffName || "";
+          return json?.profile || null;
         } catch (err) {
           console.warn("Tariff fetch failed:", err);
-          return "";
+          return null;
         }
       };
 
       const normalizeType = (value) => (value === "gym" || value === "crossfit" ? value : "gym");
       const storedMode = normalizeType(localStorage.getItem("training_mode") || "gym");
-      const initialType = normalizeType(params.get("type") || storedMode);
+      let initialType = normalizeType(params.get("type") || storedMode);
 
       if (backBtn) {
         backBtn.addEventListener("click", () => {
@@ -473,8 +476,19 @@
 
       const applyType = async (type) => {
         localStorage.setItem("training_mode", type);
-        const tariff = await fetchUserTariff();
-        const programs = await loadPrograms(type, tariff);
+        const profile = await fetchUserProfile();
+        const tariff = profile?.tariffName || "";
+        let effectiveType = type;
+        if (profile && isBasicTariff(tariff)) {
+          const forced = normalizeType(profile.trainingMode || "gym");
+          if (forced !== type) {
+            const label = forced === "crossfit" ? "Кроссфит" : "Зал";
+            showAlert(`На базовом тарифе доступно только направление: ${label}.`);
+          }
+          effectiveType = forced;
+          localStorage.setItem("training_mode", forced);
+        }
+        const programs = await loadPrograms(effectiveType, tariff);
         renderPrograms(programs);
       };
 

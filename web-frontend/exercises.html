@@ -111,6 +111,55 @@
     const densityButton = document.querySelector(".density-btn");
     const densityOrder = ["1", "2", "4"];
     const isAndroid = /Android/i.test(navigator.userAgent);
+    const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+
+    const buildInitData = () => {
+      const raw = tg?.initData || "";
+      if (raw && raw.length > 0) return raw;
+
+      const u = tg?.initDataUnsafe || null;
+      if (!u || !u.hash) return "";
+
+      const p = new URLSearchParams();
+      if (u.query_id) p.set("query_id", u.query_id);
+      if (u.user) p.set("user", JSON.stringify(u.user));
+      if (u.auth_date) p.set("auth_date", String(u.auth_date));
+      if (u.start_param) p.set("start_param", u.start_param);
+      if (u.chat_type) p.set("chat_type", u.chat_type);
+      if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+      p.set("hash", u.hash);
+      return p.toString();
+    };
+
+    const fetchUserProfile = async () => {
+      if (!apiBase || !tg) return null;
+      const initData = buildInitData();
+      if (!initData) return null;
+      try {
+        const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
+        const json = await res.json().catch(() => ({}));
+        return json?.profile || null;
+      } catch (err) {
+        console.warn("profile fetch failed", err);
+        return null;
+      }
+    };
+
+    const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
+
+    const enforceBaseAccess = async () => {
+      const profile = await fetchUserProfile();
+      if (!profile) return true;
+      if (!isBasicTariff(profile.tariffName)) return true;
+      const mode = profile.trainingMode === "crossfit" ? "crossfit" : "gym";
+      localStorage.setItem("training_mode", mode);
+      if (mode !== "gym") {
+        showAlert("Этот раздел доступен только для направления Кроссфит.");
+        window.location.replace("crossfit_exercises.html");
+        return false;
+      }
+      return true;
+    };
 
     const applyDensity = (cols) => {
       if (!exerciseList) return;
@@ -752,9 +801,15 @@
       });
     });
 
-    const savedView = localStorage.getItem("exercise_view") || "map";
-    setViewMode(savedView);
-    loadExercises();
+    const initPage = async () => {
+      const allowed = await enforceBaseAccess();
+      if (!allowed) return;
+      const savedView = localStorage.getItem("exercise_view") || "map";
+      setViewMode(savedView);
+      loadExercises();
+    };
+
+    initPage();
   </script>
 </body>
 </html>
