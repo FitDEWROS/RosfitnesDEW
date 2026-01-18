@@ -344,6 +344,14 @@
       showAlert("Дневник питания недоступен на базовом тарифе.");
     });
   }
+  if (nutritionHero) {
+    nutritionHero.addEventListener("click", (e) => {
+      if (!nutritionLocked) return;
+      e.preventDefault();
+      e.stopPropagation();
+      showAlert("Дневник питания недоступен на базовом тарифе.");
+    });
+  }
 
   let isDark = true;
 
@@ -411,7 +419,13 @@
           window.scrollTo({ top: 0, behavior: "smooth" });
         } else if (target) {
           const el = document.querySelector(target);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+            el.classList.remove("section-flash");
+            void el.offsetWidth;
+            el.classList.add("section-flash");
+            setTimeout(() => el.classList.remove("section-flash"), 900);
+          }
         }
         navItems.forEach((b) => b.classList.remove("is-active"));
         btn.classList.add("is-active");
