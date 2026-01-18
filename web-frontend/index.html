@@ -332,21 +332,21 @@
         radial-gradient(320px 120px at 20% 30%, rgba(255, 255, 255, 0.22), transparent 60%),
         radial-gradient(240px 160px at 80% 20%, rgba(255, 255, 255, 0.18), transparent 65%),
         radial-gradient(260px 180px at 60% 80%, rgba(255, 255, 255, 0.15), transparent 70%);
-      opacity: 0.85;
+      opacity: 0.55;
       animation: fogDrift 9s ease-in-out infinite;
       pointer-events: none;
     }
 
     .fog-lock::after {
-      opacity: 0.7;
+      opacity: 0.4;
       animation-duration: 12s;
       mix-blend-mode: screen;
     }
 
     .fog-lock > * {
-      filter: blur(6px) saturate(0.8);
-      opacity: 0.35;
-      transform: scale(1.02);
+      filter: blur(3px) saturate(0.9);
+      opacity: 0.55;
+      transform: scale(1.01);
     }
 
     html.light .fog-lock::before,
@@ -599,6 +599,43 @@
       padding: 4px;
       position: relative;
       box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+    }
+
+    .mode-toggle.is-locked {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .mode-toggle.is-locked .toggle-option {
+      pointer-events: none;
+    }
+
+    .mode-lock {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-strong);
+      opacity: 0;
+      transition: opacity var(--transition);
+      z-index: 3;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+    }
+
+    .mode-lock svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+    }
+
+    .mode-toggle.is-locked .mode-lock {
+      opacity: 0.85;
     }
 
     html.light .mode-toggle {
@@ -1060,6 +1097,11 @@
       <div class="toggle-slider" id="toggleSlider"></div>
       <span class="toggle-option" data-mode="gym">Зал</span>
       <span class="toggle-option" data-mode="crossfit">Кроссфит</span>
+      <span class="mode-lock" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img" focusable="false" aria-hidden="true">
+          <path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>
+        </svg>
+      </span>
     </div>
     <nav class="bottom-nav" aria-label="Основная навигация">
       <button class="nav-item is-active" data-scroll="body" type="button" aria-label="Главная">

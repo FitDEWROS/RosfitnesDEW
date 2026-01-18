@@ -824,8 +824,8 @@
               <span>Базовый</span>
             </label>
             <label class="pill">
-              <input type="checkbox" name="programTariff" value="Выгодный" checked>
-              <span>Выгодный</span>
+              <input type="checkbox" name="programTariff" value="Оптимальный" checked>
+              <span>Оптимальный</span>
             </label>
             <label class="pill">
               <input type="checkbox" name="programTariff" value="Максимум" checked>
@@ -1601,7 +1601,7 @@
         } else {
           document.querySelector("input[name='programType'][value='gym']").checked = true;
         }
-        setSelectedTariffs(["Базовый", "Выгодный", "Максимум"]);
+        setSelectedTariffs(["Базовый", "Оптимальный", "Максимум"]);
         weeksContainer.innerHTML = "";
         addDefaultWeek();
         setStatus("", null);

@@ -15,6 +15,7 @@ INVISIBLE = "\u2063"  # невидимый символ
 # ---------- временное состояние ----------
 class TempState:
     TARIFF = "temp_tariff"
+    MODE = "temp_mode"
 
 
 # ---------- локальные reply-клавиатуры ----------
@@ -22,6 +23,17 @@ def base_tariff_menu_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="💳 Купить")],
+            [KeyboardButton(text="⬅️ Назад")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=False,
+    )
+
+
+def base_tariff_mode_kb() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Зал"), KeyboardButton(text="Кроссфит")],
             [KeyboardButton(text="⬅️ Назад")],
         ],
         resize_keyboard=True,
@@ -133,22 +145,38 @@ async def tariff_to_home(message: Message, state: FSMContext):
 # ---------- Базовый ----------
 @router.message(StateFilter(None), F.text == "💼 Базовый")
 async def show_base_tariff(message: Message, state: FSMContext):
-    await state.set_data({TempState.TARIFF: "Базовый"})
+    await state.set_data({TempState.TARIFF: "Базовый", TempState.MODE: ""})
     await send_temp(
         message,
-        "🧾 *Базовый тариф*\n\nТут будет ваше описание.",
+        "🧾 *Базовый тариф*\n\nВыберите направление: зал или кроссфит.\nОт выбора зависит доступный контент.",
+        parse_mode="Markdown",
+        reply_markup=base_tariff_mode_kb()
+    )
+
+
+@router.message(StateFilter(None), F.text.in_({"Зал", "Кроссфит"}))
+async def select_base_tariff_mode(message: Message, state: FSMContext):
+    data = await state.get_data()
+    if data.get(TempState.TARIFF) != "Базовый":
+        return
+
+    mode = "gym" if message.text == "Зал" else "crossfit"
+    await state.update_data({TempState.MODE: mode})
+    await send_temp(
+        message,
+        f"Вы выбрали направление: *{message.text}*.\nМожно продолжать покупку тарифа.",
         parse_mode="Markdown",
         reply_markup=base_tariff_menu_kb()
     )
 
 
-# ---------- Выгодный ----------
-@router.message(StateFilter(None), F.text == "🤑 Выгодный")
+# ---------- Оптимальный ----------
+@router.message(StateFilter(None), F.text == "🤑 Оптимальный")
 async def show_value_tariff(message: Message, state: FSMContext):
-    await state.set_data({TempState.TARIFF: "Выгодный"})
+    await state.set_data({TempState.TARIFF: "Оптимальный"})
     await send_temp(
         message,
-        "🧾 *Выгодный тариф*\n\nЗдесь будет описание тарифа.",
+        "🧾 *Оптимальный тариф*\n\nЗдесь будет описание тарифа.",
         parse_mode="Markdown",
         reply_markup=buy_kb()
     )
@@ -170,20 +198,33 @@ async def show_maximum_tariff(message: Message, state: FSMContext):
 async def handle_tariff_purchase(message: Message, state: FSMContext):
     data = await state.get_data()
     bought_tariff = data.get(TempState.TARIFF, "Базовый")
+    selected_mode = data.get(TempState.MODE)
+
+    if bought_tariff == "Базовый" and selected_mode not in ("gym", "crossfit"):
+        await send_temp(
+            message,
+            "Перед покупкой выбери направление: зал или кроссфит.",
+            reply_markup=base_tariff_mode_kb()
+        )
+        return
+
+    create_data = {
+        "tg_id": message.from_user.id,
+        "username": message.from_user.username,
+        "tariffName": bought_tariff,
+    }
+    update_data = {
+        "username": message.from_user.username,
+        "tariffName": bought_tariff,
+    }
+
+    if bought_tariff == "Базовый":
+        create_data["trainingMode"] = selected_mode
+        update_data["trainingMode"] = selected_mode
 
     await reg_db.user.upsert(
         where={"tg_id": message.from_user.id},
-        data={
-            "create": {
-                "tg_id": message.from_user.id,
-                "username": message.from_user.username,
-                "tariffName": bought_tariff,
-            },
-            "update": {
-                "username": message.from_user.username,
-                "tariffName": bought_tariff,
-            },
-        },
+        data={"create": create_data, "update": update_data},
     )
 
     await send_temp(message, f"✅ Поздравляем! Вы оформили тариф *{bought_tariff}*", parse_mode="Markdown")

@@ -19,6 +19,7 @@
   const nutritionHero = document.getElementById("nutritionHero");
   const metricWaterCard = document.getElementById("metricWaterCard");
   const metricMealsCard = document.getElementById("metricMealsCard");
+  const modeToggleEl = document.getElementById("modeToggle");
   const themeToggleBtn = document.getElementById("themeToggle");
 
   const profileBtn = document.getElementById("profileBtn");
@@ -95,6 +96,10 @@
     if (metricMealsCard) {
       metricMealsCard.classList.toggle("fog-lock", nutritionLocked);
     }
+    if (modeToggleEl) {
+      modeToggleEl.classList.toggle("is-locked", nutritionLocked);
+      modeToggleEl.setAttribute("aria-disabled", nutritionLocked ? "true" : "false");
+    }
   };
 
   const applyNutritionEntry = (entry) => {
@@ -141,6 +146,10 @@
 
     toggle.querySelectorAll(".toggle-option").forEach((opt) => {
       opt.addEventListener("click", async () => {
+        if (toggle.classList.contains("is-locked")) {
+          showAlert("Переключение доступно на тарифах Оптимальный и Максимум.");
+          return;
+        }
         const newMode = opt.dataset.mode;
         if (!newMode) return;
         toggle.dataset.mode = newMode;

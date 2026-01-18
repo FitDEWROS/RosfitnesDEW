@@ -78,7 +78,7 @@ def tariffs_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="💼 Базовый")],
-            [KeyboardButton(text="🤑 Выгодный")],
+            [KeyboardButton(text="🤑 Оптимальный")],
             [KeyboardButton(text="💎 Максимум")],
             [KeyboardButton(text="⬅️ Назад")],
         ],

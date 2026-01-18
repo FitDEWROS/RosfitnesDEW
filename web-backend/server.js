@@ -246,7 +246,7 @@ app.get('/api/user', async (req, res) => {
 
     const profile = {
       first_name: dbUser?.first_name || user?.first_name || 'друг',
-      tariffName: dbUser?.tariffName || 'Базовый',
+      tariffName: normalizeTariffName(dbUser?.tariffName) || 'Базовый',
       trainingMode: dbUser?.trainingMode || 'gym',
       heightCm: dbUser?.heightCm ?? null,
       weightKg: dbUser?.weightKg ?? null,
@@ -384,13 +384,37 @@ function optionalString(value) {
   return trimmed ? trimmed : null;
 }
 
-const ALLOWED_TARIFFS = ['Базовый', 'Выгодный', 'Максимум'];
+const LEGACY_OPTIMAL_TARIFF = 'Выгодный';
+const ALLOWED_TARIFFS = ['Базовый', 'Оптимальный', 'Максимум'];
+
+function normalizeTariffName(value) {
+  const cleaned = cleanString(value);
+  if (cleaned === LEGACY_OPTIMAL_TARIFF) return 'Оптимальный';
+  return cleaned;
+}
+
+function normalizeTariffList(value) {
+  const list = Array.isArray(value) ? value : [];
+  const unique = new Set();
+  list.forEach((item) => {
+    const cleaned = normalizeTariffName(item);
+    if (ALLOWED_TARIFFS.includes(cleaned)) unique.add(cleaned);
+  });
+  return Array.from(unique);
+}
+
+function expandTariffFilter(value) {
+  const cleaned = normalizeTariffName(value);
+  if (!cleaned) return [];
+  if (cleaned === 'Оптимальный') return ['Оптимальный', LEGACY_OPTIMAL_TARIFF];
+  return [cleaned];
+}
 
 function normalizeTariffs(value) {
   if (!Array.isArray(value)) return [];
   const unique = new Set();
   value.forEach((item) => {
-    const cleaned = cleanString(item);
+    const cleaned = normalizeTariffName(item);
     if (ALLOWED_TARIFFS.includes(cleaned)) {
       unique.add(cleaned);
     }
@@ -1268,7 +1292,11 @@ app.get('/api/admin/exercises', async (req, res) => {
       orderBy: { updatedAt: 'desc' }
     });
 
-    res.json({ ok: true, exercises });
+    const normalized = exercises.map((exercise) => ({
+      ...exercise,
+      tariffs: normalizeTariffList(exercise.tariffs)
+    }));
+    res.json({ ok: true, exercises: normalized });
   } catch (e) {
     console.error('[api/admin/exercises:get] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -1386,12 +1414,13 @@ app.get('/api/exercises', async (req, res) => {
   try {
     const typeRaw = cleanString(req.query?.type);
     const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : typeRaw === 'gym' ? 'gym' : '';
-    const tariff = cleanString(req.query?.tariff);
+    const tariff = normalizeTariffName(cleanString(req.query?.tariff));
     const where = {};
     if (normalizedType) where.type = normalizedType;
     if (tariff && ALLOWED_TARIFFS.includes(tariff)) {
+      const filterTariffs = expandTariffFilter(tariff);
       where.OR = [
-        { tariffs: { has: tariff } },
+        { tariffs: { hasSome: filterTariffs } },
         { tariffs: { isEmpty: true } }
       ];
     }
@@ -1399,7 +1428,11 @@ app.get('/api/exercises', async (req, res) => {
       where: Object.keys(where).length ? where : undefined,
       orderBy: { updatedAt: 'desc' }
     });
-    res.json({ ok: true, exercises });
+    const normalized = exercises.map((exercise) => ({
+      ...exercise,
+      tariffs: normalizeTariffList(exercise.tariffs)
+    }));
+    res.json({ ok: true, exercises: normalized });
   } catch (e) {
     console.error('[api/exercises:get] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -1411,14 +1444,15 @@ app.get('/api/programs', async (req, res) => {
   try {
     await ensureProgramSeed();
     const type = req.query.type;
-    const tariff = cleanString(req.query.tariff);
+    const tariff = normalizeTariffName(cleanString(req.query.tariff));
     const where = {};
     if (type && ['gym', 'crossfit'].includes(type)) {
       where.type = type;
     }
     if (tariff && ALLOWED_TARIFFS.includes(tariff)) {
+      const filterTariffs = expandTariffFilter(tariff);
       where.OR = [
-        { tariffs: { has: tariff } },
+        { tariffs: { hasSome: filterTariffs } },
         { tariffs: { isEmpty: true } }
       ];
     }
@@ -1445,7 +1479,11 @@ app.get('/api/programs', async (req, res) => {
       }
     });
 
-    res.json({ ok: true, programs });
+    const normalized = programs.map((program) => ({
+      ...program,
+      tariffs: normalizeTariffList(program.tariffs)
+    }));
+    res.json({ ok: true, programs: normalized });
   } catch (e) {
     console.error('[api/programs] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -1476,7 +1514,11 @@ app.get('/api/programs/:slug', async (req, res) => {
     });
 
     if (!program) return res.status(404).json({ ok: false, error: 'not_found' });
-    res.json({ ok: true, program });
+    const normalized = {
+      ...program,
+      tariffs: normalizeTariffList(program.tariffs)
+    };
+    res.json({ ok: true, program: normalized });
   } catch (e) {
     console.error('[api/programs:detail] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
