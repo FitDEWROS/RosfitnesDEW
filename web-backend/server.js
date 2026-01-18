@@ -1541,6 +1541,7 @@ app.get('/api/admin/clients', async (req, res) => {
 
     const normalized = clients.map((client) => ({
       ...client,
+      tg_id: client.tg_id ? String(client.tg_id) : null,
       tariffName: normalizeTariffName(client.tariffName),
       trainer: client.trainer
         ? {
@@ -1606,6 +1607,7 @@ app.get('/api/admin/clients/:id', async (req, res) => {
       ok: true,
       client: {
         ...client,
+        tg_id: client.tg_id ? String(client.tg_id) : null,
         tariffName: normalizeTariffName(client.tariffName),
         trainer: client.trainer
           ? {
