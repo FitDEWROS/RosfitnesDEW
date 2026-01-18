@@ -388,6 +388,20 @@
       position: relative;
     }
 
+    .section-flash::before {
+      content: "";
+      position: absolute;
+      inset: -12px;
+      border-radius: 26px;
+      background:
+        radial-gradient(420px 220px at 30% 20%, rgba(243, 213, 139, 0.35), transparent 70%),
+        radial-gradient(420px 240px at 70% 80%, rgba(243, 213, 139, 0.22), transparent 70%);
+      opacity: 0;
+      pointer-events: none;
+      animation: sectionGlow 0.9s ease;
+      z-index: 0;
+    }
+
     .section-flash::after {
       content: "";
       position: absolute;
@@ -400,6 +414,7 @@
       opacity: 0;
       pointer-events: none;
       animation: sectionPulse 0.9s ease;
+      z-index: 1;
     }
 
     html.light .section-flash::after {
@@ -407,6 +422,23 @@
       box-shadow:
         0 0 0 0 rgba(195, 144, 40, 0.35),
         0 16px 26px rgba(195, 144, 40, 0.12);
+    }
+
+    html.light .section-flash::before {
+      background:
+        radial-gradient(420px 220px at 30% 20%, rgba(195, 144, 40, 0.25), transparent 70%),
+        radial-gradient(420px 240px at 70% 80%, rgba(195, 144, 40, 0.18), transparent 70%);
+    }
+
+    .section-flash > * {
+      position: relative;
+      z-index: 2;
+    }
+
+    @keyframes sectionGlow {
+      0% { opacity: 0; transform: scale(0.98); }
+      35% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.02); }
     }
 
     @keyframes sectionPulse {
