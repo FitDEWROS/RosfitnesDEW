@@ -3,13 +3,14 @@ from aiogram.types import (
     InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 )
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+from datetime import datetime
 import os
 
 APP_URL_RAW = os.getenv("APP_URL")
 if not APP_URL_RAW:
     raise RuntimeError("Не задан APP_URL в .env")
 
-APP_VERSION = os.getenv("APP_VERSION", "20260115")
+APP_VERSION = os.getenv("APP_VERSION") or datetime.utcnow().strftime("%Y%m%d%H%M")
 
 def _with_version(url: str, version: str) -> str:
     if not version:
