@@ -283,6 +283,30 @@
       color: var(--muted);
     }
 
+    details.section-card summary {
+      cursor: pointer;
+      list-style: none;
+    }
+
+    details.section-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      font-weight: 600;
+    }
+
+    html.light .toggle-row {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
     @media (max-width: 640px) {
       .admin-screen { padding: 22px 16px 50px; }
       .calendar-day { height: 32px; font-size: 0.8rem; }
@@ -338,7 +362,35 @@
           <select class="select" id="trainerSelect"></select>
         </div>
       </div>
-    </section>
+    
+    <details class="section-card" id="staffCard" hidden>
+      <summary class="section-title">??????? ????????? ?????</summary>
+      <p class="page-subtitle">?????? ??? ??????.</p>
+      <div class="info-grid">
+        <label class="toggle-row">
+          <input type="checkbox" id="staffTrainer">
+          <span>??????</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="staffCurator">
+          <span>???????</span>
+        </label>
+        <div class="info-item">
+          <div class="info-label">???????????</div>
+          <select class="select" id="staffScope">
+            <option value="gym">???</option>
+            <option value="crossfit">????????</option>
+            <option value="both">???</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn-outline" id="saveStaff" type="button">????????? ????</button>
+        <span class="status-line" id="staffStatus"></span>
+      </div>
+    </details>
+
+</section>
 
     <section class="section-card" id="nutritionCard" hidden>
       <div class="section-head">
@@ -405,6 +457,12 @@
       const infoStats = document.getElementById("infoStats");
       const infoPhone = document.getElementById("infoPhone");
       const trainerSelect = document.getElementById("trainerSelect");
+      const staffCard = document.getElementById("staffCard");
+      const staffTrainer = document.getElementById("staffTrainer");
+      const staffCurator = document.getElementById("staffCurator");
+      const staffScope = document.getElementById("staffScope");
+      const saveStaff = document.getElementById("saveStaff");
+      const staffStatus = document.getElementById("staffStatus");
 
       const calendarTitle = document.getElementById("calendarTitle");
       const calendarGrid = document.getElementById("calendarGrid");
@@ -429,6 +487,8 @@
       let monthEntries = {};
       let monthComments = {};
       let role = "user";
+      let isAdmin = false;
+      let canCurate = false;
       let initData = "";
 
       const buildInitData = () => {
@@ -560,72 +620,108 @@
           if (!json?.ok) return;
 
           const client = json.client || {};
-          const name = [client.first_name, client.last_name].filter(Boolean).join(" ") || "Без имени";
+          const name = [client.first_name, client.last_name].filter(Boolean).join(" ") || "??? ?????";
 
           clientTitle.textContent = name;
-          clientSubtitle.textContent = client.username ? `@${client.username}` : "без username";
+          clientSubtitle.textContent = client.username ? `@${client.username}` : "??? username";
           infoName.textContent = name;
-          infoTariff.textContent = client.tariffName || "—";
+          infoTariff.textContent = client.tariffName || "?";
           infoMode.textContent = formatMode(client.trainingMode);
-          infoStats.textContent = `${client.heightCm ?? "—"} см / ${client.weightKg ?? "—"} кг`;
-          infoPhone.textContent = client.phone || "—";
+          infoStats.textContent = `${client.heightCm ?? "?"} ?? / ${client.weightKg ?? "?"} ??`;
+          infoPhone.textContent = client.phone || "?";
 
           if (profileCard) profileCard.hidden = false;
           if (nutritionCard) nutritionCard.hidden = false;
+          if (staffCard) staffCard.hidden = !isAdmin;
 
-          await loadTrainers(client.trainer?.id || null);
+          if (isAdmin && staffTrainer && staffCurator && staffScope) {
+            staffTrainer.checked = client.role === "trainer";
+            staffCurator.checked = Boolean(client.isCurator);
+            staffScope.value = client.trainerScope || "both";
+            syncStaffScope();
+          }
+
+          await loadCurators(client.trainer?.id || null);
         } catch (e) {
-          console.error("Ошибка загрузки клиента", e);
+          console.error("?????? ???????? ???????", e);
         }
       };
 
-      const loadTrainers = async (currentTrainerId) => {
+const loadCurators = async (currentCuratorId) => {
         if (!apiBase || !initData) return;
         try {
-          const res = await fetch(`${apiBase}/api/admin/trainers?initData=${encodeURIComponent(initData)}`);
+          const res = await fetch(`${apiBase}/api/admin/curators?initData=${encodeURIComponent(initData)}`);
           const json = await res.json().catch(() => ({}));
-          const trainers = Array.isArray(json.trainers) ? json.trainers : [];
+          const curators = Array.isArray(json.curators) ? json.curators : [];
           trainerSelect.innerHTML = "";
 
           const emptyOpt = document.createElement("option");
           emptyOpt.value = "";
-          emptyOpt.textContent = "Не назначен";
+          emptyOpt.textContent = "?? ????????";
           trainerSelect.appendChild(emptyOpt);
 
-          trainers.forEach((trainer) => {
+          curators.forEach((curator) => {
             const opt = document.createElement("option");
-            const name = [trainer.first_name, trainer.last_name].filter(Boolean).join(" ") || trainer.username;
-            opt.value = trainer.id;
-            opt.textContent = name || `Тренер #${trainer.id}`;
+            const name = [curator.first_name, curator.last_name].filter(Boolean).join(" ") || curator.username;
+            opt.value = curator.id;
+            opt.textContent = name || `??????? #${curator.id}`;
             trainerSelect.appendChild(opt);
           });
 
-          trainerSelect.value = currentTrainerId ? String(currentTrainerId) : "";
-          trainerSelect.disabled = role !== "admin";
+          trainerSelect.value = currentCuratorId ? String(currentCuratorId) : "";
+          trainerSelect.disabled = !isAdmin;
         } catch (e) {
-          console.error("Ошибка загрузки тренеров", e);
+          console.error("?????? ???????? ?????????", e);
         }
       };
 
-      const assignTrainer = async () => {
-        if (role !== "admin") return;
+const assignCurator = async () => {
+        if (!isAdmin) return;
         const value = trainerSelect.value || null;
         try {
-          profileStatus.textContent = "Сохраняем...";
+          profileStatus.textContent = "?????????...";
           const res = await fetch(`${apiBase}/api/admin/clients/${clientId}/trainer`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ initData, trainerId: value ? Number(value) : null })
           });
           const json = await res.json().catch(() => ({}));
-          profileStatus.textContent = json?.ok ? "Куратор назначен" : "Ошибка назначения";
+          profileStatus.textContent = json?.ok ? "??????? ????????" : "?????? ??????????";
           setTimeout(() => { profileStatus.textContent = ""; }, 2000);
         } catch (e) {
-          profileStatus.textContent = "Ошибка назначения";
+          profileStatus.textContent = "?????? ??????????";
         }
       };
 
-      const saveCommentHandler = async () => {
+      const syncStaffScope = () => {
+        if (!staffScope || !staffTrainer) return;
+        staffScope.disabled = !staffTrainer.checked;
+      };
+
+      const saveStaffHandler = async () => {
+        if (!isAdmin) return;
+        try {
+          staffStatus.textContent = "?????????...";
+          const payload = {
+            initData,
+            isTrainer: Boolean(staffTrainer?.checked),
+            isCurator: Boolean(staffCurator?.checked),
+            trainerScope: staffScope?.value || "both"
+          };
+          const res = await fetch(`${apiBase}/api/admin/clients/${clientId}/staff`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json().catch(() => ({}));
+          staffStatus.textContent = json?.ok ? "???? ?????????" : "?????? ??????????";
+          setTimeout(() => { staffStatus.textContent = ""; }, 2000);
+        } catch (e) {
+          staffStatus.textContent = "?????? ??????????";
+        }
+      };
+
+const saveCommentHandler = async () => {
         const dateKey = toYMD(selectedDate);
         const text = commentText?.value || "";
         if (!text.trim()) {
@@ -670,12 +766,14 @@
         try {
           const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
           const json = await res.json().catch(() => ({}));
-          role = json?.profile?.role || "user";
-          if (role !== "admin" && role !== "trainer") {
-            accessMessage.textContent = "Доступ закрыт. Нужна роль admin или trainer.";
-            return;
-          }
-          accessMessage.textContent = "Доступ подтвержден.";
+                    role = json?.profile?.role || "user";
+                    isAdmin = role === "admin";
+                    canCurate = Boolean(json?.profile?.canCurate);
+                    if (!canCurate) {
+                      accessMessage.textContent = "?????? ??????. ????? ???? admin ??? ???????.";
+                      return;
+                    }
+accessMessage.textContent = "Доступ подтвержден.";
           await loadClient();
           await loadMonth();
         } catch (e) {
@@ -693,8 +791,10 @@
         selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
         loadMonth();
       });
-      saveComment?.addEventListener("click", saveCommentHandler);
-      trainerSelect?.addEventListener("change", assignTrainer);
+            staffTrainer?.addEventListener("change", syncStaffScope);
+      saveStaff?.addEventListener("click", saveStaffHandler);
+saveComment?.addEventListener("click", saveCommentHandler);
+      trainerSelect?.addEventListener("change", assignCurator);
       goBack?.addEventListener("click", () => {
         const backUrl = initData ? `admin_clients.html?initData=${encodeURIComponent(initData)}` : "admin_clients.html";
         window.location.href = backUrl;

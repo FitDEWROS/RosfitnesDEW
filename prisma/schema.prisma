@@ -29,6 +29,7 @@ model User {
   trainingMode    String    @default("gym")
   role            UserRole  @default(user)
   trainerScope    TrainerScope?
+  isCurator       Boolean   @default(false)
   trainerId       Int?
   trainer         User?     @relation("UserTrainer", fields: [trainerId], references: [id])
   trainees        User[]    @relation("UserTrainer")

@@ -413,12 +413,12 @@
         try {
           const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
           const json = await res.json().catch(() => ({}));
-          const role = json?.profile?.role;
-          if (role !== "admin" && role !== "trainer") {
-            setAccess(false, "Доступ закрыт. Нужна роль admin или trainer.");
+                    const canCurate = Boolean(json?.profile?.canCurate);
+          if (!canCurate) {
+            setAccess(false, "?????? ??????. ????? ???? admin ??? ???????.");
             return;
           }
-          setAccess(true, "Доступ подтвержден.");
+setAccess(true, "Доступ подтвержден.");
           await loadClients();
         } catch (e) {
           setAccess(false, "Ошибка проверки доступа.");
