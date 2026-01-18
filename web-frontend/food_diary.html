@@ -153,6 +153,7 @@
       content: "";
       position: absolute;
       inset: -40%;
+      border-radius: inherit;
       background:
         radial-gradient(320px 120px at 20% 30%, rgba(255, 255, 255, 0.22), transparent 60%),
         radial-gradient(240px 160px at 80% 20%, rgba(255, 255, 255, 0.18), transparent 65%),
@@ -171,7 +172,7 @@
     .fog-lock > * {
       filter: blur(2px) saturate(0.95);
       opacity: 0.7;
-      transform: scale(1.005);
+      transform: scale(1);
     }
 
     html.light .fog-lock::before,

@@ -144,6 +144,32 @@
       background: linear-gradient(135deg, #cbe7ba 0%, #a7d3a5 100%);
     }
 
+    .hero-cover.has-cover {
+      color: #f7f4ea;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .hero-cover.has-cover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.68) 100%);
+      z-index: 0;
+    }
+
+    .hero-cover.has-cover > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-cover.has-cover .tag,
+    .hero-cover.has-cover .stat-chip {
+      background: rgba(0, 0, 0, 0.35);
+      color: inherit;
+    }
+
     .hero-tags {
       display: flex;
       flex-wrap: wrap;
@@ -428,6 +454,12 @@
         return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
       };
 
+      const getCoverUrl = (value) => {
+        if (!value) return "";
+        const trimmed = value.trim();
+        return /^(https?:)?\/\//i.test(trimmed) ? trimmed : "";
+      };
+
       const normalizeWorkoutId = (value) => (value === null || value === undefined ? "" : String(value));
 
       const renderProgram = (program) => {
@@ -449,6 +481,14 @@
 
         const cover = byId("programCover");
         cover.classList.toggle("cover-gym", program.type === "gym");
+        const coverUrl = getCoverUrl(program.coverImage);
+        if (coverUrl) {
+          cover.classList.add("has-cover");
+          cover.style.backgroundImage = `url("${coverUrl}")`;
+        } else {
+          cover.classList.remove("has-cover");
+          cover.style.backgroundImage = "";
+        }
 
         const tagContainer = byId("programTags");
         tagContainer.innerHTML = tags.map((tag) => `<span class="tag">${tag}</span>`).join("");

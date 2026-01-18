@@ -200,6 +200,31 @@
       background: linear-gradient(135deg, #f6e5a6 0%, #f1c873 100%);
     }
 
+    .program-hero.has-cover {
+      color: #f7f4ea;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .program-hero.has-cover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.68) 100%);
+      z-index: 0;
+    }
+
+    .program-hero.has-cover > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .program-hero.has-cover .program-badge {
+      background: rgba(0, 0, 0, 0.35);
+      color: inherit;
+    }
+
     .program-badge {
       width: fit-content;
       background: rgba(0, 0, 0, 0.15);
@@ -397,6 +422,12 @@
         return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
       };
 
+      const getCoverUrl = (value) => {
+        if (!value) return "";
+        const trimmed = value.trim();
+        return /^(https?:)?\/\//i.test(trimmed) ? trimmed : "";
+      };
+
       const renderPrograms = (programs) => {
         programList.innerHTML = "";
         if (!programs.length) {
@@ -442,7 +473,14 @@
             </div>
           `;
 
-          card.addEventListener("click", () => {
+            const coverUrl = getCoverUrl(program.coverImage);
+            if (coverUrl) {
+              const hero = card.querySelector(".program-hero");
+              hero.classList.add("has-cover");
+              hero.style.backgroundImage = `url("${coverUrl}")`;
+            }
+
+            card.addEventListener("click", () => {
             const slug = program.slug || "";
             if (!slug) return;
             window.location.href = `program_detail.html?slug=${encodeURIComponent(slug)}`;
