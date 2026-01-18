@@ -1267,17 +1267,18 @@ app.post('/api/admin/exercises', async (req, res) => {
     const auth = await requireStaff(req.body?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
 
-    const payload = req.body?.exercise || {};
-    const title = cleanString(payload.title);
-    const typeRaw = cleanString(payload.type);
-    const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
-    if (auth.role === 'trainer') {
-      const scope = normalizeTrainerScope(auth.trainerScope);
-      if (scope !== 'both' && normalizedType !== scope) {
-        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+  const payload = req.body?.exercise || {};
+  const title = cleanString(payload.title);
+  const typeRaw = cleanString(payload.type);
+  const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
+  const tariffs = normalizeTariffs(payload.tariffs);
+  if (auth.role === 'trainer') {
+    const scope = normalizeTrainerScope(auth.trainerScope);
+    if (scope !== 'both' && normalizedType !== scope) {
+      return res.status(403).json({ ok: false, error: 'forbidden_type' });
       }
     }
-    const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'общая') : null;
+    const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'Общая') : null;
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });
     }
@@ -1286,6 +1287,7 @@ app.post('/api/admin/exercises', async (req, res) => {
       data: {
         title,
         type: normalizedType,
+        tariffs,
         muscle,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
@@ -1309,14 +1311,15 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'invalid_id' });
     }
 
-    const payload = req.body?.exercise || {};
-    const title = cleanString(payload.title);
-    const typeRaw = cleanString(payload.type);
-    const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
-    if (auth.role === 'trainer') {
-      const scope = normalizeTrainerScope(auth.trainerScope);
-      if (scope !== 'both' && normalizedType !== scope) {
-        return res.status(403).json({ ok: false, error: 'forbidden_type' });
+  const payload = req.body?.exercise || {};
+  const title = cleanString(payload.title);
+  const typeRaw = cleanString(payload.type);
+  const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
+  const tariffs = normalizeTariffs(payload.tariffs);
+  if (auth.role === 'trainer') {
+    const scope = normalizeTrainerScope(auth.trainerScope);
+    if (scope !== 'both' && normalizedType !== scope) {
+      return res.status(403).json({ ok: false, error: 'forbidden_type' });
       }
       const existing = await prisma.exercise.findUnique({
         where: { id },
@@ -1329,7 +1332,7 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
         return res.status(403).json({ ok: false, error: 'forbidden_type' });
       }
     }
-    const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'общая') : null;
+    const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'Общая') : null;
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });
     }
@@ -1339,6 +1342,7 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
       data: {
         title,
         type: normalizedType,
+        tariffs,
         muscle,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
@@ -1357,8 +1361,17 @@ app.get('/api/exercises', async (req, res) => {
   try {
     const typeRaw = cleanString(req.query?.type);
     const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : typeRaw === 'gym' ? 'gym' : '';
+    const tariff = cleanString(req.query?.tariff);
+    const where = {};
+    if (normalizedType) where.type = normalizedType;
+    if (tariff && ALLOWED_TARIFFS.includes(tariff)) {
+      where.OR = [
+        { tariffs: { has: tariff } },
+        { tariffs: { isEmpty: true } }
+      ];
+    }
     const exercises = await prisma.exercise.findMany({
-      where: normalizedType ? { type: normalizedType } : undefined,
+      where: Object.keys(where).length ? where : undefined,
       orderBy: { updatedAt: 'desc' }
     });
     res.json({ ok: true, exercises });

@@ -719,8 +719,44 @@
           </select>
         </label>
         <label class="full">
+          Тарифы доступа
+          <div class="pill-group">
+            <label class="pill">
+              <input type="checkbox" name="exerciseTariff" value="Базовый" checked>
+              <span>Базовый</span>
+            </label>
+            <label class="pill">
+              <input type="checkbox" name="exerciseTariff" value="Выгодный" checked>
+              <span>Выгодный</span>
+            </label>
+            <label class="pill">
+              <input type="checkbox" name="exerciseTariff" value="Максимум" checked>
+              <span>Максимум</span>
+            </label>
+          </div>
+        </label>
+        <label class="full">
           Мышца (для зала)
-          <input id="exerciseMuscle" type="text" placeholder="Общая">
+          <select id="exerciseMuscle">
+            <option value="">—</option>
+            <option value="Общая">Общая</option>
+            <option value="Трапециевидная мышца">Трапециевидная мышца</option>
+            <option value="Большая грудная мышца">Большая грудная мышца</option>
+            <option value="Дельтовидная мышца">Дельтовидная мышца</option>
+            <option value="Двуглавая мышца плеча (бицепс)">Двуглавая мышца плеча (бицепс)</option>
+            <option value="Мышцы предплечья">Мышцы предплечья</option>
+            <option value="Прямая мышца живота">Прямая мышца живота</option>
+            <option value="Мышцы квадрицепса">Мышцы квадрицепса</option>
+            <option value="Приводящая мышца">Приводящая мышца</option>
+            <option value="Передняя группа мышц голени">Передняя группа мышц голени</option>
+            <option value="Мышцы верха спины">Мышцы верха спины</option>
+            <option value="Трехглавая мышца плеча (трицепс)">Трехглавая мышца плеча (трицепс)</option>
+            <option value="Широчайшая мышца спины">Широчайшая мышца спины</option>
+            <option value="Мышцы низа спины">Мышцы низа спины</option>
+            <option value="Большая ягодичная мышца">Большая ягодичная мышца</option>
+            <option value="Хамстринги (мышцы задней части бедра)">Хамстринги (мышцы задней части бедра)</option>
+            <option value="Икроножная мышца">Икроножная мышца</option>
+          </select>
         </label>
         <label class="full">
           Описание
@@ -789,6 +825,7 @@
       const exerciseMuscle = document.getElementById("exerciseMuscle");
       const exerciseDescription = document.getElementById("exerciseDescription");
       const exerciseVideo = document.getElementById("exerciseVideo");
+      const exerciseTariffInputs = Array.from(document.querySelectorAll("input[name='exerciseTariff']"));
       const exerciseStatus = document.getElementById("exerciseStatus");
       const reloadExercises = document.getElementById("reloadExercises");
       const resetExercise = document.getElementById("resetExercise");
@@ -798,6 +835,7 @@
       let exerciseLibrary = [];
       let trainerScope = "both";
       let isTrainer = false;
+      const defaultTariffs = ["Базовый", "Выгодный", "Максимум"];
 
       const setAccess = (ok, message) => {
         accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
@@ -815,12 +853,42 @@
         exerciseStatus.classList.toggle("bad", ok === false);
       };
 
+      const setSelectedTariffs = (tariffs) => {
+        if (!exerciseTariffInputs.length) return;
+        const selected = new Set(Array.isArray(tariffs) ? tariffs : []);
+        exerciseTariffInputs.forEach((input) => {
+          input.checked = selected.has(input.value);
+        });
+      };
+
+      const getSelectedTariffs = () => (
+        exerciseTariffInputs
+          .filter((input) => input.checked)
+          .map((input) => input.value)
+      );
+
+      const setMuscleValue = (value) => {
+        if (!exerciseMuscle) return;
+        const normalized = value || "";
+        const hasOption = Array.from(exerciseMuscle.options)
+          .some((option) => option.value === normalized);
+        if (normalized && !hasOption) {
+          const option = document.createElement("option");
+          option.value = normalized;
+          option.textContent = normalized;
+          exerciseMuscle.appendChild(option);
+        }
+        exerciseMuscle.value = normalized;
+      };
+
       const syncExerciseType = () => {
         if (!exerciseType || !exerciseMuscle) return;
         const isGym = exerciseType.value !== "crossfit";
         exerciseMuscle.disabled = !isGym;
         if (!isGym) {
-          exerciseMuscle.value = "";
+          setMuscleValue("");
+        } else if (!exerciseMuscle.value) {
+          setMuscleValue("Общая");
         }
       };
 
@@ -853,12 +921,15 @@
           const typeLabel = exercise.type === "crossfit" ? "Кроссфит" : "Зал";
           const muscleLabel = exercise.type === "gym" && exercise.muscle ? ` - ${exercise.muscle}` : "";
           const videoLabel = exercise.videoUrl ? "Есть видео" : "Без видео";
+          const tariffsLabel = Array.isArray(exercise.tariffs) && exercise.tariffs.length
+            ? ` / ${exercise.tariffs.join(", ")}`
+            : " / Все тарифы";
           const item = document.createElement("div");
           item.className = "exercise-item";
           item.innerHTML = `
             <div class="exercise-meta">
               <strong>${exercise.title}</strong>
-              <span class="muted">${typeLabel}${muscleLabel} - ${videoLabel}</span>
+              <span class="muted">${typeLabel}${muscleLabel} - ${videoLabel}${tariffsLabel}</span>
             </div>
             <div class="exercise-actions">
               <button class="btn-outline" type="button" data-ex-edit="${exercise.id}">Редактировать</button>
@@ -890,10 +961,11 @@
         if (exerciseType) {
           exerciseType.value = trainerScope && trainerScope !== "both" ? trainerScope : "gym";
         }
-        if (exerciseMuscle) exerciseMuscle.value = "";
+        setMuscleValue(exerciseType?.value === "crossfit" ? "" : "Общая");
         if (exerciseDescription) exerciseDescription.value = "";
         if (exerciseVideo) exerciseVideo.value = "";
         if (saveExercise) saveExercise.textContent = "Сохранить упражнение";
+        setSelectedTariffs(defaultTariffs);
         setExerciseStatus("", null);
         applyTrainerScope();
         syncExerciseType();
@@ -928,10 +1000,11 @@
         currentExerciseId = id;
         if (exerciseTitle) exerciseTitle.value = exercise.title || "";
         if (exerciseType) exerciseType.value = exercise.type || "gym";
-        if (exerciseMuscle) exerciseMuscle.value = exercise.muscle || "";
+        setMuscleValue(exercise.muscle || "");
         if (exerciseDescription) exerciseDescription.value = exercise.description || "";
         if (exerciseVideo) exerciseVideo.value = exercise.videoUrl || "";
         if (saveExercise) saveExercise.textContent = "Сохранить изменения";
+        setSelectedTariffs(exercise.tariffs || []);
         setExerciseStatus("Редактирование упражнения.", true);
         syncExerciseType();
       });
@@ -951,7 +1024,8 @@
           type: exerciseType?.value || "gym",
           muscle: exerciseMuscle?.value.trim() || "",
           description: exerciseDescription?.value.trim() || "",
-          videoUrl: exerciseVideo?.value.trim() || ""
+          videoUrl: exerciseVideo?.value.trim() || "",
+          tariffs: getSelectedTariffs()
         };
 
         if (isTrainer && trainerScope && trainerScope !== "both") {
