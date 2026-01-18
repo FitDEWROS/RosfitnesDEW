@@ -236,7 +236,15 @@ app.get('/api/user', async (req, res) => {
           weightKg: true,
           age: true,
           role: true,
-          trainerScope: true
+          trainerScope: true,
+          trainer: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              username: true
+            }
+          }
         }
       });
       console.log('[api/user] dbUser:', dbUser);
@@ -252,7 +260,14 @@ app.get('/api/user', async (req, res) => {
       weightKg: dbUser?.weightKg ?? null,
       age: dbUser?.age ?? null,
       role: dbUser?.role || 'user',
-      trainerScope: normalizeTrainerScope(dbUser?.trainerScope)
+      trainerScope: normalizeTrainerScope(dbUser?.trainerScope),
+      trainer: dbUser?.trainer
+        ? {
+            id: dbUser.trainer.id,
+            name: [dbUser.trainer.first_name, dbUser.trainer.last_name].filter(Boolean).join(' ') || dbUser.trainer.username,
+            username: dbUser.trainer.username || null
+          }
+        : null
     };
 
     console.log(`[api/user] profile for ${tg_id}:`, profile);
@@ -439,6 +454,35 @@ const TRAINER_SCOPES = ['gym', 'crossfit', 'both'];
 
 function normalizeTrainerScope(value) {
   return TRAINER_SCOPES.includes(value) ? value : 'both';
+}
+
+const NOTIFICATION_TYPES = ['nutrition_comment', 'program_available'];
+
+const buildNotificationPreview = (text, limit = 160) => {
+  const cleaned = cleanString(text);
+  if (!cleaned) return null;
+  if (cleaned.length <= limit) return cleaned;
+  return `${cleaned.slice(0, limit).trim()}…`;
+};
+
+async function createNotificationsForUsers(userIds, payload) {
+  const ids = Array.isArray(userIds) ? userIds.filter((id) => Number.isInteger(id)) : [];
+  if (!ids.length) return;
+
+  const type = NOTIFICATION_TYPES.includes(payload?.type) ? payload.type : 'program_available';
+  const title = optionalString(payload?.title);
+  const message = optionalString(payload?.message);
+  const data = payload?.data ?? null;
+
+  const rows = ids.map((userId) => ({
+    userId,
+    type,
+    title,
+    message,
+    data
+  }));
+
+  await prisma.notification.createMany({ data: rows });
 }
 
 async function requireAdmin(initData) {
@@ -778,7 +822,26 @@ app.get('/api/nutrition/history', async (req, res) => {
       orderBy: { date: 'desc' }
     });
 
-    res.json({ ok: true, from: startKey, to: endKey, entries });
+    const comments = await prisma.nutritionComment.findMany({
+      where: {
+        userId: dbUser.id,
+        date: { gte: startKey, lte: endKey }
+      },
+      select: { date: true, text: true }
+    });
+    const commentMap = new Map(comments.map((comment) => [comment.date, comment.text]));
+    const entriesWithComments = entries.map((entry) => ({
+      ...entry,
+      comment: commentMap.get(entry.date) || null
+    }));
+
+    res.json({
+      ok: true,
+      from: startKey,
+      to: endKey,
+      entries: entriesWithComments,
+      commentDates: comments.map((comment) => comment.date)
+    });
   } catch (e) {
     console.error('[api/nutrition:history] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -808,7 +871,12 @@ app.get('/api/nutrition', async (req, res) => {
       where: { userId_date: { userId: dbUser.id, date } }
     });
 
-    res.json({ ok: true, date, entry });
+    const comment = await prisma.nutritionComment.findUnique({
+      where: { userId_date: { userId: dbUser.id, date } },
+      select: { text: true }
+    });
+
+    res.json({ ok: true, date, entry, comment: comment?.text || null });
   } catch (e) {
     console.error('[api/nutrition:get] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -892,6 +960,87 @@ app.post('/api/mode', async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     console.error('[api/mode:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Notifications (GET / POST) ===
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.query.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const limitRaw = Number(req.query.limit || 20);
+    const offsetRaw = Number(req.query.offset || 0);
+    const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(limitRaw, 50)) : 20;
+    const offset = Number.isFinite(offsetRaw) ? Math.max(0, offsetRaw) : 0;
+    const unreadOnly = String(req.query.unreadOnly || '').toLowerCase() === 'true' || String(req.query.unreadOnly) === '1';
+
+    const dbUser = await prisma.user.upsert({
+      where: { tg_id: Number(parsed.tg_id) },
+      update: {},
+      create: {
+        tg_id: Number(parsed.tg_id),
+        username: parsed.user?.username || null,
+        first_name: parsed.user?.first_name || null
+      }
+    });
+
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where: {
+          userId: dbUser.id,
+          ...(unreadOnly ? { readAt: null } : {})
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit
+      }),
+      prisma.notification.count({
+        where: { userId: dbUser.id, readAt: null }
+      })
+    ]);
+
+    res.json({ ok: true, notifications, unreadCount });
+  } catch (e) {
+    console.error('[api/notifications:get] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/notifications/read', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.body?.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.map((id) => Number(id)).filter((id) => Number.isInteger(id))
+      : [];
+    const markAll = Boolean(req.body?.all);
+
+    const dbUser = await prisma.user.upsert({
+      where: { tg_id: Number(parsed.tg_id) },
+      update: {},
+      create: {
+        tg_id: Number(parsed.tg_id),
+        username: parsed.user?.username || null,
+        first_name: parsed.user?.first_name || null
+      }
+    });
+
+    const where = { userId: dbUser.id };
+    if (!markAll && ids.length) {
+      where.id = { in: ids };
+    }
+
+    await prisma.notification.updateMany({
+      where,
+      data: { readAt: new Date() }
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[api/notifications:read] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
@@ -1029,6 +1178,27 @@ app.post('/api/admin/programs', async (req, res) => {
         weeks: { create: weeksData }
       }
     });
+
+    const tariffFilters = Array.from(new Set(tariffs.flatMap((item) => expandTariffFilter(item))));
+    if (tariffFilters.length) {
+      const recipients = await prisma.user.findMany({
+        where: {
+          role: 'user',
+          trainingMode: type,
+          tariffName: { in: tariffFilters }
+        },
+        select: { id: true }
+      });
+      await createNotificationsForUsers(
+        recipients.map((user) => user.id),
+        {
+          type: 'program_available',
+          title: 'Новая программа',
+          message: buildNotificationPreview(`Доступна новая программа: ${title}`),
+          data: { slug: created.slug, type }
+        }
+      );
+    }
 
     res.json({ ok: true, program: { id: created.id, slug: created.slug } });
   } catch (e) {
@@ -1269,6 +1439,279 @@ app.get('/api/admin/trainers', async (req, res) => {
     res.json({ ok: true, trainers });
   } catch (e) {
     console.error('[api/admin/trainers] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: clients list ===
+app.get('/api/admin/clients', async (req, res) => {
+  try {
+    const auth = await requireStaff(req.query?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const where = { role: 'user' };
+    if (auth.role === 'trainer') {
+      where.trainerId = auth.userId;
+    }
+
+    const clients = await prisma.user.findMany({
+      where,
+      orderBy: { id: 'desc' },
+      select: {
+        id: true,
+        tg_id: true,
+        first_name: true,
+        last_name: true,
+        username: true,
+        tariffName: true,
+        trainingMode: true,
+        heightCm: true,
+        weightKg: true,
+        phone: true,
+        trainerId: true,
+        trainer: {
+          select: { id: true, first_name: true, last_name: true, username: true }
+        }
+      }
+    });
+
+    const todayKey = toDateKeyLocal(new Date());
+    const ids = clients.map((client) => client.id);
+    let filledSet = new Set();
+    if (ids.length) {
+      const filled = await prisma.nutritionEntry.findMany({
+        where: { userId: { in: ids }, date: todayKey },
+        select: { userId: true }
+      });
+      filledSet = new Set(filled.map((entry) => entry.userId));
+    }
+
+    const normalized = clients.map((client) => ({
+      ...client,
+      tariffName: normalizeTariffName(client.tariffName),
+      trainer: client.trainer
+        ? {
+            id: client.trainer.id,
+            name: [client.trainer.first_name, client.trainer.last_name].filter(Boolean).join(' ') || client.trainer.username,
+            username: client.trainer.username || null
+          }
+        : null,
+      hasTodayNutrition: filledSet.has(client.id)
+    }));
+
+    res.json({ ok: true, date: todayKey, clients: normalized });
+  } catch (e) {
+    console.error('[api/admin/clients:get] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: client profile ===
+app.get('/api/admin/clients/:id', async (req, res) => {
+  try {
+    const auth = await requireStaff(req.query?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const clientId = Number(req.params.id);
+    if (!Number.isInteger(clientId)) {
+      return res.status(400).json({ ok: false, error: 'invalid_client_id' });
+    }
+
+    const client = await prisma.user.findUnique({
+      where: { id: clientId },
+      select: {
+        id: true,
+        tg_id: true,
+        first_name: true,
+        last_name: true,
+        username: true,
+        tariffName: true,
+        trainingMode: true,
+        heightCm: true,
+        weightKg: true,
+        phone: true,
+        trainerId: true,
+        trainer: {
+          select: { id: true, first_name: true, last_name: true, username: true, trainerScope: true }
+        }
+      }
+    });
+
+    if (!client || client.tg_id === null) {
+      return res.status(404).json({ ok: false, error: 'not_found' });
+    }
+
+    if (auth.role === 'trainer' && client.trainerId !== auth.userId) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
+    res.json({
+      ok: true,
+      client: {
+        ...client,
+        tariffName: normalizeTariffName(client.tariffName),
+        trainer: client.trainer
+          ? {
+              id: client.trainer.id,
+              name: [client.trainer.first_name, client.trainer.last_name].filter(Boolean).join(' ') || client.trainer.username,
+              username: client.trainer.username || null,
+              trainerScope: normalizeTrainerScope(client.trainer.trainerScope)
+            }
+          : null
+      }
+    });
+  } catch (e) {
+    console.error('[api/admin/clients:detail] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: assign trainer to client ===
+app.post('/api/admin/clients/:id/trainer', async (req, res) => {
+  try {
+    const auth = await requireStaff(req.body?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+    if (auth.role !== 'admin') return res.status(403).json({ ok: false, error: 'forbidden' });
+
+    const clientId = Number(req.params.id);
+    if (!Number.isInteger(clientId)) {
+      return res.status(400).json({ ok: false, error: 'invalid_client_id' });
+    }
+
+    const rawTrainerId = req.body?.trainerId;
+    const trainerId = rawTrainerId === null || rawTrainerId === undefined || rawTrainerId === ''
+      ? null
+      : Number(rawTrainerId);
+    if (trainerId !== null && !Number.isInteger(trainerId)) {
+      return res.status(400).json({ ok: false, error: 'invalid_trainer_id' });
+    }
+
+    let trainer = null;
+    if (trainerId !== null) {
+      trainer = await prisma.user.findUnique({
+        where: { id: trainerId },
+        select: { id: true, role: true, trainerScope: true }
+      });
+      if (!trainer || trainer.role !== 'trainer') {
+        return res.status(400).json({ ok: false, error: 'trainer_not_found' });
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: clientId },
+      data: { trainerId }
+    });
+
+    res.json({ ok: true, trainerId: updated.trainerId });
+  } catch (e) {
+    console.error('[api/admin/clients:trainer] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: client nutrition (history) ===
+app.get('/api/admin/clients/:id/nutrition', async (req, res) => {
+  try {
+    const auth = await requireStaff(req.query?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const clientId = Number(req.params.id);
+    if (!Number.isInteger(clientId)) {
+      return res.status(400).json({ ok: false, error: 'invalid_client_id' });
+    }
+
+    const client = await prisma.user.findUnique({
+      where: { id: clientId },
+      select: { id: true, trainerId: true }
+    });
+    if (!client) return res.status(404).json({ ok: false, error: 'not_found' });
+    if (auth.role === 'trainer' && client.trainerId !== auth.userId) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
+    const toKey = req.query.to ? getDateKey(req.query.to) : toDateKeyLocal(new Date());
+    let fromKey = req.query.from ? getDateKey(req.query.from) : null;
+    if (!fromKey) {
+      const endDate = new Date(`${toKey}T00:00:00`);
+      const startDate = addDaysLocal(endDate, -30);
+      fromKey = toDateKeyLocal(startDate);
+    }
+
+    let startKey = fromKey;
+    let endKey = toKey;
+    if (startKey > endKey) {
+      [startKey, endKey] = [endKey, startKey];
+    }
+
+    const entries = await prisma.nutritionEntry.findMany({
+      where: { userId: client.id, date: { gte: startKey, lte: endKey } },
+      orderBy: { date: 'desc' }
+    });
+
+    const comments = await prisma.nutritionComment.findMany({
+      where: { userId: client.id, date: { gte: startKey, lte: endKey } },
+      select: { date: true, text: true, authorId: true, updatedAt: true }
+    });
+
+    res.json({
+      ok: true,
+      from: startKey,
+      to: endKey,
+      entries,
+      comments
+    });
+  } catch (e) {
+    console.error('[api/admin/clients:nutrition] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: client nutrition comment ===
+app.post('/api/admin/clients/:id/nutrition-comment', async (req, res) => {
+  try {
+    const auth = await requireStaff(req.body?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+
+    const clientId = Number(req.params.id);
+    if (!Number.isInteger(clientId)) {
+      return res.status(400).json({ ok: false, error: 'invalid_client_id' });
+    }
+
+    const client = await prisma.user.findUnique({
+      where: { id: clientId },
+      select: { id: true, trainerId: true }
+    });
+    if (!client) return res.status(404).json({ ok: false, error: 'not_found' });
+    if (auth.role === 'trainer' && client.trainerId !== auth.userId) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
+    const date = getDateKey(req.body?.date);
+    const text = cleanString(req.body?.text);
+    if (!text) {
+      return res.status(400).json({ ok: false, error: 'missing_text' });
+    }
+
+    const comment = await prisma.nutritionComment.upsert({
+      where: { userId_date: { userId: client.id, date } },
+      update: { text, authorId: auth.userId },
+      create: { userId: client.id, date, text, authorId: auth.userId }
+    });
+
+    const preview = buildNotificationPreview(text);
+    await prisma.notification.create({
+      data: {
+        userId: client.id,
+        type: 'nutrition_comment',
+        title: 'Комментарий к питанию',
+        message: preview,
+        data: { date }
+      }
+    });
+
+    res.json({ ok: true, comment });
+  } catch (e) {
+    console.error('[api/admin/clients:comment] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });

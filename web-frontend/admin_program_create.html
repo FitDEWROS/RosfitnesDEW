@@ -772,6 +772,7 @@
       <div class="actions nav-actions">
         <button class="btn-outline" id="goHome" type="button">Назад</button>
         <button class="btn-outline" id="goExercises" type="button">Упражнения</button>
+        <button class="btn-outline" id="goClients" type="button">Клиенты</button>
       </div>
     </section>
 
@@ -1044,6 +1045,7 @@
       const slugAuto = document.getElementById("slugAuto");
       const goHome = document.getElementById("goHome");
       const goExercises = document.getElementById("goExercises");
+      const goClients = document.getElementById("goClients");
       const resetForm = document.getElementById("resetForm");
       const saveProgram = document.getElementById("saveProgram");
       const deleteProgram = document.getElementById("deleteProgram");
@@ -1900,6 +1902,10 @@
 
       goExercises?.addEventListener("click", () => {
         window.location.href = buildUrl("admin_exercises.html");
+      });
+
+      goClients?.addEventListener("click", () => {
+        window.location.href = buildUrl("admin_clients.html");
       });
 
       generatePlan?.addEventListener("click", () => generatePlanStructure());

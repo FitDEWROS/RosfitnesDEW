@@ -846,6 +846,13 @@
       align-items: center;
     }
 
+    .profile-avatar {
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+      position: relative;
+    }
+
     .profile-photo {
       width: 88px;
       height: 88px;
@@ -853,6 +860,38 @@
       object-fit: cover;
       border: 2px solid var(--accent);
       box-shadow: 0 0 18px rgba(243, 213, 139, 0.25);
+    }
+
+    .notify-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.2);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    html.light .notify-btn {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .notify-badge {
+      position: absolute;
+      top: -4px;
+      right: 8px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #1b1b1b;
+      font-size: 0.65rem;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
     }
 
     .profile-name {
@@ -1188,7 +1227,15 @@
       <button class="close" id="closeProfile" aria-label="Закрыть профиль">&times;</button>
       <div class="profile-card">
         <div class="profile-head">
-          <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Фото профиля">
+          <div class="profile-avatar">
+            <img id="profilePhoto" class="profile-photo" src="default-avatar.png" alt="Фото профиля">
+            <button class="notify-btn" id="openNotifications" type="button" aria-label="Оповещения">
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M12 22a2.4 2.4 0 0 0 2.3-1.7h-4.6A2.4 2.4 0 0 0 12 22zm6.4-6.2V11c0-3.3-2.1-6-5-6.8V3a1.4 1.4 0 1 0-2.8 0v1.2C7.7 5 5.6 7.7 5.6 11v4.8L4 18.2h16l-1.6-2.4z"/>
+              </svg>
+            </button>
+            <span class="notify-badge" id="notifyBadge" hidden>0</span>
+          </div>
           <div class="profile-head-text">
             <h2 id="profileName" class="profile-name">Гость</h2>
             <div id="profileUsername" class="profile-username">@ник</div>

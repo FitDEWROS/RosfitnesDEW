@@ -727,6 +727,10 @@
           <span class="action-title">Библиотека упражнений</span>
           <span class="action-desc">Добавляй видео, описание, тип (зал/кроссфит) и мышцу для зала.</span>
         </button>
+        <button class="action-card" id="openClients" type="button">
+          <span class="action-title">Клиенты</span>
+          <span class="action-desc">Список клиентов, назначение куратора и контроль питания.</span>
+        </button>
       </div>
     </section>
   </div>
@@ -762,6 +766,7 @@
       const actionCard = document.getElementById("actionCard");
       const openPrograms = document.getElementById("openPrograms");
       const openExercises = document.getElementById("openExercises");
+      const openClients = document.getElementById("openClients");
 
       const setAccess = (ok, message) => {
         accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
@@ -771,6 +776,7 @@
         if (actionCard) actionCard.hidden = !ok;
         if (openPrograms) openPrograms.disabled = !ok;
         if (openExercises) openExercises.disabled = !ok;
+        if (openClients) openClients.disabled = !ok;
       };
 
       const buildUrl = (path) => (
@@ -786,6 +792,12 @@
       if (openExercises) {
         openExercises.addEventListener("click", () => {
           window.location.href = buildUrl("admin_exercises.html");
+        });
+      }
+
+      if (openClients) {
+        openClients.addEventListener("click", () => {
+          window.location.href = buildUrl("admin_clients.html");
         });
       }
 

@@ -786,6 +786,7 @@
       <div class="actions nav-actions">
         <button class="btn-outline" id="goHome" type="button">Назад</button>
         <button class="btn-outline" id="goPrograms" type="button">Программы</button>
+        <button class="btn-outline" id="goClients" type="button">Клиенты</button>
       </div>
     </section>
 
@@ -966,6 +967,7 @@
 
       const goHome = document.getElementById("goHome");
       const goPrograms = document.getElementById("goPrograms");
+      const goClients = document.getElementById("goClients");
 
       const exerciseTitle = document.getElementById("exerciseTitle");
       const exerciseType = document.getElementById("exerciseType");
@@ -1191,6 +1193,10 @@
 
       goPrograms?.addEventListener("click", () => {
         window.location.href = buildUrl("admin_program_create.html");
+      });
+
+      goClients?.addEventListener("click", () => {
+        window.location.href = buildUrl("admin_clients.html");
       });
 
       exerciseType?.addEventListener("change", syncExerciseType);

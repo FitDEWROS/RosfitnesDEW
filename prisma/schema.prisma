@@ -29,8 +29,14 @@ model User {
   trainingMode    String    @default("gym")
   role            UserRole  @default(user)
   trainerScope    TrainerScope?
+  trainerId       Int?
+  trainer         User?     @relation("UserTrainer", fields: [trainerId], references: [id])
+  trainees        User[]    @relation("UserTrainer")
   fatsecret_token FatSecretToken?
   nutritionEntries NutritionEntry[]
+  nutritionComments NutritionComment[]
+  authoredNutritionComments NutritionComment[] @relation("NutritionCommentAuthor")
+  notifications   Notification[]
   authoredPrograms TrainingProgram[] @relation("TrainingProgramAuthor")
 }
 
@@ -61,6 +67,34 @@ model NutritionEntry {
   updatedAt  DateTime @updatedAt
 
   @@unique([userId, date])
+}
+
+model NutritionComment {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  author    User?    @relation("NutritionCommentAuthor", fields: [authorId], references: [id])
+  authorId  Int?
+  date      String   @db.VarChar(10)
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  type      String
+  title     String?
+  message   String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt])
 }
 
 enum TrainingProgramType {

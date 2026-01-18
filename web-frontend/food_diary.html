@@ -715,6 +715,32 @@
       gap: 16px;
     }
 
+    .comment-card {
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      display: grid;
+      gap: 8px;
+    }
+
+    html.light .comment-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .comment-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .comment-text {
+      font-size: 0.95rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
     .diary-form {
       display: grid;
       gap: 14px;
@@ -977,6 +1003,10 @@
         </div>
         <p class="save-status" id="saveStatus"></p>
       </form>
+      <div class="comment-card" id="commentCard">
+        <div class="comment-title">Комментарий тренера</div>
+        <div class="comment-text" id="trainerComment">Комментариев пока нет.</div>
+      </div>
     </section>
     </div>
   </div>
@@ -1038,6 +1068,7 @@
       const formCard = byId("formCard");
       const lockNote = byId("lockNote");
       const lockShell = byId("lockShell");
+      const trainerComment = byId("trainerComment");
 
       const dateLabelEl = byId("currentDateLabel");
       const dateSubEl = byId("currentDateSub");
@@ -1418,6 +1449,9 @@
             applyEntry(json.entry);
           } else {
             applyEntry({});
+          }
+          if (trainerComment) {
+            trainerComment.textContent = json?.comment ? json.comment : "Комментариев пока нет.";
           }
         } catch (e) {
           console.warn("Ошибка загрузки дневника питания", e);

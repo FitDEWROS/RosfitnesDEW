@@ -25,6 +25,8 @@
   const profileBtn = document.getElementById("profileBtn");
   const profileModal = document.getElementById("profileModal");
   const closeProfile = document.getElementById("closeProfile");
+  const notifyBtn = document.getElementById("openNotifications");
+  const notifyBadge = document.getElementById("notifyBadge");
   const profileNameEl = document.getElementById("profileName");
   const profileUsernameEl = document.getElementById("profileUsername");
   const profileIdEl = document.getElementById("profileId");
@@ -135,6 +137,27 @@
     localStorage.setItem("training_mode", mode);
     const toggle = document.getElementById("modeToggle");
     if (toggle) toggle.dataset.mode = mode;
+  };
+
+  const updateNotificationBadge = (count) => {
+    if (!notifyBadge) return;
+    const value = Number(count) || 0;
+    notifyBadge.textContent = value > 99 ? "99+" : String(value);
+    notifyBadge.hidden = value <= 0;
+  };
+
+  const fetchNotificationsCount = async (initData) => {
+    if (!API_BASE || !initData) return;
+    try {
+      const url = `${API_BASE}/api/notifications?initData=${encodeURIComponent(initData)}&unreadOnly=1&limit=1`;
+      const res = await fetch(url);
+      const json = await res.json().catch(() => ({}));
+      if (json?.ok) {
+        updateNotificationBadge(json.unreadCount);
+      }
+    } catch (e) {
+      console.warn("[api/notifications] ошибка загрузки", e);
+    }
   };
 
   const setupModeToggle = () => {
@@ -388,6 +411,13 @@
 
   if (profileBtn) profileBtn.addEventListener("click", () => profileModal?.classList.add("show"));
   if (closeProfile) closeProfile.addEventListener("click", () => profileModal?.classList.remove("show"));
+  if (notifyBtn) {
+    notifyBtn.addEventListener("click", () => {
+      const initData = buildInitData();
+      const url = initData ? `notifications.html?initData=${encodeURIComponent(initData)}` : "notifications.html";
+      window.location.href = url;
+    });
+  }
   window.addEventListener("click", (e) => {
     if (e.target === profileModal) profileModal.classList.remove("show");
   });
@@ -455,6 +485,7 @@
           await fetch(`${API_BASE}/api/validate?initData=${encodeURIComponent(initData)}`).catch(() => ({}));
           await fetchUserAndRender(initData);
           await fetchNutrition(initData);
+          await fetchNotificationsCount(initData);
         }
       }
     } catch (e) {
