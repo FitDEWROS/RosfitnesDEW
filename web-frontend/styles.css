@@ -577,6 +577,55 @@ html.light .header {
   color: var(--muted);
 }
 
+.info .muscle-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+}
+
+.info .muscle-item {
+  width: 100%;
+  display: block;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.info .muscle-item:hover {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.info .muscle-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  body.map-mode .info {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    max-height: 40vh;
+    overflow-y: auto;
+    z-index: 20;
+  }
+
+  body.map-mode .map-view {
+    padding-bottom: 220px;
+  }
+}
+
 .debug-toggle {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--card-border);

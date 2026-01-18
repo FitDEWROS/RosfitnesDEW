@@ -217,24 +217,70 @@
       (value || "").toLowerCase().replace(/\s+/g, " ").trim()
     );
 
+    const emptyExercisesMessage = "??? ??????????.";
+
     const getExercisesForGroup = (groupKey) => {
-      if (!exerciseLibrary.length) return ["Нет упражнений"];
+      if (!exerciseLibrary.length) {
+        return { items: [], message: emptyExercisesMessage };
+      }
       const targetMuscle = normalizeMuscleName(humanName(groupKey));
-      const muscleMatches = exerciseLibrary.filter((exercise) => {
+      let matches = exerciseLibrary.filter((exercise) => {
         const muscle = normalizeMuscleName(exercise.muscle);
         return muscle && muscle === targetMuscle;
       });
-      if (muscleMatches.length) {
-        return muscleMatches.map((exercise) => exercise.title || "Упражнение");
+
+      if (!matches.length) {
+        const keywords = muscleKeywords[groupKey] || [];
+        if (!keywords.length) {
+          return { items: [], message: emptyExercisesMessage };
+        }
+        matches = exerciseLibrary.filter((exercise) => {
+          const haystack = `${exercise.title || ""} ${exercise.description || ""}`.toLowerCase();
+          return keywords.some((word) => haystack.includes(word));
+        });
       }
-      const keywords = muscleKeywords[groupKey] || [];
-      if (!keywords.length) return ["Нет упражнений"];
-      const results = exerciseLibrary.filter((exercise) => {
-        const haystack = `${exercise.title || ""} ${exercise.description || ""}`.toLowerCase();
-        return keywords.some((word) => haystack.includes(word));
+
+      if (!matches.length) {
+        return { items: [], message: emptyExercisesMessage };
+      }
+      return { items: matches, message: emptyExercisesMessage };
+    };
+
+    const renderInfoList = (groupKey) => {
+      if (!info) return;
+      const data = getExercisesForGroup(groupKey);
+      info.innerHTML = "";
+      const titleEl = document.createElement("h3");
+      titleEl.textContent = humanName(groupKey);
+      info.appendChild(titleEl);
+
+      if (!data.items.length) {
+        const empty = document.createElement("p");
+        empty.className = "legend";
+        empty.textContent = data.message;
+        info.appendChild(empty);
+        return;
+      }
+
+      const listEl = document.createElement("ul");
+      listEl.className = "muscle-list";
+      data.items.forEach((exercise) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "muscle-item";
+        if (exercise && exercise.id !== undefined && exercise.id !== null) {
+          btn.dataset.exId = String(exercise.id);
+        }
+        const exIndex = exerciseLibrary.indexOf(exercise);
+        if (exIndex >= 0) {
+          btn.dataset.exIndex = String(exIndex);
+        }
+        btn.textContent = exercise.title || "??????????";
+        li.appendChild(btn);
+        listEl.appendChild(li);
       });
-      if (!results.length) return ["Нет упражнений"];
-      return results.map((exercise) => exercise.title || "Упражнение");
+      info.appendChild(listEl);
     };
 
     function attachHandlers(obj){
@@ -276,8 +322,7 @@
                 const g = svgDoc.getElementById(gid);
                 if (g) g.classList.add("active");
               });
-              const list = getExercisesForGroup(groupKey);
-              info.innerHTML = `<h3>${humanName(groupKey)}</h3><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+              renderInfoList(groupKey);
             }
           });
         });
@@ -437,7 +482,7 @@
         exerciseLibrary = json.exercises;
         renderExerciseList(exerciseLibrary);
         if (lastGroup) {
-          info.innerHTML = `<h3>${humanName(lastGroup)}</h3><ul>${getExercisesForGroup(lastGroup).map(x=>`<li>${x}</li>`).join('')}</ul>`;
+          renderInfoList(lastGroup);
         }
       } catch (err) {
         console.warn("exercises load failed", err);
@@ -569,6 +614,7 @@
           if (requestId !== currentVideoRequest) return;
           showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
         };
+
         videoEl.onloadeddata = () => {
           if (requestId !== currentVideoRequest) return;
           if (videoNote) {
@@ -592,6 +638,26 @@
         showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
       }
     };
+
+    if (info) {
+      info.addEventListener("click", (event) => {
+        const button = event.target.closest(".muscle-item");
+        if (!button) return;
+        const exId = button.dataset.exId;
+        let exercise = null;
+        if (exId) {
+          exercise = exerciseLibrary.find((item) => String(item.id) === exId);
+        }
+        if (!exercise && button.dataset.exIndex) {
+          const idx = Number(button.dataset.exIndex);
+          if (!Number.isNaN(idx)) {
+            exercise = exerciseLibrary[idx];
+          }
+        }
+        if (exercise) openVideo(exercise);
+      });
+    }
+
     const closeVideoModal = () => {
       if (!videoModal) return;
       currentVideoRequest += 1;
@@ -628,6 +694,7 @@
         btn.classList.toggle("is-active", active);
         btn.setAttribute("aria-selected", active ? "true" : "false");
       });
+      document.body.classList.toggle("map-mode", !isList);
       localStorage.setItem("exercise_view", mode);
     };
 
