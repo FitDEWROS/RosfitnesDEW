@@ -986,6 +986,7 @@
       let trainerScope = "both";
       let isTrainer = false;
       const defaultTariffs = ["Базовый", "Выгодный", "Максимум"];
+      const descriptionTemplate = "Как выполнять:\n\nСовет:\n";
 
       const setAccess = (ok, message) => {
         accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
@@ -1171,7 +1172,7 @@
         }
         setMuscleValues([]);
         setMuscleOpen(false);
-        if (exerciseDescription) exerciseDescription.value = "";
+        if (exerciseDescription) exerciseDescription.value = descriptionTemplate;
         if (exerciseVideo) exerciseVideo.value = "";
         if (saveExercise) saveExercise.textContent = "Сохранить упражнение";
         setSelectedTariffs(defaultTariffs);
@@ -1227,12 +1228,19 @@
             ? exercise.muscles
             : (exercise.muscle ? [exercise.muscle] : [])
         );
-        if (exerciseDescription) exerciseDescription.value = exercise.description || "";
+        if (exerciseDescription) {
+          exerciseDescription.value = exercise.description || descriptionTemplate;
+        }
         if (exerciseVideo) exerciseVideo.value = exercise.videoUrl || "";
         if (saveExercise) saveExercise.textContent = "Сохранить изменения";
         setSelectedTariffs(exercise.tariffs || []);
         setExerciseStatus("Редактирование упражнения.", true);
         syncExerciseType();
+        if (exerciseCard && typeof exerciseCard.scrollIntoView === "function") {
+          exerciseCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       });
 
       saveExercise?.addEventListener("click", async () => {
