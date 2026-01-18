@@ -148,6 +148,18 @@
     let currentVideoRequest = 0;
     let currentVideoUrl = "";
 
+    const setInfoVisible = (visible) => {
+      if (!info) return;
+      info.hidden = !visible;
+      info.classList.toggle("is-hidden", !visible);
+      info.setAttribute("aria-hidden", visible ? "false" : "true");
+    };
+
+    const showInfo = () => setInfoVisible(true);
+    const hideInfo = () => setInfoVisible(false);
+
+    hideInfo();
+
     btnDebug.onclick = () => {
       debugMode = !debugMode;
       btnDebug.classList.toggle("active", debugMode);
@@ -161,8 +173,7 @@
       btnBack.classList.toggle('active', !isFront);
       btnFront.setAttribute('aria-selected', String(isFront));
       btnBack.setAttribute('aria-selected', String(!isFront));
-      info.innerHTML = `<h3>Выбери мышцу</h3>
-        <p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>`;
+      hideInfo();
     }
 
     btnFront.onclick = () => setView(true);
@@ -269,6 +280,7 @@
       const titleEl = document.createElement("h3");
       titleEl.textContent = humanName(groupKey);
       info.appendChild(titleEl);
+      showInfo();
 
       if (!data.items.length) {
         const empty = document.createElement("p");
@@ -342,11 +354,30 @@
             }
           });
         });
+
+        const svgRoot = svgDoc.documentElement;
+        if (svgRoot) {
+          svgRoot.addEventListener("pointerdown", (event) => {
+            const target = event.target;
+            if (target && typeof target.closest === "function" && target.closest(".muscle")) return;
+            hideInfo();
+          });
+        }
       });
     }
 
     attachHandlers(document.getElementById("svgFront"));
     attachHandlers(document.getElementById("svgBack"));
+
+    if (mapView) {
+      mapView.addEventListener("pointerdown", (event) => {
+        if (!info || info.classList.contains("is-hidden")) return;
+        if (info.contains(event.target)) return;
+        const target = event.target;
+        if (target && typeof target.closest === "function" && target.closest(".svg-host")) return;
+        hideInfo();
+      });
+    }
 
     function humanName(key){
       const map = {
