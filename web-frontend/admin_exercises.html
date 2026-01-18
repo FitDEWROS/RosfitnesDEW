@@ -737,7 +737,7 @@
         </label>
         <label class="full">
           Мышца (для зала)
-          <select id="exerciseMuscle">
+          <select id="exerciseMuscle" multiple size="8">
             <option value="">—</option>
             <option value="Общая">Общая</option>
             <option value="Трапециевидная мышца">Трапециевидная мышца</option>
@@ -867,18 +867,39 @@
           .map((input) => input.value)
       );
 
-      const setMuscleValue = (value) => {
-        if (!exerciseMuscle) return;
-        const normalized = value || "";
-        const hasOption = Array.from(exerciseMuscle.options)
-          .some((option) => option.value === normalized);
-        if (normalized && !hasOption) {
-          const option = document.createElement("option");
-          option.value = normalized;
-          option.textContent = normalized;
-          exerciseMuscle.appendChild(option);
+      const normalizeMuscles = (values) => {
+        if (Array.isArray(values)) {
+          return values
+            .map((item) => String(item || "").trim())
+            .filter((item) => item);
         }
-        exerciseMuscle.value = normalized;
+        const single = typeof values === "string" ? values.trim() : "";
+        return single ? [single] : [];
+      };
+
+      const setMuscleValues = (values) => {
+        if (!exerciseMuscle) return;
+        const list = normalizeMuscles(values);
+        list.forEach((value) => {
+          const hasOption = Array.from(exerciseMuscle.options)
+            .some((option) => option.value === value);
+          if (!hasOption) {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = value;
+            exerciseMuscle.appendChild(option);
+          }
+        });
+        Array.from(exerciseMuscle.options).forEach((option) => {
+          option.selected = list.includes(option.value);
+        });
+      };
+
+      const getSelectedMuscles = () => {
+        if (!exerciseMuscle) return [];
+        return Array.from(exerciseMuscle.selectedOptions)
+          .map((option) => option.value)
+          .filter((value) => value);
       };
 
       const syncExerciseType = () => {
@@ -886,9 +907,9 @@
         const isGym = exerciseType.value !== "crossfit";
         exerciseMuscle.disabled = !isGym;
         if (!isGym) {
-          setMuscleValue("");
-        } else if (!exerciseMuscle.value) {
-          setMuscleValue("Общая");
+          setMuscleValues([]);
+        } else if (!getSelectedMuscles().length) {
+          setMuscleValues(["Общая"]);
         }
       };
 
@@ -919,7 +940,12 @@
         }
         exercises.forEach((exercise) => {
           const typeLabel = exercise.type === "crossfit" ? "Кроссфит" : "Зал";
-          const muscleLabel = exercise.type === "gym" && exercise.muscle ? ` - ${exercise.muscle}` : "";
+          const muscleList = Array.isArray(exercise.muscles) && exercise.muscles.length
+            ? exercise.muscles
+            : (exercise.muscle ? [exercise.muscle] : []);
+          const muscleLabel = exercise.type === "gym" && muscleList.length
+            ? ` - ${muscleList.join(", ")}`
+            : "";
           const videoLabel = exercise.videoUrl ? "Есть видео" : "Без видео";
           const tariffsLabel = Array.isArray(exercise.tariffs) && exercise.tariffs.length
             ? ` / ${exercise.tariffs.join(", ")}`
@@ -961,7 +987,7 @@
         if (exerciseType) {
           exerciseType.value = trainerScope && trainerScope !== "both" ? trainerScope : "gym";
         }
-        setMuscleValue(exerciseType?.value === "crossfit" ? "" : "Общая");
+        setMuscleValues(exerciseType?.value === "crossfit" ? [] : ["Общая"]);
         if (exerciseDescription) exerciseDescription.value = "";
         if (exerciseVideo) exerciseVideo.value = "";
         if (saveExercise) saveExercise.textContent = "Сохранить упражнение";
@@ -1000,7 +1026,11 @@
         currentExerciseId = id;
         if (exerciseTitle) exerciseTitle.value = exercise.title || "";
         if (exerciseType) exerciseType.value = exercise.type || "gym";
-        setMuscleValue(exercise.muscle || "");
+        setMuscleValues(
+          Array.isArray(exercise.muscles) && exercise.muscles.length
+            ? exercise.muscles
+            : (exercise.muscle ? [exercise.muscle] : [])
+        );
         if (exerciseDescription) exerciseDescription.value = exercise.description || "";
         if (exerciseVideo) exerciseVideo.value = exercise.videoUrl || "";
         if (saveExercise) saveExercise.textContent = "Сохранить изменения";
@@ -1019,10 +1049,12 @@
           return;
         }
 
+        const selectedMuscles = getSelectedMuscles();
         const payload = {
           title: exerciseTitle?.value.trim() || "",
           type: exerciseType?.value || "gym",
-          muscle: exerciseMuscle?.value.trim() || "",
+          muscles: selectedMuscles,
+          muscle: selectedMuscles[0] || "",
           description: exerciseDescription?.value.trim() || "",
           videoUrl: exerciseVideo?.value.trim() || "",
           tariffs: getSelectedTariffs()

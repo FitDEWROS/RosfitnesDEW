@@ -217,7 +217,22 @@
       (value || "").toLowerCase().replace(/\s+/g, " ").trim()
     );
 
-    const emptyExercisesMessage = "??? ??????????.";
+    const emptyExercisesMessage = "\u041d\u0435\u0442 \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0439.";
+    const defaultExerciseTitle = "\u0423\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0435";
+    const generalMuscleName = "\u041e\u0431\u0449\u0430\u044f";
+
+    const getExerciseMuscles = (exercise) => {
+      if (!exercise) return [];
+      if (Array.isArray(exercise.muscles) && exercise.muscles.length) return exercise.muscles;
+      if (exercise.muscle) return [exercise.muscle];
+      return [];
+    };
+
+    const getEffectiveMuscles = (exercise) => (
+      getExerciseMuscles(exercise)
+        .map(normalizeMuscleName)
+        .filter((muscle) => muscle && muscle !== normalizeMuscleName(generalMuscleName))
+    );
 
     const getExercisesForGroup = (groupKey) => {
       if (!exerciseLibrary.length) {
@@ -225,8 +240,8 @@
       }
       const targetMuscle = normalizeMuscleName(humanName(groupKey));
       let matches = exerciseLibrary.filter((exercise) => {
-        const muscle = normalizeMuscleName(exercise.muscle);
-        return muscle && muscle === targetMuscle;
+        const muscles = getEffectiveMuscles(exercise);
+        return muscles.includes(targetMuscle);
       });
 
       if (!matches.length) {
@@ -235,6 +250,7 @@
           return { items: [], message: emptyExercisesMessage };
         }
         matches = exerciseLibrary.filter((exercise) => {
+          if (getEffectiveMuscles(exercise).length) return false;
           const haystack = `${exercise.title || ""} ${exercise.description || ""}`.toLowerCase();
           return keywords.some((word) => haystack.includes(word));
         });
@@ -276,7 +292,7 @@
         if (exIndex >= 0) {
           btn.dataset.exIndex = String(exIndex);
         }
-        btn.textContent = exercise.title || "??????????";
+        btn.textContent = exercise.title || defaultExerciseTitle;
         li.appendChild(btn);
         listEl.appendChild(li);
       });

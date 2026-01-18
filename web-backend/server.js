@@ -398,6 +398,19 @@ function normalizeTariffs(value) {
   return Array.from(unique);
 }
 
+const DEFAULT_MUSCLE = "\u041e\u0431\u0449\u0430\u044f";
+
+function normalizeMuscles(value) {
+  const list = Array.isArray(value) ? value : (value ? [value] : []);
+  const unique = new Set();
+  list.forEach((item) => {
+    const cleaned = cleanString(item);
+    if (cleaned) unique.add(cleaned);
+  });
+  return Array.from(unique);
+}
+
+
 const TRAINER_SCOPES = ['gym', 'crossfit', 'both'];
 
 function normalizeTrainerScope(value) {
@@ -1278,7 +1291,12 @@ app.post('/api/admin/exercises', async (req, res) => {
       return res.status(403).json({ ok: false, error: 'forbidden_type' });
       }
     }
-    const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'Общая') : null;
+    const rawMuscles = Array.isArray(payload.muscles) ? payload.muscles : payload.muscle;
+    const muscles = normalizedType === 'gym' ? normalizeMuscles(rawMuscles) : [];
+    const finalMuscles = normalizedType === 'gym'
+      ? (muscles.length ? muscles : [DEFAULT_MUSCLE])
+      : [];
+    const muscle = normalizedType === 'gym' ? (finalMuscles[0] || DEFAULT_MUSCLE) : null;
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });
     }
@@ -1289,6 +1307,7 @@ app.post('/api/admin/exercises', async (req, res) => {
         type: normalizedType,
         tariffs,
         muscle,
+        muscles: finalMuscles,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
       }
@@ -1332,7 +1351,12 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
         return res.status(403).json({ ok: false, error: 'forbidden_type' });
       }
     }
-    const muscle = normalizedType === 'gym' ? (cleanString(payload.muscle) || 'Общая') : null;
+    const rawMuscles = Array.isArray(payload.muscles) ? payload.muscles : payload.muscle;
+    const muscles = normalizedType === 'gym' ? normalizeMuscles(rawMuscles) : [];
+    const finalMuscles = normalizedType === 'gym'
+      ? (muscles.length ? muscles : [DEFAULT_MUSCLE])
+      : [];
+    const muscle = normalizedType === 'gym' ? (finalMuscles[0] || DEFAULT_MUSCLE) : null;
     if (!title) {
       return res.status(400).json({ ok: false, error: 'missing_title' });
     }
@@ -1344,6 +1368,7 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
         type: normalizedType,
         tariffs,
         muscle,
+        muscles: finalMuscles,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
       }
