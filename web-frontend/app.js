@@ -15,6 +15,9 @@
   const metricWaterStatusEl = document.getElementById("metricWaterStatus");
   const metricMealsEl = document.getElementById("metricMeals");
   const metricMealsStatusEl = document.getElementById("metricMealsStatus");
+  const nutritionLink = document.getElementById("nutritionLink");
+  const metricWaterCard = document.getElementById("metricWaterCard");
+  const metricMealsCard = document.getElementById("metricMealsCard");
   const themeToggleBtn = document.getElementById("themeToggle");
 
   const profileBtn = document.getElementById("profileBtn");
@@ -33,6 +36,7 @@
   const editAgeEl = document.getElementById("editAge");
   const saveProfileBtn = document.getElementById("saveProfile");
   const profileSaveStatusEl = document.getElementById("profileSaveStatus");
+  let nutritionLocked = false;
 
   const buildInitData = () => {
     const raw = tg?.initData || "";
@@ -69,6 +73,24 @@
     if (!Number.isFinite(value)) return fallback;
     const rounded = Math.round(value * 10) / 10;
     return rounded % 1 === 0 ? String(rounded.toFixed(0)) : String(rounded.toFixed(1));
+  };
+
+  const isBasicTariff = (tariff) => (
+    String(tariff || "").toLowerCase().includes("базов")
+  );
+
+  const applyNutritionAccess = (tariff) => {
+    nutritionLocked = isBasicTariff(tariff);
+    if (nutritionLink) {
+      nutritionLink.classList.toggle("is-locked", nutritionLocked);
+      nutritionLink.setAttribute("aria-disabled", nutritionLocked ? "true" : "false");
+    }
+    if (metricWaterCard) {
+      metricWaterCard.classList.toggle("fog-lock", nutritionLocked);
+    }
+    if (metricMealsCard) {
+      metricMealsCard.classList.toggle("fog-lock", nutritionLocked);
+    }
   };
 
   const applyNutritionEntry = (entry) => {
@@ -160,6 +182,7 @@
       if (greetingEl) greetingEl.textContent = name;
       if (tariffEl) tariffEl.textContent = tariff;
       renderTilesByTariff(tariff);
+      applyNutritionAccess(tariff);
       applyTrainingMode(trainingMode);
 
       if (profileNameEl) profileNameEl.textContent = name;
@@ -300,6 +323,15 @@
   const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
   const waitReady = () => { try { tg?.ready?.(); } catch (_) {} };
 
+  if (nutritionLink) {
+    nutritionLink.addEventListener("click", (e) => {
+      if (!nutritionLocked) return;
+      e.preventDefault();
+      e.stopPropagation();
+      showAlert("Дневник питания недоступен на базовом тарифе.");
+    });
+  }
+
   let isDark = true;
 
   const clearInlineVars = () => {
@@ -388,6 +420,7 @@
 
       const qpTariff = qs.get("tariff");
       if (qpTariff && tariffEl) tariffEl.textContent = qpTariff;
+      if (qpTariff) applyNutritionAccess(qpTariff);
 
       if (API_BASE && tg) {
         const initData = buildInitData();

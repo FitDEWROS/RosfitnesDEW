@@ -72,6 +72,122 @@
       gap: 18px;
     }
 
+    .lock-shell {
+      display: grid;
+      gap: 18px;
+      position: relative;
+    }
+
+    .lock-note {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+    }
+
+    .lock-note[hidden] {
+      display: none;
+    }
+
+    .lock-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    html.light .lock-badge {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .lock-badge svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .lock-note-content {
+      display: grid;
+      gap: 4px;
+    }
+
+    .lock-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .lock-text {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    body.is-locked .lock-shell {
+      pointer-events: none;
+    }
+
+    body.is-locked .fab {
+      pointer-events: none;
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .fog-lock {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fog-lock::before,
+    .fog-lock::after {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(320px 120px at 20% 30%, rgba(255, 255, 255, 0.22), transparent 60%),
+        radial-gradient(240px 160px at 80% 20%, rgba(255, 255, 255, 0.18), transparent 65%),
+        radial-gradient(260px 180px at 60% 80%, rgba(255, 255, 255, 0.15), transparent 70%);
+      opacity: 0.6;
+      animation: fogDrift 9s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .fog-lock::after {
+      opacity: 0.45;
+      animation-duration: 12s;
+      mix-blend-mode: screen;
+    }
+
+    .fog-lock > * {
+      filter: blur(1.2px);
+      opacity: 0.5;
+    }
+
+    html.light .fog-lock::before,
+    html.light .fog-lock::after {
+      background:
+        radial-gradient(320px 120px at 20% 30%, rgba(0, 0, 0, 0.12), transparent 60%),
+        radial-gradient(240px 160px at 80% 20%, rgba(0, 0, 0, 0.1), transparent 65%),
+        radial-gradient(260px 180px at 60% 80%, rgba(0, 0, 0, 0.08), transparent 70%);
+      mix-blend-mode: multiply;
+    }
+
+    @keyframes fogDrift {
+      0% { transform: translateX(-8%) translateY(0); }
+      50% { transform: translateX(8%) translateY(-3%); }
+      100% { transform: translateX(-8%) translateY(0); }
+    }
+
     .diary-header {
       display: grid;
       gap: 10px;
@@ -691,6 +807,12 @@
       box-shadow: var(--shadow);
     }
 
+    .fab:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
     .fab-icon {
       width: 28px;
       height: 28px;
@@ -728,79 +850,92 @@
       <p>Заполни калории и БЖУ - показатели сразу появятся на главной.</p>
     </header>
 
-    <div class="date-toolbar">
-      <div>
-        <div class="date-title" id="currentDateLabel">Сегодня</div>
-        <div class="date-sub" id="currentDateSub"></div>
+    <div class="lock-note" id="lockNote" hidden>
+      <div class="lock-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img" focusable="false" aria-hidden="true">
+          <path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>
+        </svg>
       </div>
-      <button class="ghost-btn" id="goToday" type="button">Сегодня</button>
+      <div class="lock-note-content">
+        <div class="lock-title">Дневник питания закрыт</div>
+        <p class="lock-text">Доступно на тарифе Выгодный и Максимум.</p>
+      </div>
     </div>
 
-    <div class="week-strip">
-      <button class="week-nav" id="prevWeek" type="button" aria-label="Предыдущая неделя">&lt;</button>
-      <div class="week-days" id="weekStrip"></div>
-      <button class="week-nav" id="nextWeek" type="button" aria-label="Следующая неделя">&gt;</button>
-    </div>
-
-    <section class="calendar-card">
-      <div class="calendar-head">
-        <div class="calendar-title" id="calendarTitle">Месяц</div>
-        <div class="calendar-actions">
-          <button class="calendar-nav" id="prevMonth" type="button" aria-label="Предыдущий месяц">&lt;</button>
-          <button class="calendar-nav" id="nextMonth" type="button" aria-label="Следующий месяц">&gt;</button>
+    <div class="lock-shell" id="lockShell">
+      <div class="date-toolbar">
+        <div>
+          <div class="date-title" id="currentDateLabel">Сегодня</div>
+          <div class="date-sub" id="currentDateSub"></div>
         </div>
+        <button class="ghost-btn" id="goToday" type="button">Сегодня</button>
       </div>
-      <div class="calendar-weekdays">
-        <span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span>
-      </div>
-      <div class="calendar-grid" id="calendarGrid"></div>
-    </section>
 
-    <section class="summary-card">
-      <div>
-        <div class="summary-value" id="previewKcal">0</div>
-        <div class="summary-unit">ККАЛ</div>
+      <div class="week-strip">
+        <button class="week-nav" id="prevWeek" type="button" aria-label="Предыдущая неделя">&lt;</button>
+        <div class="week-days" id="weekStrip"></div>
+        <button class="week-nav" id="nextWeek" type="button" aria-label="Следующая неделя">&gt;</button>
       </div>
-      <div class="summary-macros">
-        <div class="macro-pill">
-          <span>Б</span>
-          <strong id="previewProtein">0</strong>
+
+      <section class="calendar-card">
+        <div class="calendar-head">
+          <div class="calendar-title" id="calendarTitle">Месяц</div>
+          <div class="calendar-actions">
+            <button class="calendar-nav" id="prevMonth" type="button" aria-label="Предыдущий месяц">&lt;</button>
+            <button class="calendar-nav" id="nextMonth" type="button" aria-label="Следующий месяц">&gt;</button>
+          </div>
         </div>
-        <div class="macro-pill">
-          <span>Ж</span>
-          <strong id="previewFat">0</strong>
+        <div class="calendar-weekdays">
+          <span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span>
         </div>
-        <div class="macro-pill">
-          <span>У</span>
-          <strong id="previewCarb">0</strong>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+
+      <section class="summary-card">
+        <div>
+          <div class="summary-value" id="previewKcal">0</div>
+          <div class="summary-unit">ККАЛ</div>
         </div>
-      </div>
-    </section>
+        <div class="summary-macros">
+          <div class="macro-pill">
+            <span>Б</span>
+            <strong id="previewProtein">0</strong>
+          </div>
+          <div class="macro-pill">
+            <span>Ж</span>
+            <strong id="previewFat">0</strong>
+          </div>
+          <div class="macro-pill">
+            <span>У</span>
+            <strong id="previewCarb">0</strong>
+          </div>
+        </div>
+      </section>
 
-    <section class="chart-card">
-      <div class="chart-head">
-        <h2>Тренд недели</h2>
-        <span class="chart-range" id="chartRange"></span>
-      </div>
-      <svg class="chart-svg" id="weeklyChart" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true"></svg>
-      <div class="chart-legend">
-        <span class="legend-item"><span class="legend-dot" style="background: var(--chart-kcal)"></span>ККАЛ</span>
-        <span class="legend-item"><span class="legend-dot" style="background: var(--chart-protein)"></span>Б</span>
-        <span class="legend-item"><span class="legend-dot" style="background: var(--chart-fat)"></span>Ж</span>
-        <span class="legend-item"><span class="legend-dot" style="background: var(--chart-carb)"></span>У</span>
-      </div>
-    </section>
+      <section class="chart-card">
+        <div class="chart-head">
+          <h2>Тренд недели</h2>
+          <span class="chart-range" id="chartRange"></span>
+        </div>
+        <svg class="chart-svg" id="weeklyChart" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot" style="background: var(--chart-kcal)"></span>ККАЛ</span>
+          <span class="legend-item"><span class="legend-dot" style="background: var(--chart-protein)"></span>Б</span>
+          <span class="legend-item"><span class="legend-dot" style="background: var(--chart-fat)"></span>Ж</span>
+          <span class="legend-item"><span class="legend-dot" style="background: var(--chart-carb)"></span>У</span>
+        </div>
+      </section>
 
-    <section class="history-card">
-      <div class="history-head">
-        <h2>История недели</h2>
-        <span class="history-range" id="historyRange"></span>
-      </div>
-      <div class="history-list" id="historyList"></div>
-    </section>
+      <section class="history-card">
+        <div class="history-head">
+          <h2>История недели</h2>
+          <span class="history-range" id="historyRange"></span>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
 
-    <section class="form-card" id="formCard">
-      <form id="diaryForm" class="diary-form" autocomplete="off">
+      <section class="form-card" id="formCard">
+        <form id="diaryForm" class="diary-form" autocomplete="off">
         <div class="form-grid">
           <label class="field">
             <span>Калории</span>
@@ -841,6 +976,7 @@
         <p class="save-status" id="saveStatus"></p>
       </form>
     </section>
+    </div>
   </div>
 
   <button class="fab" id="jumpToForm" type="button" aria-label="Перейти к вводу данных">
@@ -855,6 +991,7 @@
 
       const tg = window.Telegram?.WebApp || null;
       const API_BASE = window.ENV?.API_BASE || "";
+      const qs = new URLSearchParams(location.search);
 
       function buildInitData() {
         const raw = tg?.initData || "";
@@ -892,6 +1029,13 @@
         fat: byId("previewFat"),
         carb: byId("previewCarb")
       };
+      const form = byId("diaryForm");
+      const status = byId("saveStatus");
+      const back = byId("backHome");
+      const jumpToForm = byId("jumpToForm");
+      const formCard = byId("formCard");
+      const lockNote = byId("lockNote");
+      const lockShell = byId("lockShell");
 
       const dateLabelEl = byId("currentDateLabel");
       const dateSubEl = byId("currentDateSub");
@@ -915,9 +1059,74 @@
         return Number.isFinite(num) ? num : null;
       };
 
+      const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+      const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
+
+      const applyLockState = (locked) => {
+        isLocked = locked;
+        document.body.classList.toggle("is-locked", locked);
+        if (lockNote) lockNote.hidden = !locked;
+        if (lockShell) lockShell.classList.toggle("fog-lock", locked);
+        if (form) {
+          form.querySelectorAll("input, select, textarea, button").forEach((el) => {
+            el.disabled = locked;
+          });
+        }
+        if (jumpToForm) jumpToForm.disabled = locked;
+      };
+
+      const loadUserTariff = async () => {
+        const qpTariff = qs.get("tariff");
+        if (qpTariff) return qpTariff;
+        if (!API_BASE || !initData) return "";
+        try {
+          const url = `${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          return json?.profile?.tariffName || "";
+        } catch (e) {
+          console.warn("Ошибка загрузки тарифа", e);
+          return "";
+        }
+      };
+
       const formatWhole = (value, fallback = "0") => {
         if (!Number.isFinite(value)) return fallback;
         return Math.round(value).toLocaleString("ru-RU");
+      };
+
+      const isBasicTariff = (tariff) => (
+        String(tariff || "").toLowerCase().includes("базов")
+      );
+
+      const applyLockState = (tariff) => {
+        const locked = isBasicTariff(tariff);
+        isLocked = locked;
+        document.body.classList.toggle("is-locked", locked);
+        if (lockNote) lockNote.hidden = !locked;
+        if (lockShell) lockShell.classList.toggle("fog-lock", locked);
+        if (jumpToForm) {
+          jumpToForm.disabled = locked;
+          jumpToForm.setAttribute("aria-disabled", locked ? "true" : "false");
+        }
+        if (form) {
+          form.querySelectorAll("input, button, textarea, select").forEach((el) => {
+            el.disabled = locked;
+          });
+        }
+      };
+
+      const loadUserTariff = async () => {
+        if (!API_BASE || !initData) return "";
+        try {
+          const url = `${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          if (json?.ok) return json.profile?.tariffName || "";
+        } catch (e) {
+          console.warn("Ошибка загрузки тарифа", e);
+        }
+        return "";
       };
 
       const daysShort = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
@@ -958,6 +1167,7 @@
       let historyMap = {};
       let monthMap = {};
       let currentMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      let isLocked = false;
 
       const formatDateLabel = (date) => {
         const today = new Date();
@@ -1185,7 +1395,7 @@
       };
 
       const loadHistory = async () => {
-        if (!API_BASE || !initData) return;
+        if (isLocked || !API_BASE || !initData) return;
         const from = toYMD(weekStart);
         const to = toYMD(addDays(weekStart, 6));
         try {
@@ -1207,7 +1417,7 @@
       };
 
       const loadMonthHistory = async () => {
-        if (!API_BASE || !initData) return;
+        if (isLocked || !API_BASE || !initData) return;
         const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
         const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
         const from = toYMD(start);
@@ -1230,7 +1440,7 @@
       };
 
       const loadEntry = async (dateKey) => {
-        if (!API_BASE || !initData) return;
+        if (isLocked || !API_BASE || !initData) return;
         const key = dateKey || toYMD(selectedDate);
         try {
           const url = `${API_BASE}/api/nutrition?initData=${encodeURIComponent(initData)}&date=${key}`;
@@ -1247,6 +1457,10 @@
       };
 
       const saveEntry = async () => {
+        if (isLocked) {
+          showAlert("Дневник питания недоступен на базовом тарифе.");
+          return false;
+        }
         if (!API_BASE || !initData) return false;
         const payload = {
           initData,
@@ -1271,8 +1485,6 @@
         return !!json?.ok;
       };
 
-      const form = byId("diaryForm");
-      const status = byId("saveStatus");
       if (form) {
         form.addEventListener("input", updatePreview);
         form.addEventListener("submit", async (e) => {
@@ -1325,21 +1537,41 @@
         });
       }
 
-      const back = byId("backHome");
       if (back) back.addEventListener("click", () => { window.location.href = "index.html"; });
 
-      const jumpToForm = byId("jumpToForm");
-      const formCard = byId("formCard");
       if (jumpToForm && formCard) {
         jumpToForm.addEventListener("click", () => {
           formCard.scrollIntoView({ behavior: "smooth", block: "start" });
         });
       }
 
-      updateDateLabels();
-      loadHistory();
-      loadMonthHistory();
-      loadEntry(toYMD(selectedDate));
+      const init = async () => {
+        try {
+          if (tg) {
+            tg.ready?.();
+            tg.expand?.();
+          }
+          const tariff = await loadUserTariff();
+          applyLockState(isBasicTariff(tariff));
+
+          updateDateLabels();
+          updateHistoryRange();
+          updateCalendarTitle();
+          renderWeekStrip();
+          renderHistory();
+          renderWeeklyChart();
+          renderCalendar();
+
+          if (isLocked) return;
+          await loadHistory();
+          await loadMonthHistory();
+          await loadEntry(toYMD(selectedDate));
+        } catch (e) {
+          console.warn("Ошибка инициализации дневника питания", e);
+        }
+      };
+
+      init();
     })();
   </script>
 </body>
