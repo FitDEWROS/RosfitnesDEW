@@ -157,20 +157,21 @@
         radial-gradient(320px 120px at 20% 30%, rgba(255, 255, 255, 0.22), transparent 60%),
         radial-gradient(240px 160px at 80% 20%, rgba(255, 255, 255, 0.18), transparent 65%),
         radial-gradient(260px 180px at 60% 80%, rgba(255, 255, 255, 0.15), transparent 70%);
-      opacity: 0.6;
+      opacity: 0.85;
       animation: fogDrift 9s ease-in-out infinite;
       pointer-events: none;
     }
 
     .fog-lock::after {
-      opacity: 0.45;
+      opacity: 0.7;
       animation-duration: 12s;
       mix-blend-mode: screen;
     }
 
     .fog-lock > * {
-      filter: blur(1.2px);
-      opacity: 0.5;
+      filter: blur(6px) saturate(0.8);
+      opacity: 0.35;
+      transform: scale(1.02);
     }
 
     html.light .fog-lock::before,
@@ -1093,40 +1094,6 @@
       const formatWhole = (value, fallback = "0") => {
         if (!Number.isFinite(value)) return fallback;
         return Math.round(value).toLocaleString("ru-RU");
-      };
-
-      const isBasicTariff = (tariff) => (
-        String(tariff || "").toLowerCase().includes("базов")
-      );
-
-      const applyLockState = (tariff) => {
-        const locked = isBasicTariff(tariff);
-        isLocked = locked;
-        document.body.classList.toggle("is-locked", locked);
-        if (lockNote) lockNote.hidden = !locked;
-        if (lockShell) lockShell.classList.toggle("fog-lock", locked);
-        if (jumpToForm) {
-          jumpToForm.disabled = locked;
-          jumpToForm.setAttribute("aria-disabled", locked ? "true" : "false");
-        }
-        if (form) {
-          form.querySelectorAll("input, button, textarea, select").forEach((el) => {
-            el.disabled = locked;
-          });
-        }
-      };
-
-      const loadUserTariff = async () => {
-        if (!API_BASE || !initData) return "";
-        try {
-          const url = `${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`;
-          const res = await fetch(url);
-          const json = await res.json().catch(() => ({}));
-          if (json?.ok) return json.profile?.tariffName || "";
-        } catch (e) {
-          console.warn("Ошибка загрузки тарифа", e);
-        }
-        return "";
       };
 
       const daysShort = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];

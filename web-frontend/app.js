@@ -16,6 +16,7 @@
   const metricMealsEl = document.getElementById("metricMeals");
   const metricMealsStatusEl = document.getElementById("metricMealsStatus");
   const nutritionLink = document.getElementById("nutritionLink");
+  const nutritionHero = document.getElementById("nutritionHero");
   const metricWaterCard = document.getElementById("metricWaterCard");
   const metricMealsCard = document.getElementById("metricMealsCard");
   const themeToggleBtn = document.getElementById("themeToggle");
@@ -84,6 +85,9 @@
     if (nutritionLink) {
       nutritionLink.classList.toggle("is-locked", nutritionLocked);
       nutritionLink.setAttribute("aria-disabled", nutritionLocked ? "true" : "false");
+    }
+    if (nutritionHero) {
+      nutritionHero.classList.toggle("fog-lock", nutritionLocked);
     }
     if (metricWaterCard) {
       metricWaterCard.classList.toggle("fog-lock", nutritionLocked);
