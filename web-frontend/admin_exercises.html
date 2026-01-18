@@ -317,6 +317,100 @@
       resize: vertical;
     }
 
+    .muscle-picker {
+      position: relative;
+      display: grid;
+      gap: 8px;
+    }
+
+    .muscle-toggle {
+      width: 100%;
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+    html.light .muscle-toggle {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .muscle-toggle:focus-visible {
+      border-color: rgba(242, 209, 124, 0.6);
+      box-shadow: 0 0 0 3px rgba(242, 209, 124, 0.15);
+      outline: none;
+    }
+
+    .muscle-toggle:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .muscle-toggle-icon {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      transition: transform var(--transition);
+    }
+
+    .muscle-toggle.is-open .muscle-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .muscle-options {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 20;
+    }
+
+    html.light .muscle-options {
+      background: #ffffff;
+    }
+
+    .muscle-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text);
+    }
+
+    .muscle-option input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent-strong);
+    }
+
+    .muscle-option:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    html.light .muscle-option:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
     .slug-field {
       display: flex;
       gap: 8px;
@@ -737,26 +831,79 @@
         </label>
         <label class="full">
           Мышца (для зала)
-          <select id="exerciseMuscle" multiple size="8">
-            <option value="">—</option>
-            <option value="Общая">Общая</option>
-            <option value="Трапециевидная мышца">Трапециевидная мышца</option>
-            <option value="Большая грудная мышца">Большая грудная мышца</option>
-            <option value="Дельтовидная мышца">Дельтовидная мышца</option>
-            <option value="Двуглавая мышца плеча (бицепс)">Двуглавая мышца плеча (бицепс)</option>
-            <option value="Мышцы предплечья">Мышцы предплечья</option>
-            <option value="Прямая мышца живота">Прямая мышца живота</option>
-            <option value="Мышцы квадрицепса">Мышцы квадрицепса</option>
-            <option value="Приводящая мышца">Приводящая мышца</option>
-            <option value="Передняя группа мышц голени">Передняя группа мышц голени</option>
-            <option value="Мышцы верха спины">Мышцы верха спины</option>
-            <option value="Трехглавая мышца плеча (трицепс)">Трехглавая мышца плеча (трицепс)</option>
-            <option value="Широчайшая мышца спины">Широчайшая мышца спины</option>
-            <option value="Мышцы низа спины">Мышцы низа спины</option>
-            <option value="Большая ягодичная мышца">Большая ягодичная мышца</option>
-            <option value="Хамстринги (мышцы задней части бедра)">Хамстринги (мышцы задней части бедра)</option>
-            <option value="Икроножная мышца">Икроножная мышца</option>
-          </select>
+          <div class="muscle-picker" id="musclePicker">
+            <button class="muscle-toggle" id="muscleToggle" type="button" aria-expanded="false">
+              <span class="muscle-toggle-text" id="muscleToggleText">Выбрать мышцы</span>
+              <span class="muscle-toggle-icon">v</span>
+            </button>
+            <div class="muscle-options" id="muscleOptions" hidden>
+              <label class="muscle-option">
+                <input type="checkbox" value="Трапециевидная мышца">
+                <span>Трапециевидная мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Большая грудная мышца">
+                <span>Большая грудная мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Дельтовидная мышца">
+                <span>Дельтовидная мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Двуглавая мышца плеча (бицепс)">
+                <span>Двуглавая мышца плеча (бицепс)</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Мышцы предплечья">
+                <span>Мышцы предплечья</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Прямая мышца живота">
+                <span>Прямая мышца живота</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Мышцы квадрицепса">
+                <span>Мышцы квадрицепса</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Приводящая мышца">
+                <span>Приводящая мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Передняя группа мышц голени">
+                <span>Передняя группа мышц голени</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Мышцы верха спины">
+                <span>Мышцы верха спины</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Трехглавая мышца плеча (трицепс)">
+                <span>Трехглавая мышца плеча (трицепс)</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Широчайшая мышца спины">
+                <span>Широчайшая мышца спины</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Мышцы низа спины">
+                <span>Мышцы низа спины</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Большая ягодичная мышца">
+                <span>Большая ягодичная мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Хамстринги (мышцы задней части бедра)">
+                <span>Хамстринги (мышцы задней части бедра)</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Икроножная мышца">
+                <span>Икроножная мышца</span>
+              </label>
+            </div>
+          </div>
+          <span class="help-text">Можно выбрать несколько мышц.</span>
         </label>
         <label class="full">
           Описание
@@ -822,7 +969,10 @@
 
       const exerciseTitle = document.getElementById("exerciseTitle");
       const exerciseType = document.getElementById("exerciseType");
-      const exerciseMuscle = document.getElementById("exerciseMuscle");
+      const musclePicker = document.getElementById("musclePicker");
+      const muscleToggle = document.getElementById("muscleToggle");
+      const muscleToggleText = document.getElementById("muscleToggleText");
+      const muscleOptions = document.getElementById("muscleOptions");
       const exerciseDescription = document.getElementById("exerciseDescription");
       const exerciseVideo = document.getElementById("exerciseVideo");
       const exerciseTariffInputs = Array.from(document.querySelectorAll("input[name='exerciseTariff']"));
@@ -867,49 +1017,80 @@
           .map((input) => input.value)
       );
 
+      const GENERAL_MUSCLE = "Общая";
+
+      const getMuscleInputs = () => (
+        muscleOptions
+          ? Array.from(muscleOptions.querySelectorAll("input[type='checkbox']"))
+          : []
+      );
+
+      const updateMuscleToggle = () => {
+        if (!muscleToggleText) return;
+        const selected = getSelectedMuscles();
+        muscleToggleText.textContent = selected.length
+          ? `Выбрано: ${selected.length}`
+          : "Выбрать мышцы";
+      };
+
+      const setMuscleOpen = (open) => {
+        if (!muscleOptions || !muscleToggle) return;
+        muscleOptions.hidden = !open;
+        muscleToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        muscleToggle.classList.toggle("is-open", open);
+      };
+
+      const buildMuscleOption = (value) => {
+        const label = document.createElement("label");
+        label.className = "muscle-option";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = value;
+        const span = document.createElement("span");
+        span.textContent = value;
+        label.appendChild(input);
+        label.appendChild(span);
+        return label;
+      };
+
       const normalizeMuscles = (values) => {
-        if (Array.isArray(values)) {
-          return values
-            .map((item) => String(item || "").trim())
-            .filter((item) => item);
-        }
-        const single = typeof values === "string" ? values.trim() : "";
-        return single ? [single] : [];
+        const list = Array.isArray(values) ? values : (values ? [values] : []);
+        return list
+          .map((item) => String(item || "").trim())
+          .filter((item) => item && item !== GENERAL_MUSCLE);
       };
 
       const setMuscleValues = (values) => {
-        if (!exerciseMuscle) return;
+        if (!muscleOptions) return;
         const list = normalizeMuscles(values);
         list.forEach((value) => {
-          const hasOption = Array.from(exerciseMuscle.options)
-            .some((option) => option.value === value);
-          if (!hasOption) {
-            const option = document.createElement("option");
-            option.value = value;
-            option.textContent = value;
-            exerciseMuscle.appendChild(option);
+          const exists = getMuscleInputs()
+            .some((input) => input.value === value);
+          if (!exists) {
+            muscleOptions.appendChild(buildMuscleOption(value));
           }
         });
-        Array.from(exerciseMuscle.options).forEach((option) => {
-          option.selected = list.includes(option.value);
+        getMuscleInputs().forEach((input) => {
+          input.checked = list.includes(input.value);
         });
+        updateMuscleToggle();
       };
 
-      const getSelectedMuscles = () => {
-        if (!exerciseMuscle) return [];
-        return Array.from(exerciseMuscle.selectedOptions)
-          .map((option) => option.value)
-          .filter((value) => value);
-      };
+      const getSelectedMuscles = () => (
+        getMuscleInputs()
+          .filter((input) => input.checked)
+          .map((input) => input.value)
+      );
 
       const syncExerciseType = () => {
-        if (!exerciseType || !exerciseMuscle) return;
+        if (!exerciseType || !muscleToggle || !muscleOptions) return;
         const isGym = exerciseType.value !== "crossfit";
-        exerciseMuscle.disabled = !isGym;
+        muscleToggle.disabled = !isGym;
         if (!isGym) {
+          setMuscleOpen(false);
           setMuscleValues([]);
-        } else if (!getSelectedMuscles().length) {
-          setMuscleValues(["Общая"]);
+        } else {
+          updateMuscleToggle();
         }
       };
 
@@ -940,9 +1121,10 @@
         }
         exercises.forEach((exercise) => {
           const typeLabel = exercise.type === "crossfit" ? "Кроссфит" : "Зал";
-          const muscleList = Array.isArray(exercise.muscles) && exercise.muscles.length
+          const rawMuscles = Array.isArray(exercise.muscles) && exercise.muscles.length
             ? exercise.muscles
             : (exercise.muscle ? [exercise.muscle] : []);
+          const muscleList = rawMuscles.filter((item) => item && item !== GENERAL_MUSCLE);
           const muscleLabel = exercise.type === "gym" && muscleList.length
             ? ` - ${muscleList.join(", ")}`
             : "";
@@ -987,7 +1169,8 @@
         if (exerciseType) {
           exerciseType.value = trainerScope && trainerScope !== "both" ? trainerScope : "gym";
         }
-        setMuscleValues(exerciseType?.value === "crossfit" ? [] : ["Общая"]);
+        setMuscleValues([]);
+        setMuscleOpen(false);
         if (exerciseDescription) exerciseDescription.value = "";
         if (exerciseVideo) exerciseVideo.value = "";
         if (saveExercise) saveExercise.textContent = "Сохранить упражнение";
@@ -1010,6 +1193,19 @@
       });
 
       exerciseType?.addEventListener("change", syncExerciseType);
+      muscleToggle?.addEventListener("click", () => {
+        if (!muscleOptions || muscleToggle.disabled) return;
+        setMuscleOpen(muscleOptions.hidden);
+      });
+      muscleOptions?.addEventListener("change", () => {
+        updateMuscleToggle();
+      });
+      document.addEventListener("click", (event) => {
+        if (!musclePicker || !muscleOptions || muscleOptions.hidden) return;
+        if (!musclePicker.contains(event.target)) {
+          setMuscleOpen(false);
+        }
+      });
       resetExercise?.addEventListener("click", () => clearExerciseForm());
       reloadExercises?.addEventListener("click", () => loadExercises());
 
