@@ -213,9 +213,22 @@
       return null;
     }
 
+    const normalizeMuscleName = (value) => (
+      (value || "").toLowerCase().replace(/\s+/g, " ").trim()
+    );
+
     const getExercisesForGroup = (groupKey) => {
+      if (!exerciseLibrary.length) return ["Нет упражнений"];
+      const targetMuscle = normalizeMuscleName(humanName(groupKey));
+      const muscleMatches = exerciseLibrary.filter((exercise) => {
+        const muscle = normalizeMuscleName(exercise.muscle);
+        return muscle && muscle === targetMuscle;
+      });
+      if (muscleMatches.length) {
+        return muscleMatches.map((exercise) => exercise.title || "Упражнение");
+      }
       const keywords = muscleKeywords[groupKey] || [];
-      if (!keywords.length || !exerciseLibrary.length) return ["Нет упражнений"];
+      if (!keywords.length) return ["Нет упражнений"];
       const results = exerciseLibrary.filter((exercise) => {
         const haystack = `${exercise.title || ""} ${exercise.description || ""}`.toLowerCase();
         return keywords.some((word) => haystack.includes(word));

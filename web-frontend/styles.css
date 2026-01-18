@@ -875,6 +875,22 @@ html.light .exercise-card {
   background: #000;
 }
 
+@media (max-width: 600px) {
+  .video-modal {
+    width: calc(100% - 32px);
+    max-height: 80dvh;
+    overflow-y: auto;
+    margin: 0 auto;
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .video-modal video {
+    max-height: 50dvh;
+    object-fit: contain;
+  }
+}
+
 .video-title {
   margin: 12px 0 6px;
   font-weight: 700;
