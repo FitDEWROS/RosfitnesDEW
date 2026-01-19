@@ -364,28 +364,28 @@
       </div>
     
     <details class="section-card" id="staffCard" hidden>
-      <summary class="section-title">??????? ????????? ?????</summary>
-      <p class="page-subtitle">?????? ??? ??????.</p>
+      <summary class="section-title">Скрытая настройка ролей</summary>
+      <p class="page-subtitle">Только для админа.</p>
       <div class="info-grid">
         <label class="toggle-row">
           <input type="checkbox" id="staffTrainer">
-          <span>??????</span>
+          <span>Тренер</span>
         </label>
         <label class="toggle-row">
           <input type="checkbox" id="staffCurator">
-          <span>???????</span>
+          <span>Куратор</span>
         </label>
         <div class="info-item">
-          <div class="info-label">???????????</div>
+          <div class="info-label">Направление</div>
           <select class="select" id="staffScope">
-            <option value="gym">???</option>
-            <option value="crossfit">????????</option>
-            <option value="both">???</option>
+            <option value="gym">Зал</option>
+            <option value="crossfit">Кроссфит</option>
+            <option value="both">Оба</option>
           </select>
         </div>
       </div>
       <div class="actions">
-        <button class="btn-outline" id="saveStaff" type="button">????????? ????</button>
+        <button class="btn-outline" id="saveStaff" type="button">Сохранить роли</button>
         <span class="status-line" id="staffStatus"></span>
       </div>
     </details>
@@ -620,10 +620,10 @@
           if (!json?.ok) return;
 
           const client = json.client || {};
-          const name = [client.first_name, client.last_name].filter(Boolean).join(" ") || "??? ?????";
+          const name = [client.first_name, client.last_name].filter(Boolean).join(" ") || "Без имени";
 
           clientTitle.textContent = name;
-          clientSubtitle.textContent = client.username ? `@${client.username}` : "??? username";
+          clientSubtitle.textContent = client.username ? `@${client.username}` : "без username";
           infoName.textContent = name;
           infoTariff.textContent = client.tariffName || "?";
           infoMode.textContent = formatMode(client.trainingMode);
@@ -643,7 +643,7 @@
 
           await loadCurators(client.trainer?.id || null);
         } catch (e) {
-          console.error("?????? ???????? ???????", e);
+          console.error("Ошибка загрузки клиента", e);
         }
       };
 
@@ -657,21 +657,21 @@ const loadCurators = async (currentCuratorId) => {
 
           const emptyOpt = document.createElement("option");
           emptyOpt.value = "";
-          emptyOpt.textContent = "?? ????????";
+          emptyOpt.textContent = "Не назначен";
           trainerSelect.appendChild(emptyOpt);
 
           curators.forEach((curator) => {
             const opt = document.createElement("option");
             const name = [curator.first_name, curator.last_name].filter(Boolean).join(" ") || curator.username;
             opt.value = curator.id;
-            opt.textContent = name || `??????? #${curator.id}`;
+            opt.textContent = name || `Куратор #${curator.id}`;
             trainerSelect.appendChild(opt);
           });
 
           trainerSelect.value = currentCuratorId ? String(currentCuratorId) : "";
           trainerSelect.disabled = !isAdmin;
         } catch (e) {
-          console.error("?????? ???????? ?????????", e);
+          console.error("Ошибка загрузки кураторов", e);
         }
       };
 
@@ -679,17 +679,17 @@ const assignCurator = async () => {
         if (!isAdmin) return;
         const value = trainerSelect.value || null;
         try {
-          profileStatus.textContent = "?????????...";
+          profileStatus.textContent = "Сохраняем...";
           const res = await fetch(`${apiBase}/api/admin/clients/${clientId}/trainer`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ initData, trainerId: value ? Number(value) : null })
           });
           const json = await res.json().catch(() => ({}));
-          profileStatus.textContent = json?.ok ? "??????? ????????" : "?????? ??????????";
+          profileStatus.textContent = json?.ok ? "Куратор назначен" : "Ошибка назначения";
           setTimeout(() => { profileStatus.textContent = ""; }, 2000);
         } catch (e) {
-          profileStatus.textContent = "?????? ??????????";
+          profileStatus.textContent = "Ошибка назначения";
         }
       };
 
@@ -701,7 +701,7 @@ const assignCurator = async () => {
       const saveStaffHandler = async () => {
         if (!isAdmin) return;
         try {
-          staffStatus.textContent = "?????????...";
+          staffStatus.textContent = "Сохраняем...";
           const payload = {
             initData,
             isTrainer: Boolean(staffTrainer?.checked),
@@ -714,10 +714,10 @@ const assignCurator = async () => {
             body: JSON.stringify(payload)
           });
           const json = await res.json().catch(() => ({}));
-          staffStatus.textContent = json?.ok ? "???? ?????????" : "?????? ??????????";
+          staffStatus.textContent = json?.ok ? "Роли сохранены" : "Ошибка сохранения";
           setTimeout(() => { staffStatus.textContent = ""; }, 2000);
         } catch (e) {
-          staffStatus.textContent = "?????? ??????????";
+          staffStatus.textContent = "Ошибка сохранения";
         }
       };
 
@@ -770,7 +770,7 @@ const saveCommentHandler = async () => {
                     isAdmin = role === "admin";
                     canCurate = Boolean(json?.profile?.canCurate);
                     if (!canCurate) {
-                      accessMessage.textContent = "?????? ??????. ????? ???? admin ??? ???????.";
+                    accessMessage.textContent = "Доступ закрыт. Нужна роль admin или куратор.";
                       return;
                     }
 accessMessage.textContent = "Доступ подтвержден.";

@@ -415,7 +415,7 @@
           const json = await res.json().catch(() => ({}));
                     const canCurate = Boolean(json?.profile?.canCurate);
           if (!canCurate) {
-            setAccess(false, "?????? ??????. ????? ???? admin ??? ???????.");
+            setAccess(false, "Доступ закрыт. Нужна роль admin или куратор.");
             return;
           }
 setAccess(true, "Доступ подтвержден.");
