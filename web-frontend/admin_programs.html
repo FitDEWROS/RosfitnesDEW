@@ -822,7 +822,7 @@
           const canTrain = Boolean(json?.profile?.canTrain);
           const canCurate = Boolean(json?.profile?.canCurate);
           if (!canTrain && !canCurate) {
-            setAccess(false, "Доступ закрыт. Нужна роль admin, trainer или curator.");
+            setAccess(false, "Доступ закрыт. Нужна роль admin, sadmin, trainer или куратор.");
             return;
           }
           const message = canTrain

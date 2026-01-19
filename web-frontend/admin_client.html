@@ -365,8 +365,16 @@
     
     <details class="section-card" id="staffCard" hidden>
       <summary class="section-title">Скрытая настройка ролей</summary>
-      <p class="page-subtitle">Только для админа.</p>
+      <p class="page-subtitle">Только для суперадмина.</p>
       <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Роль</div>
+          <select class="select" id="staffRole">
+            <option value="user">Пользователь</option>
+            <option value="admin">Админ</option>
+            <option value="sadmin">Суперадмин</option>
+          </select>
+        </div>
         <label class="toggle-row">
           <input type="checkbox" id="staffTrainer">
           <span>Тренер</span>
@@ -458,6 +466,7 @@
       const infoPhone = document.getElementById("infoPhone");
       const trainerSelect = document.getElementById("trainerSelect");
       const staffCard = document.getElementById("staffCard");
+      const staffRole = document.getElementById("staffRole");
       const staffTrainer = document.getElementById("staffTrainer");
       const staffCurator = document.getElementById("staffCurator");
       const staffScope = document.getElementById("staffScope");
@@ -489,6 +498,7 @@
       let hasNutritionDiary = true;
       let role = "user";
       let isAdmin = false;
+      let isSuperAdmin = false;
       let canCurate = false;
       let initData = "";
 
@@ -636,13 +646,14 @@
 
           if (profileCard) profileCard.hidden = false;
           if (nutritionCard) nutritionCard.hidden = !hasNutritionDiary;
-          if (staffCard) staffCard.hidden = !isAdmin;
+          if (staffCard) staffCard.hidden = !isSuperAdmin;
 
-          if (isAdmin && staffTrainer && staffCurator && staffScope) {
+          if (isSuperAdmin && staffRole && staffTrainer && staffCurator && staffScope) {
+            staffRole.value = client.role === "admin" || client.role === "sadmin" ? client.role : "user";
             staffTrainer.checked = client.role === "trainer";
             staffCurator.checked = Boolean(client.isCurator);
             staffScope.value = client.trainerScope || "both";
-            syncStaffScope();
+            applyStaffRoleState();
           }
 
           await loadCurators(client.trainer?.id || null);
@@ -697,17 +708,31 @@ const assignCurator = async () => {
         }
       };
 
+      const applyStaffRoleState = () => {
+        if (!staffRole || !staffTrainer || !staffScope) return;
+        const baseRole = staffRole.value || "user";
+        const isPrivilegedRole = baseRole !== "user";
+        staffTrainer.disabled = isPrivilegedRole;
+        if (isPrivilegedRole) {
+          staffTrainer.checked = false;
+        }
+        syncStaffScope();
+      };
+
       const syncStaffScope = () => {
-        if (!staffScope || !staffTrainer) return;
-        staffScope.disabled = !staffTrainer.checked;
+        if (!staffScope || !staffTrainer || !staffRole) return;
+        const baseRole = staffRole.value || "user";
+        const isPrivilegedRole = baseRole !== "user";
+        staffScope.disabled = isPrivilegedRole || !staffTrainer.checked;
       };
 
       const saveStaffHandler = async () => {
-        if (!isAdmin) return;
+        if (!isSuperAdmin) return;
         try {
           staffStatus.textContent = "Сохраняем...";
           const payload = {
             initData,
+            role: staffRole?.value || "user",
             isTrainer: Boolean(staffTrainer?.checked),
             isCurator: Boolean(staffCurator?.checked),
             trainerScope: staffScope?.value || "both"
@@ -753,7 +778,7 @@ const saveCommentHandler = async () => {
         }
       };
 
-      const checkAccess = async () => {
+            const checkAccess = async () => {
         if (!apiBase) {
           accessMessage.textContent = "Нет API_BASE. Проверь env.js и конфиг.";
           return;
@@ -770,14 +795,15 @@ const saveCommentHandler = async () => {
         try {
           const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
           const json = await res.json().catch(() => ({}));
-                    role = json?.profile?.role || "user";
-                    isAdmin = role === "admin";
-                    canCurate = Boolean(json?.profile?.canCurate);
-                    if (!canCurate) {
-                    accessMessage.textContent = "Доступ закрыт. Нужна роль admin или куратор.";
-                      return;
-                    }
-accessMessage.textContent = "Доступ подтвержден.";
+          role = json?.profile?.role || "user";
+          isSuperAdmin = role === "sadmin";
+          isAdmin = role === "admin" || isSuperAdmin;
+          canCurate = Boolean(json?.profile?.canCurate);
+          if (!canCurate) {
+            accessMessage.textContent = "Доступ закрыт. Нужна роль admin или куратор.";
+            return;
+          }
+          accessMessage.textContent = "Доступ подтвержден.";
           await loadClient();
           if (hasNutritionDiary) {
             await loadMonth();
@@ -787,7 +813,7 @@ accessMessage.textContent = "Доступ подтвержден.";
         }
       };
 
-      prevMonth?.addEventListener("click", () => {
+prevMonth?.addEventListener("click", () => {
         currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
         selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
         loadMonth();
@@ -797,9 +823,10 @@ accessMessage.textContent = "Доступ подтвержден.";
         selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
         loadMonth();
       });
-            staffTrainer?.addEventListener("change", syncStaffScope);
+      staffRole?.addEventListener("change", applyStaffRoleState);
+      staffTrainer?.addEventListener("change", syncStaffScope);
       saveStaff?.addEventListener("click", saveStaffHandler);
-saveComment?.addEventListener("click", saveCommentHandler);
+      saveComment?.addEventListener("click", saveCommentHandler);
       trainerSelect?.addEventListener("change", assignCurator);
       goBack?.addEventListener("click", () => {
         const backUrl = initData ? `admin_clients.html?initData=${encodeURIComponent(initData)}` : "admin_clients.html";

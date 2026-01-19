@@ -106,6 +106,7 @@ enum TrainingProgramType {
 enum UserRole {
   user
   admin
+  sadmin
   trainer
 }
 

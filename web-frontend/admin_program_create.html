@@ -1998,10 +1998,11 @@
             return;
           }
           const role = json?.profile?.role || "user";
+          const canTrain = Boolean(json?.profile?.canTrain);
           trainerScope = json?.profile?.trainerScope || "both";
           isTrainer = role === "trainer";
-          if (role !== "admin" && role !== "trainer") {
-            setAccess(false, "Доступ закрыт. Нужна роль admin или trainer.");
+          if (!canTrain) {
+            setAccess(false, "Доступ закрыт. Нужна роль admin, trainer или sadmin.");
             return;
           }
           const scopeLabel = trainerScope === "crossfit"
@@ -2011,7 +2012,9 @@
               : "Зал + Кроссфит";
           const accessText = isTrainer
             ? `Доступ подтвержден. Роль: тренер (${scopeLabel}).`
-            : "Доступ подтвержден. Можно создавать программы.";
+            : role === "sadmin"
+              ? "Доступ подтвержден. Роль: суперадмин."
+              : "Доступ подтвержден. Можно создавать программы.";
           setAccess(true, accessText);
           clearForm();
           if (isTrainer) {

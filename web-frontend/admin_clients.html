@@ -320,12 +320,21 @@
           ? clients
           : clients.filter((client) => {
               const name = [client.first_name, client.last_name].filter(Boolean).join(" ");
+              const roleLabel = client.role === "trainer"
+                ? "Тренер"
+                : client.role === "admin"
+                  ? "Админ"
+                  : client.role === "sadmin"
+                    ? "Суперадмин"
+                    : "Пользователь";
+              const roleText = client.isCurator ? `${roleLabel}, куратор` : roleLabel;
               const bits = [
                 name,
                 client.username ? `@${client.username}` : "",
                 client.phone || "",
                 client.tariffName || "",
-                client.trainingMode || ""
+                client.trainingMode || "",
+                roleText
               ].join(" ").toLowerCase();
               return bits.includes(query);
             });
@@ -344,6 +353,14 @@
           const fullName = [client.first_name, client.last_name].filter(Boolean).join(" ") || "Без имени";
           const trainerName = client.trainer?.name || "Не назначен";
           const modeLabel = client.trainingMode === "crossfit" ? "Кроссфит" : "Зал";
+          const roleLabel = client.role === "trainer"
+            ? "Тренер"
+            : client.role === "admin"
+              ? "Админ"
+              : client.role === "sadmin"
+                ? "Суперадмин"
+                : "Пользователь";
+          const roleText = client.isCurator ? `${roleLabel}, куратор` : roleLabel;
           const tariff = client.tariffName || "—";
           const phone = client.phone || "—";
           const statusDot = client.hasTodayNutrition ? "status-dot is-filled" : "status-dot";
@@ -364,6 +381,10 @@
               <div>
                 <div class="meta-label">Тип</div>
                 <div class="meta-value">${modeLabel}</div>
+              </div>
+              <div>
+                <div class="meta-label">Роль</div>
+                <div class="meta-value">${roleText}</div>
               </div>
               <div>
                 <div class="meta-label">Телефон</div>

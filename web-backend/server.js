@@ -254,6 +254,7 @@ app.get('/api/user', async (req, res) => {
     }
 
     const isTrainer = dbUser?.role === 'trainer';
+    const isAdmin = dbUser?.role === 'admin' || dbUser?.role === 'sadmin';
     const isCurator = Boolean(dbUser?.isCurator);
     const profile = {
       first_name: dbUser?.first_name || user?.first_name || 'друг',
@@ -264,8 +265,8 @@ app.get('/api/user', async (req, res) => {
       age: dbUser?.age ?? null,
       role: dbUser?.role || 'user',
       trainerScope: normalizeTrainerScope(dbUser?.trainerScope),
-      canTrain: (dbUser?.role === 'admin') || isTrainer,
-      canCurate: (dbUser?.role === 'admin') || isCurator,
+      canTrain: isAdmin || isTrainer,
+      canCurate: isAdmin || isCurator,
       isCurator,
       trainer: dbUser?.trainer
         ? {
@@ -500,7 +501,23 @@ async function requireAdmin(initData) {
     select: { role: true }
   });
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.role !== 'sadmin')) {
+    return { ok: false, status: 403, error: 'forbidden' };
+  }
+
+  return { ok: true, tg_id: parsed.tg_id };
+}
+
+async function requireSuperAdmin(initData) {
+  const parsed = parseInitData(initData);
+  if (!parsed.ok) return parsed;
+
+  const user = await prisma.user.findUnique({
+    where: { tg_id: Number(parsed.tg_id) },
+    select: { role: true }
+  });
+
+  if (!user || user.role !== 'sadmin') {
     return { ok: false, status: 403, error: 'forbidden' };
   }
 
@@ -517,8 +534,9 @@ async function requireStaff(initData) {
   });
 
   const isTrainer = user?.role === 'trainer';
+  const isAdmin = user?.role === 'admin' || user?.role === 'sadmin';
   const isCurator = Boolean(user?.isCurator);
-  if (!user || (!['admin', 'trainer'].includes(user.role) && !isCurator)) {
+  if (!user || (!['admin', 'sadmin', 'trainer'].includes(user.role) && !isCurator)) {
     return { ok: false, status: 403, error: 'forbidden' };
   }
 
@@ -528,8 +546,8 @@ async function requireStaff(initData) {
     userId: user.id,
     role: user.role,
     trainerScope: normalizeTrainerScope(user.trainerScope),
-    canTrain: user.role === 'admin' || isTrainer,
-    canCurate: user.role === 'admin' || isCurator,
+    canTrain: isAdmin || isTrainer,
+    canCurate: isAdmin || isCurator,
     user
   };
 }
@@ -1462,7 +1480,9 @@ app.get('/api/admin/curators', async (req, res) => {
   try {
     const auth = await requireStaff(req.query?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
-    if (auth.role !== 'admin') return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (auth.role !== 'admin' && auth.role !== 'sadmin') {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
 
     const curators = await prisma.user.findMany({
       where: { isCurator: true },
@@ -1502,8 +1522,10 @@ app.get('/api/admin/clients', async (req, res) => {
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
     if (!auth.canCurate) return res.status(403).json({ ok: false, error: 'forbidden' });
 
-    const where = { role: 'user', isCurator: false };
-    if (auth.role !== 'admin') {
+    let where = { role: 'user', isCurator: false };
+    if (auth.role === 'sadmin') {
+      where = {};
+    } else if (auth.role !== 'admin') {
       where.trainerId = auth.userId;
     }
 
@@ -1521,6 +1543,9 @@ app.get('/api/admin/clients', async (req, res) => {
         heightCm: true,
         weightKg: true,
         phone: true,
+        role: true,
+        isCurator: true,
+        trainerScope: true,
         trainerId: true,
         trainer: {
           select: { id: true, first_name: true, last_name: true, username: true }
@@ -1599,7 +1624,7 @@ app.get('/api/admin/clients/:id', async (req, res) => {
       return res.status(404).json({ ok: false, error: 'not_found' });
     }
 
-    if (auth.role !== 'admin' && client.trainerId !== auth.userId) {
+    if (auth.role !== 'admin' && auth.role !== 'sadmin' && client.trainerId !== auth.userId) {
       return res.status(403).json({ ok: false, error: 'forbidden' });
     }
 
@@ -1630,7 +1655,9 @@ app.post('/api/admin/clients/:id/trainer', async (req, res) => {
   try {
     const auth = await requireStaff(req.body?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
-    if (auth.role !== 'admin') return res.status(403).json({ ok: false, error: 'forbidden' });
+    if (auth.role !== 'admin' && auth.role !== 'sadmin') {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
 
     const clientId = Number(req.params.id);
     if (!Number.isInteger(clientId)) {
@@ -1671,7 +1698,7 @@ app.post('/api/admin/clients/:id/trainer', async (req, res) => {
 // === Admin: update staff roles ===
 app.post('/api/admin/clients/:id/staff', async (req, res) => {
   try {
-    const auth = await requireAdmin(req.body?.initData);
+    const auth = await requireSuperAdmin(req.body?.initData);
     if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
 
     const clientId = Number(req.params.id);
@@ -1684,14 +1711,21 @@ app.post('/api/admin/clients/:id/staff', async (req, res) => {
       select: { id: true, role: true }
     });
     if (!target) return res.status(404).json({ ok: false, error: 'not_found' });
-    if (target.role === 'admin') {
-      return res.status(400).json({ ok: false, error: 'cannot_edit_admin' });
-    }
 
+    const requestedRole = cleanString(req.body?.role);
     const isTrainer = Boolean(req.body?.isTrainer);
     const isCurator = Boolean(req.body?.isCurator);
-    const trainerScope = isTrainer ? normalizeTrainerScope(req.body?.trainerScope) : null;
-    const role = isTrainer ? 'trainer' : 'user';
+
+    let role = 'user';
+    if (requestedRole === 'admin' || requestedRole === 'sadmin') {
+      role = requestedRole;
+    } else if (isTrainer) {
+      role = 'trainer';
+    }
+
+    const trainerScope = role === 'trainer'
+      ? normalizeTrainerScope(req.body?.trainerScope)
+      : null;
 
     const updated = await prisma.user.update({
       where: { id: clientId },
@@ -1735,7 +1769,7 @@ app.get('/api/admin/clients/:id/nutrition', async (req, res) => {
       select: { id: true, trainerId: true }
     });
     if (!client) return res.status(404).json({ ok: false, error: 'not_found' });
-    if (auth.role !== 'admin' && client.trainerId !== auth.userId) {
+    if (auth.role !== 'admin' && auth.role !== 'sadmin' && client.trainerId !== auth.userId) {
       return res.status(403).json({ ok: false, error: 'forbidden' });
     }
 
@@ -1793,7 +1827,7 @@ app.post('/api/admin/clients/:id/nutrition-comment', async (req, res) => {
       select: { id: true, trainerId: true }
     });
     if (!client) return res.status(404).json({ ok: false, error: 'not_found' });
-    if (auth.role !== 'admin' && client.trainerId !== auth.userId) {
+    if (auth.role !== 'admin' && auth.role !== 'sadmin' && client.trainerId !== auth.userId) {
       return res.status(403).json({ ok: false, error: 'forbidden' });
     }
 
