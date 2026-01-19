@@ -26,9 +26,10 @@ async def send_app_button(message: Message):
 @router.message(F.text.func(lambda t: _text_contains(t, "управление программами")))
 async def send_admin_button(message: Message):
     user = await reg_db.user.find_unique(where={"tg_id": message.from_user.id})
-    is_admin = bool(user and getattr(user, "role", None) == "admin")
+    role = getattr(user, "role", None) if user else None
+    is_admin = role in ("admin", "sadmin")
     if not is_admin:
-        await send_temp(message, "Доступ закрыт. Нужна роль admin.", delay=10)
+        await send_temp(message, "Доступ закрыт. Нужна роль admin или sadmin.", delay=10)
         return
 
     await send_temp(
