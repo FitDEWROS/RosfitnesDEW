@@ -768,15 +768,17 @@
       const openExercises = document.getElementById("openExercises");
       const openClients = document.getElementById("openClients");
 
-      const setAccess = (ok, message) => {
+      const setAccess = (ok, message, flags = {}) => {
+        const canTrain = Boolean(flags.canTrain);
+        const canCurate = Boolean(flags.canCurate);
         accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
         accessStatus.classList.toggle("ok", ok);
         accessStatus.classList.toggle("bad", !ok);
         accessMessage.textContent = message;
         if (actionCard) actionCard.hidden = !ok;
-        if (openPrograms) openPrograms.disabled = !ok;
-        if (openExercises) openExercises.disabled = !ok;
-        if (openClients) openClients.disabled = !ok;
+        if (openPrograms) openPrograms.disabled = !ok || !canTrain;
+        if (openExercises) openExercises.disabled = !ok || !canTrain;
+        if (openClients) openClients.disabled = !ok || !canCurate;
       };
 
       const buildUrl = (path) => (
@@ -817,12 +819,16 @@
             setAccess(false, "Не удалось подтвердить доступ.");
             return;
           }
-          const role = json?.profile?.role || "user";
-          if (role !== "admin") {
-            setAccess(false, "Доступ закрыт. Нужна роль admin.");
+          const canTrain = Boolean(json?.profile?.canTrain);
+          const canCurate = Boolean(json?.profile?.canCurate);
+          if (!canTrain && !canCurate) {
+            setAccess(false, "Доступ закрыт. Нужна роль admin, trainer или curator.");
             return;
           }
-          setAccess(true, "Доступ подтвержден. Можно работать в админке.");
+          const message = canTrain
+            ? "Доступ подтвержден. Можно работать в админке."
+            : "Доступ подтвержден. Доступен раздел клиентов.";
+          setAccess(true, message, { canTrain, canCurate });
         } catch (err) {
           console.error(err);
           setAccess(false, "Ошибка сети при проверке доступа.");

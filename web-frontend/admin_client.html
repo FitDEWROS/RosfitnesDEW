@@ -486,6 +486,7 @@
       let selectedDate = new Date();
       let monthEntries = {};
       let monthComments = {};
+      let hasNutritionDiary = true;
       let role = "user";
       let isAdmin = false;
       let canCurate = false;
@@ -630,8 +631,11 @@
           infoStats.textContent = `${client.heightCm ?? "?"} ?? / ${client.weightKg ?? "?"} ??`;
           infoPhone.textContent = client.phone || "?";
 
+          const isBasicTariff = client.tariffName === "Базовый";
+          hasNutritionDiary = !isBasicTariff;
+
           if (profileCard) profileCard.hidden = false;
-          if (nutritionCard) nutritionCard.hidden = false;
+          if (nutritionCard) nutritionCard.hidden = !hasNutritionDiary;
           if (staffCard) staffCard.hidden = !isAdmin;
 
           if (isAdmin && staffTrainer && staffCurator && staffScope) {
@@ -775,7 +779,9 @@ const saveCommentHandler = async () => {
                     }
 accessMessage.textContent = "Доступ подтвержден.";
           await loadClient();
-          await loadMonth();
+          if (hasNutritionDiary) {
+            await loadMonth();
+          }
         } catch (e) {
           accessMessage.textContent = "Ошибка проверки доступа.";
         }
