@@ -703,6 +703,8 @@
 
       word-break: break-word;
 
+      position: relative;
+
     }
 
 
@@ -732,20 +734,31 @@
       color: #1b1b1b;
 
     }
-    .chat-status {
+    .chat-meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
       margin-top: 6px;
+      line-height: 1;
+      text-align: right;
+    }
+    .chat-time {
+      font-size: 9px;
+      opacity: 0.6;
+      letter-spacing: 0.2px;
+    }
+    .chat-status {
       display: inline-flex;
       align-items: center;
       justify-content: flex-end;
       gap: 2px;
-      line-height: 1;
-      font-size: 12px;
+      font-size: 10px;
       opacity: 0.6;
-      text-align: right;
     }
     .chat-status svg {
       width: auto;
-      height: 12px;
+      height: 10px;
       stroke: currentColor;
       stroke-width: 2;
       fill: none;
@@ -1905,13 +1918,65 @@ const saveCommentHandler = async () => {
       const CHAT_STATUS_SINGLE_SVG = '<svg class="chat-tick" viewBox="0 0 16 12" aria-hidden="true" focusable="false"><path d="M1 6l4 4L15 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       const CHAT_STATUS_DOUBLE_SVG = '<svg class="chat-tick" viewBox="0 0 22 12" aria-hidden="true" focusable="false"><path d="M1 6l4 4L15 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 6l4 4L21 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+      const formatChatTimestamp = (value) => {
+
+        if (!value) return "";
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) return "";
+
+        const pad = (n) => String(n).padStart(2, "0");
+
+        return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
+      };
+
+      const ensureChatMeta = (bubble, message) => {
+
+        let meta = bubble.querySelector(".chat-meta");
+
+        if (!meta) {
+
+          meta = document.createElement("div");
+
+          meta.className = "chat-meta";
+
+          bubble.appendChild(meta);
+
+        }
+
+        let timeEl = meta.querySelector(".chat-time");
+
+        if (!timeEl) {
+
+          timeEl = document.createElement("span");
+
+          timeEl.className = "chat-time";
+
+          meta.appendChild(timeEl);
+
+        }
+
+        if (!timeEl.textContent && message?.createdAt) {
+
+          timeEl.textContent = formatChatTimestamp(message.createdAt);
+
+        }
+
+        return meta;
+
+      };
+
       const updateChatStatus = (bubble, message) => {
 
         if (!bubble) return;
 
+        const meta = ensureChatMeta(bubble, message);
+
         const shouldShow = Boolean(message?.isMine);
 
-        let statusEl = bubble.querySelector(".chat-status");
+        let statusEl = meta.querySelector(".chat-status");
 
         if (!shouldShow) {
 
@@ -1923,11 +1988,11 @@ const saveCommentHandler = async () => {
 
         if (!statusEl) {
 
-          statusEl = document.createElement("div");
+          statusEl = document.createElement("span");
 
           statusEl.className = "chat-status";
 
-          bubble.appendChild(statusEl);
+          meta.appendChild(statusEl);
 
         }
 

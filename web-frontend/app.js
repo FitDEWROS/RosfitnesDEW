@@ -132,18 +132,46 @@
   const CHAT_STATUS_SINGLE_SVG = '<svg class="chat-tick" viewBox="0 0 16 12" aria-hidden="true" focusable="false"><path d="M1 6l4 4L15 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const CHAT_STATUS_DOUBLE_SVG = '<svg class="chat-tick" viewBox="0 0 22 12" aria-hidden="true" focusable="false"><path d="M1 6l4 4L15 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 6l4 4L21 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+  const formatChatTimestamp = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  const ensureChatMeta = (bubble, message) => {
+    let meta = bubble.querySelector(".chat-meta");
+    if (!meta) {
+      meta = document.createElement("div");
+      meta.className = "chat-meta";
+      bubble.appendChild(meta);
+    }
+    let timeEl = meta.querySelector(".chat-time");
+    if (!timeEl) {
+      timeEl = document.createElement("span");
+      timeEl.className = "chat-time";
+      meta.appendChild(timeEl);
+    }
+    if (!timeEl.textContent && message?.createdAt) {
+      timeEl.textContent = formatChatTimestamp(message.createdAt);
+    }
+    return meta;
+  };
+
   const updateChatStatus = (bubble, message) => {
     if (!bubble) return;
+    const meta = ensureChatMeta(bubble, message);
     const shouldShow = Boolean(message?.isMine);
-    let statusEl = bubble.querySelector(".chat-status");
+    let statusEl = meta.querySelector(".chat-status");
     if (!shouldShow) {
       if (statusEl) statusEl.remove();
       return;
     }
     if (!statusEl) {
-      statusEl = document.createElement("div");
+      statusEl = document.createElement("span");
       statusEl.className = "chat-status";
-      bubble.appendChild(statusEl);
+      meta.appendChild(statusEl);
     }
     statusEl.innerHTML = message.readAt ? CHAT_STATUS_DOUBLE_SVG : CHAT_STATUS_SINGLE_SVG;
     statusEl.classList.toggle("is-read", Boolean(message.readAt));
@@ -731,6 +759,10 @@
   }
 
   let isDark = true;
+  const THEME_ICON_MOON =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.9 15.1a8 8 0 1 1-12-12 7 7 0 0 0 12 12z" fill="currentColor"/></svg>';
+  const THEME_ICON_SUN =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M5.4 18.6l1.6-1.6M17 7l1.6-1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
 
   const clearInlineVars = () => {
     const r = document.documentElement;
@@ -741,11 +773,11 @@
     clearInlineVars();
     if (isDark) {
       document.documentElement.classList.remove("light");
-      if (themeToggleBtn) themeToggleBtn.textContent = "🌙";
+      if (themeToggleBtn) themeToggleBtn.innerHTML = THEME_ICON_MOON;
       localStorage.setItem("theme", "dark");
     } else {
       document.documentElement.classList.add("light");
-      if (themeToggleBtn) themeToggleBtn.textContent = "☀️";
+      if (themeToggleBtn) themeToggleBtn.innerHTML = THEME_ICON_SUN;
       localStorage.setItem("theme", "light");
     }
   };

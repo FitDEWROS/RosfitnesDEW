@@ -189,6 +189,14 @@
       font-size: 18px;
       line-height: 1;
       transition: transform 0.2s ease, background 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn svg {
+      width: 20px;
+      height: 20px;
+      display: block;
     }
 
     .icon-btn:hover {
@@ -1312,8 +1320,18 @@
       border: 1px solid var(--card-border);
       background: rgba(255, 255, 255, 0.08);
       color: var(--text);
-      font-size: 20px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chat-close svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
     }
 
     html.light .chat-close {
@@ -1340,6 +1358,7 @@
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
       align-self: flex-start;
       word-break: break-word;
+      position: relative;
     }
 
     .chat-bubble video {
@@ -1362,20 +1381,31 @@
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       color: #1b1b1b;
     }
-    .chat-status {
+    .chat-meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
       margin-top: 6px;
+      line-height: 1;
+      text-align: right;
+    }
+    .chat-time {
+      font-size: 9px;
+      opacity: 0.6;
+      letter-spacing: 0.2px;
+    }
+    .chat-status {
       display: inline-flex;
       align-items: center;
       justify-content: flex-end;
       gap: 2px;
-      line-height: 1;
-      font-size: 12px;
+      font-size: 10px;
       opacity: 0.6;
-      text-align: right;
     }
     .chat-status svg {
       width: auto;
-      height: 12px;
+      height: 10px;
       stroke: currentColor;
       stroke-width: 2;
       fill: none;
@@ -1512,7 +1542,11 @@
         </div>
       </div>
       <div class="top-actions">
-        <button id="themeToggle" class="icon-btn" title="Переключить тему" aria-label="Переключить тему">🌙</button>
+        <button id="themeToggle" class="icon-btn" title="Переключить тему" aria-label="Переключить тему">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.9 15.1a8 8 0 1 1-12-12 7 7 0 0 0 12 12z" fill="currentColor"/>
+          </svg>
+        </button>
         <div class="avatar-stack">
           <button id="profileBtn" class="avatar-btn" title="Открыть профиль" aria-label="Открыть профиль">
             <img id="avatarThumb" src="default-avatar.png" alt="Фото профиля">
@@ -1636,7 +1670,11 @@
           <div class="chat-title">Чат с куратором</div>
           <div class="chat-subtitle" id="chatSubtitle">Онлайн консультация</div>
         </div>
-        <button id="chatClose" class="chat-close" type="button" aria-label="Закрыть чат">&times;</button>
+        <button id="chatClose" class="chat-close" type="button" aria-label="Закрыть чат">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6l-12 12"></path>
+          </svg>
+        </button>
       </div>
       <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
       <div class="chat-input-row">
