@@ -759,10 +759,8 @@
   }
 
   let isDark = true;
-  const THEME_ICON_MOON =
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.9 15.1a8 8 0 1 1-12-12 7 7 0 0 0 12 12z" fill="currentColor"/></svg>';
-  const THEME_ICON_SUN =
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M5.4 18.6l1.6-1.6M17 7l1.6-1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  const THEME_ICON_MOON = '<span class="icon-emoji" aria-hidden="true">🌙</span>';
+  const THEME_ICON_SUN = '<span class="icon-emoji" aria-hidden="true">☀️</span>';
 
   const clearInlineVars = () => {
     const r = document.documentElement;

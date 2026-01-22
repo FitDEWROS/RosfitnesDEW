@@ -198,6 +198,16 @@
       height: 20px;
       display: block;
     }
+    .icon-btn .icon-emoji {
+      display: block;
+      font-size: 18px;
+      line-height: 1;
+    }
+    @supports (-webkit-touch-callout: none) {
+      .icon-btn .icon-emoji {
+        transform: translateY(1px);
+      }
+    }
 
     .icon-btn:hover {
       transform: translateY(-1px);
@@ -1543,9 +1553,7 @@
       </div>
       <div class="top-actions">
         <button id="themeToggle" class="icon-btn" title="Переключить тему" aria-label="Переключить тему">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20.9 15.1a8 8 0 1 1-12-12 7 7 0 0 0 12 12z" fill="currentColor"/>
-          </svg>
+          <span class="icon-emoji" aria-hidden="true">🌙</span>
         </button>
         <div class="avatar-stack">
           <button id="profileBtn" class="avatar-btn" title="Открыть профиль" aria-label="Открыть профиль">
