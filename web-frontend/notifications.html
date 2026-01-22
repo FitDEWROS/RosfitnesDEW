@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fit Dew - Оповещения</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --card: rgba(24, 27, 34, 0.9);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f7;
+      --muted: rgba(255, 255, 255, 0.55);
+      --accent: #f2d17c;
+      --shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
+      --radius: 18px;
+    }
+
+    html.light {
+      --bg: #f4f1e9;
+      --card: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(0, 0, 0, 0.06);
+      --text: #121212;
+      --muted: rgba(0, 0, 0, 0.55);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 26px 18px 60px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      margin: 0;
+      font-family: "Exo 2", sans-serif;
+      font-size: 1.5rem;
+    }
+
+    .btn-outline {
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .notif-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .notif-item {
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.2);
+      display: grid;
+      gap: 6px;
+    }
+
+    html.light .notif-item {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .notif-item.unread {
+      border-color: rgba(242, 209, 124, 0.5);
+      box-shadow: 0 0 0 1px rgba(242, 209, 124, 0.2);
+    }
+
+    .notif-title {
+      font-weight: 700;
+    }
+
+    .notif-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+    }
+html.light
+html.light
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-header">
+      <h1 class="title">Оповещения</h1>
+      <div>
+        <button class="btn-outline" id="markAll" type="button">Прочитать всё</button>
+        <button class="btn-outline" id="goBack" type="button">Назад</button>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="notif-list" id="notifList"></div>
+      <div class="empty-state" id="emptyState" hidden>Оповещений пока нет.</div>
+    </section>
+  </div>
+
+  
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+      const params = new URLSearchParams(window.location.search);
+
+      const notifList = document.getElementById("notifList");
+      const emptyState = document.getElementById("emptyState");
+      const markAll = document.getElementById("markAll");
+      const goBack = document.getElementById("goBack");
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+        return p.toString();
+      };
+
+      const initData = tg?.initData || params.get("initData") || buildInitData() || "";
+
+      const formatDate = (value) => {
+        if (!value) return "";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
+        return date.toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+      };
+
+      const renderNotifications = (items) => {
+        if (!notifList) return;
+        notifList.innerHTML = "";
+        if (!items.length) {
+          emptyState.hidden = false;
+          return;
+        }
+        emptyState.hidden = true;
+
+        items.forEach((item) => {
+          const row = document.createElement("div");
+          row.className = `notif-item${item.readAt ? "" : " unread"}`;
+          row.innerHTML = `
+            <div class="notif-title">${item.title || "Оповещение"}</div>
+            <div>${item.message || ""}</div>
+            <div class="notif-meta">${formatDate(item.createdAt)}</div>
+          `;
+          notifList.appendChild(row);
+        });
+      };
+
+      const loadNotifications = async () => {
+        if (!apiBase || !initData) return;
+        try {
+          const res = await fetch(`${apiBase}/api/notifications?initData=${encodeURIComponent(initData)}&limit=50`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) return;
+          renderNotifications(Array.isArray(json.notifications) ? json.notifications : []);
+        } catch (e) {
+          console.error("Ошибка загрузки оповещений", e);
+        }
+      };
+
+      const markAllRead = async () => {
+        if (!apiBase || !initData) return;
+        await fetch(`${apiBase}/api/notifications/read`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData, all: true })
+        }).catch(() => ({}));
+        loadNotifications();
+      };
+
+      const goBackNav = () => {
+        const backUrl = initData ? `index.html?initData=${encodeURIComponent(initData)}` : "index.html";
+        window.location.href = backUrl;
+      };
+
+      goBack?.addEventListener("click", goBackNav);
+
+
+      markAll?.addEventListener("click", markAllRead);
+      loadNotifications();
+    })();
+  </script>
+</body>
+</html>
+
+
+

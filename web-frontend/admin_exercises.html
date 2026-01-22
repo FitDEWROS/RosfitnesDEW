@@ -1,0 +1,1509 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fit Dew - Библиотека упражнений</title>
+
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js?v=20260115"></script>
+
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --bg-soft: #141417;
+      --text: #f4f1e8;
+      --muted: #c6c0b2;
+      --card: #1b1b1f;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f6e5a6;
+      --accent-strong: #f2d17c;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-lg: 26px;
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+      --transition: 0.3s ease;
+    }
+
+    html.light {
+      --bg: #f4f1e6;
+      --bg-soft: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8cc7a;
+      --accent-strong: #ddb965;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    html {
+      color-scheme: dark;
+    }
+
+    html.light {
+      color-scheme: light;
+    }
+
+    select option {
+      background: #1b1b1f;
+      color: #f4f1e8;
+    }
+
+    html.light select option {
+      background: #ffffff;
+      color: #1b1b1b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(520px 280px at 15% 8%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(440px 320px at 90% 20%, rgba(154, 215, 202, 0.12), transparent 65%),
+        radial-gradient(420px 300px at 40% 90%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
+    }
+
+    .admin-screen {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 22px 18px 140px;
+    }
+
+    .page-header {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(145deg, #1f1f22, #121214);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    html.light .page-header {
+      background: #ffffff;
+    }
+
+    .page-header::after {
+      content: "";
+      position: absolute;
+      inset: -80px;
+      background: radial-gradient(circle at 20% 120%, rgba(243, 213, 139, 0.35), transparent 70%);
+      opacity: 0.8;
+      z-index: 0;
+    }
+
+    .page-header > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .header-top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.6rem, 6vw, 2.4rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .status-pill::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9c9c9c;
+    }
+
+    .status-pill.ok {
+      color: #1b1b1b;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      border-color: transparent;
+    }
+
+    .status-pill.ok::before {
+      background: #1b1b1b;
+    }
+
+    .status-pill.bad {
+      color: #ffb0b0;
+      border-color: rgba(255, 120, 120, 0.4);
+      background: rgba(120, 20, 20, 0.3);
+    }
+
+    .status-pill.bad::before {
+      background: #ff8a8a;
+    }
+
+
+    .section-card {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 14px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .section-head.compact {
+      align-items: flex-start;
+    }
+
+    .section-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .section-title {
+      margin: 4px 0 0;
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .muted {
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-grid label {
+      display: grid;
+      gap: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .inline-group {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 140px;
+      gap: 10px;
+    }
+
+    .help-text {
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+      text-transform: none;
+      color: var(--muted);
+    }
+
+    .form-grid label.full {
+      grid-column: 1 / -1;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08));
+      background-position:
+        calc(100% - 18px) 50%,
+        calc(100% - 12px) 50%,
+        calc(100% - 34px) 50%;
+      background-size: 6px 6px, 6px 6px, 1px 60%;
+      background-repeat: no-repeat;
+      padding-right: 42px;
+    }
+
+    html.light select {
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12));
+    }
+
+    select option {
+      background: #1b1b1f;
+      color: var(--text);
+    }
+    html.light select option {
+      background: #ffffff;
+      color: #1b1b1b;
+    }
+
+    html.light input,
+    html.light textarea,
+    html.light select {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(242, 209, 124, 0.6);
+      box-shadow: 0 0 0 3px rgba(242, 209, 124, 0.15);
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .muscle-picker {
+      position: relative;
+      display: grid;
+      gap: 8px;
+    }
+
+    .muscle-toggle {
+      width: 100%;
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+    html.light .muscle-toggle {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .muscle-toggle:focus-visible {
+      border-color: rgba(242, 209, 124, 0.6);
+      box-shadow: 0 0 0 3px rgba(242, 209, 124, 0.15);
+      outline: none;
+    }
+
+    .muscle-toggle:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .muscle-toggle-icon {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      transition: transform var(--transition);
+    }
+
+    .muscle-toggle.is-open .muscle-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .muscle-options {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 20;
+    }
+
+    html.light .muscle-options {
+      background: #ffffff;
+    }
+
+    .muscle-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text);
+    }
+
+    .muscle-option input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent-strong);
+    }
+
+    .muscle-option:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    html.light .muscle-option:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .slug-field {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .slug-field input {
+      flex: 1;
+    }
+
+    .type-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 10px 0;
+    }
+
+    .field-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .pill-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .pill input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .pill span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      font-family: var(--font-title);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      transition: var(--transition);
+    }
+
+    .pill input:checked + span {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      border-color: transparent;
+    }
+
+    .note-box {
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px dashed var(--card-border);
+      background: rgba(255, 255, 255, 0.03);
+      display: grid;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .section-divider {
+      height: 1px;
+      background: var(--card-border);
+      border-radius: 999px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .repeat-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .repeat-row label {
+      display: grid;
+      gap: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .repeat-row select {
+      width: 100%;
+    }
+
+    .week-card {
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      display: grid;
+      gap: 12px;
+    }
+
+    html.light .week-card {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .workout-card {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.22);
+      display: grid;
+      gap: 12px;
+    }
+
+    html.light .workout-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .exercise-card {
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.15);
+      display: grid;
+      gap: 10px;
+    }
+
+    html.light .exercise-card {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .exercise-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .btn-primary,
+    .btn-outline,
+    .btn-ghost {
+      border-radius: 999px;
+      border: none;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-family: var(--font-title);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      transition: var(--transition);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      box-shadow: 0 12px 26px rgba(243, 213, 139, 0.3);
+    }
+
+    .btn-primary:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+      box-shadow: none;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      padding: 8px 14px;
+    }
+
+    .btn-ghost.btn-file {
+      border: 1px solid var(--card-border);
+      color: var(--text);
+    }
+    .btn-ghost.danger {
+      color: #f2a3a3;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-actions {
+      justify-content: flex-start;
+    }
+
+    .status-line {
+      min-height: 20px;
+      font-size: 0.9rem;
+    }
+
+    .status-line.ok {
+      color: #7ee0a8;
+    }
+
+    .status-line.bad {
+      color: #ff9b9b;
+    }
+
+    .program-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .program-item {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    html.light .program-item {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .program-meta {
+      display: grid;
+      gap: 4px;
+    }
+
+    .program-meta strong {
+      font-size: 1rem;
+    }
+
+    .program-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .program-tag {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .plan-grid button {
+      height: 44px;
+    }
+
+    .exercise-item {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    html.light .exercise-item {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .exercise-meta {
+      display: grid;
+      gap: 4px;
+      max-width: 70%;
+    }
+
+    .exercise-meta strong {
+      font-size: 1rem;
+    }
+
+    .exercise-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 720px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .plan-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .inline-group {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+  <style>
+    .nav-actions {
+      justify-content: flex-start;
+    }
+  </style></head>
+
+<body>
+  <div class="admin-screen" data-page="exercises">
+    <header class="page-header">
+      <div class="header-top">
+        <span class="eyebrow">Админка</span>
+      </div>
+      <h1 class="page-title">Библиотека упражнений</h1>
+      <p class="page-subtitle">Добавляй упражнения, видео, тип (зал/кроссфит) и мышцу для зала.</p>
+    </header>
+
+    <section class="section-card">
+      <div class="actions nav-actions">
+        <button class="btn-outline" id="goHome" type="button">Назад</button>
+        <button class="btn-outline" id="goPrograms" type="button">Программы</button>
+        <button class="btn-outline" id="goClients" type="button">Клиенты</button>
+      </div>
+    </section>
+
+    <section class="section-card" id="exerciseCard" hidden>
+      <div class="section-head compact">
+        <div>
+          <span class="section-eyebrow">Архив</span>
+          <h2 class="section-title">Создание упражнения</h2>
+        </div>
+        <div class="section-actions">
+          <button class="btn-outline" id="reloadExercises" type="button">Обновить</button>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <label>
+          Название упражнения
+          <input id="exerciseTitle" type="text" placeholder="Оверхед присед">
+        </label>
+        <label>
+          Тип
+          <select id="exerciseType">
+            <option value="gym" selected>Зал</option>
+            <option value="crossfit">Кроссфит</option>
+          </select>
+        </label>
+        <label class="full">
+          Тарифы доступа
+          <div class="pill-group">
+            <label class="pill">
+              <input type="checkbox" name="exerciseTariff" value="Базовый" checked>
+              <span>Базовый</span>
+            </label>
+            <label class="pill">
+              <input type="checkbox" name="exerciseTariff" value="Оптимальный" checked>
+              <span>Оптимальный</span>
+            </label>
+            <label class="pill">
+              <input type="checkbox" name="exerciseTariff" value="Максимум" checked>
+              <span>Максимум</span>
+            </label>
+          </div>
+        </label>
+        <label class="full">
+          Мышца (для зала)
+          <div class="muscle-picker" id="musclePicker">
+            <button class="muscle-toggle" id="muscleToggle" type="button" aria-expanded="false">
+              <span class="muscle-toggle-text" id="muscleToggleText">Выбрать мышцы</span>
+              <span class="muscle-toggle-icon">v</span>
+            </button>
+            <div class="muscle-options" id="muscleOptions" hidden>
+              <label class="muscle-option">
+                <input type="checkbox" value="Трапециевидная мышца">
+                <span>Трапециевидная мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Большая грудная мышца">
+                <span>Большая грудная мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Дельтовидная мышца">
+                <span>Дельтовидная мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Двуглавая мышца плеча (бицепс)">
+                <span>Двуглавая мышца плеча (бицепс)</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Мышцы предплечья">
+                <span>Мышцы предплечья</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Прямая мышца живота">
+                <span>Прямая мышца живота</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Мышцы квадрицепса">
+                <span>Мышцы квадрицепса</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Приводящая мышца">
+                <span>Приводящая мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Передняя группа мышц голени">
+                <span>Передняя группа мышц голени</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Мышцы верха спины">
+                <span>Мышцы верха спины</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Трехглавая мышца плеча (трицепс)">
+                <span>Трехглавая мышца плеча (трицепс)</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Широчайшая мышца спины">
+                <span>Широчайшая мышца спины</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Мышцы низа спины">
+                <span>Мышцы низа спины</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Большая ягодичная мышца">
+                <span>Большая ягодичная мышца</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Хамстринги (мышцы задней части бедра)">
+                <span>Хамстринги (мышцы задней части бедра)</span>
+              </label>
+              <label class="muscle-option">
+                <input type="checkbox" value="Икроножная мышца">
+                <span>Икроножная мышца</span>
+              </label>
+            </div>
+          </div>
+          <span class="help-text">Можно выбрать несколько мышц.</span>
+        </label>
+        <label class="full">
+          Описание
+          <textarea id="exerciseDescription" placeholder="Техника выполнения..."></textarea>
+        </label>
+        <label class="full">
+          Видео (ссылка или файл)
+          <div class="inline-group">
+            <input id="exerciseVideo" type="url" placeholder="https://...">
+            <button class="btn-ghost btn-file" id="exerciseVideoUpload" type="button">Файл</button>
+          </div>
+          <input id="exerciseVideoFile" type="file" accept="video/*" hidden>
+          <span class="help-text">До 50 МБ.</span>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button class="btn-outline" id="resetExercise" type="button">Очистить</button>
+        <button class="btn-primary" id="saveExercise" type="button">Сохранить упражнение</button>
+      </div>
+      <div class="status-line" id="exerciseStatus"></div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-head compact">
+        <div>
+          <span class="section-eyebrow">Список</span>
+          <h3 class="section-title">Упражнения в архиве</h3>
+        </div>
+      </div>
+      <div class="stack" id="exerciseList"></div>
+    </section>
+  </div>
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const params = new URLSearchParams(window.location.search);
+      const API_BASE = window.ENV?.API_BASE || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+        return p.toString();
+      };
+
+      const initData = tg?.initData || params.get("initData") || buildInitData() || "";
+      const accessStatus = document.getElementById("accessStatus");
+      const accessMessage = document.getElementById("accessMessage");
+      const exerciseCard = document.getElementById("exerciseCard");
+      const exerciseList = document.getElementById("exerciseList");
+
+      const goHome = document.getElementById("goHome");
+      const goPrograms = document.getElementById("goPrograms");
+      const goClients = document.getElementById("goClients");
+
+      const exerciseTitle = document.getElementById("exerciseTitle");
+      const exerciseType = document.getElementById("exerciseType");
+      const musclePicker = document.getElementById("musclePicker");
+      const muscleToggle = document.getElementById("muscleToggle");
+      const muscleToggleText = document.getElementById("muscleToggleText");
+      const muscleOptions = document.getElementById("muscleOptions");
+      const exerciseDescription = document.getElementById("exerciseDescription");
+      const exerciseVideo = document.getElementById("exerciseVideo");
+      const exerciseVideoUpload = document.getElementById("exerciseVideoUpload");
+      const exerciseVideoFile = document.getElementById("exerciseVideoFile");
+      const exerciseTariffInputs = Array.from(document.querySelectorAll("input[name='exerciseTariff']"));
+      const exerciseStatus = document.getElementById("exerciseStatus");
+      const reloadExercises = document.getElementById("reloadExercises");
+      const resetExercise = document.getElementById("resetExercise");
+      const saveExercise = document.getElementById("saveExercise");
+
+      let currentExerciseId = null;
+      let exerciseLibrary = [];
+      let trainerScope = "both";
+      let isTrainer = false;
+      const defaultTariffs = ["Базовый", "Оптимальный", "Максимум"];
+      const descriptionTemplate = "Как выполнять:\n\nСовет:\n";
+
+      const setAccess = (ok, message) => {
+        if (accessStatus) {
+          accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
+          accessStatus.classList.toggle("ok", ok);
+          accessStatus.classList.toggle("bad", !ok);
+        }
+        if (accessMessage) {
+          accessMessage.textContent = message;
+        }
+        if (exerciseCard) exerciseCard.hidden = !ok;
+        if (saveExercise) saveExercise.disabled = !ok;
+      };
+
+      const setExerciseStatus = (message, ok) => {
+        if (!exerciseStatus) return;
+        exerciseStatus.textContent = message;
+        exerciseStatus.classList.toggle("ok", Boolean(ok));
+        exerciseStatus.classList.toggle("bad", ok === false);
+      };
+
+      const uploadAdminMedia = async ({ kind, file }) => {
+        if (!apiBase || !initData || !file) {
+          setExerciseStatus("Нет данных для загрузки.", false);
+          return null;
+        }
+        const size = file.size || 0;
+        const fileType = file.type || "";
+        if (!fileType.startsWith("video/")) {
+          setExerciseStatus("Можно загрузить только видео.", false);
+          return null;
+        }
+        if (size <= 0 || size > 50 * 1024 * 1024) {
+          setExerciseStatus("Файл больше 50 МБ.", false);
+          return null;
+        }
+        try {
+          setExerciseStatus("Загрузка файла...");
+          const res = await fetch(`${apiBase}/api/admin/upload-url`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              initData,
+              kind,
+              fileName: file.name || "video.mp4",
+              contentType: fileType,
+              size
+            })
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok || !json.uploadUrl) {
+            setExerciseStatus("Ошибка подготовки загрузки.", false);
+            return null;
+          }
+          const uploadRes = await fetch(json.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": fileType },
+            body: file
+          });
+          if (!uploadRes.ok) {
+            setExerciseStatus("Ошибка загрузки файла.", false);
+            return null;
+          }
+          setExerciseStatus("Видео загружено.", true);
+          return json.publicUrl || null;
+        } catch (err) {
+          setExerciseStatus("Ошибка сети при загрузке.", false);
+          return null;
+        }
+      };
+
+      const setSelectedTariffs = (tariffs) => {
+        if (!exerciseTariffInputs.length) return;
+        const selected = new Set(Array.isArray(tariffs) ? tariffs : []);
+        exerciseTariffInputs.forEach((input) => {
+          input.checked = selected.has(input.value);
+        });
+      };
+
+      const getSelectedTariffs = () => (
+        exerciseTariffInputs
+          .filter((input) => input.checked)
+          .map((input) => input.value)
+      );
+
+      const GENERAL_MUSCLE = "Общая";
+
+      const getMuscleInputs = () => (
+        muscleOptions
+          ? Array.from(muscleOptions.querySelectorAll("input[type='checkbox']"))
+          : []
+      );
+
+      const updateMuscleToggle = () => {
+        if (!muscleToggleText) return;
+        const selected = getSelectedMuscles();
+        muscleToggleText.textContent = selected.length
+          ? `Выбрано: ${selected.length}`
+          : "Выбрать мышцы";
+      };
+
+      const setMuscleOpen = (open) => {
+        if (!muscleOptions || !muscleToggle) return;
+        muscleOptions.hidden = !open;
+        muscleToggle.setAttribute("aria-expanded", open ? "true" : "false");
+        muscleToggle.classList.toggle("is-open", open);
+      };
+
+      const buildMuscleOption = (value) => {
+        const label = document.createElement("label");
+        label.className = "muscle-option";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = value;
+        const span = document.createElement("span");
+        span.textContent = value;
+        label.appendChild(input);
+        label.appendChild(span);
+        return label;
+      };
+
+      const normalizeMuscles = (values) => {
+        const list = Array.isArray(values) ? values : (values ? [values] : []);
+        return list
+          .map((item) => String(item || "").trim())
+          .filter((item) => item && item !== GENERAL_MUSCLE);
+      };
+
+      const setMuscleValues = (values) => {
+        if (!muscleOptions) return;
+        const list = normalizeMuscles(values);
+        list.forEach((value) => {
+          const exists = getMuscleInputs()
+            .some((input) => input.value === value);
+          if (!exists) {
+            muscleOptions.appendChild(buildMuscleOption(value));
+          }
+        });
+        getMuscleInputs().forEach((input) => {
+          input.checked = list.includes(input.value);
+        });
+        updateMuscleToggle();
+      };
+
+      const getSelectedMuscles = () => (
+        getMuscleInputs()
+          .filter((input) => input.checked)
+          .map((input) => input.value)
+      );
+
+      const syncExerciseType = () => {
+        if (!exerciseType || !muscleToggle || !muscleOptions) return;
+        const isGym = exerciseType.value !== "crossfit";
+        muscleToggle.disabled = !isGym;
+        if (!isGym) {
+          setMuscleOpen(false);
+          setMuscleValues([]);
+        } else {
+          updateMuscleToggle();
+        }
+      };
+
+      const applyTrainerScope = () => {
+        if (!exerciseType) return;
+        if (!trainerScope || trainerScope === "both") {
+          Array.from(exerciseType.options).forEach((option) => {
+            option.disabled = false;
+          });
+          exerciseType.disabled = false;
+          return;
+        }
+        Array.from(exerciseType.options).forEach((option) => {
+          const allowed = option.value === trainerScope;
+          option.disabled = !allowed;
+          if (allowed) exerciseType.value = option.value;
+        });
+        exerciseType.disabled = false;
+        syncExerciseType();
+      };
+
+      const renderExerciseList = (exercises) => {
+        if (!exerciseList) return;
+        exerciseList.innerHTML = "";
+        if (!exercises.length) {
+          exerciseList.innerHTML = "<p class='muted'>Архив упражнений пуст.</p>";
+          return;
+        }
+        exercises.forEach((exercise) => {
+          const typeLabel = exercise.type === "crossfit" ? "Кроссфит" : "Зал";
+          const rawMuscles = Array.isArray(exercise.muscles) && exercise.muscles.length
+            ? exercise.muscles
+            : (exercise.muscle ? [exercise.muscle] : []);
+          const muscleList = rawMuscles.filter((item) => item && item !== GENERAL_MUSCLE);
+          const muscleLabel = exercise.type === "gym" && muscleList.length
+            ? ` - ${muscleList.join(", ")}`
+            : "";
+          const videoLabel = exercise.videoUrl ? "Есть видео" : "Без видео";
+          const tariffsLabel = Array.isArray(exercise.tariffs) && exercise.tariffs.length
+            ? ` / ${exercise.tariffs.join(", ")}`
+            : " / Все тарифы";
+          const item = document.createElement("div");
+          item.className = "exercise-item";
+          item.innerHTML = `
+            <div class="exercise-meta">
+              <strong>${exercise.title}</strong>
+              <span class="muted">${typeLabel}${muscleLabel} - ${videoLabel}${tariffsLabel}</span>
+            </div>
+            <div class="exercise-actions">
+              <button class="btn-outline" type="button" data-ex-edit="${exercise.id}">Редактировать</button>
+              <button class="btn-ghost danger" type="button" data-ex-delete="${exercise.id}">Удалить</button>
+            </div>
+          `;
+          exerciseList.appendChild(item);
+        });
+      };
+
+      const loadExercises = async () => {
+        if (!apiBase || !initData) return;
+        try {
+          const res = await fetch(`${apiBase}/api/admin/exercises?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok || !Array.isArray(json.exercises)) return;
+          const list = json.exercises;
+          exerciseLibrary = isTrainer && trainerScope && trainerScope !== "both"
+            ? list.filter((exercise) => exercise.type === trainerScope)
+            : list;
+          renderExerciseList(exerciseLibrary);
+        } catch (err) {
+          console.warn("exercises load failed", err);
+        }
+      };
+
+      const clearExerciseForm = () => {
+        currentExerciseId = null;
+        if (exerciseTitle) exerciseTitle.value = "";
+        if (exerciseType) {
+          exerciseType.value = trainerScope && trainerScope !== "both" ? trainerScope : "gym";
+        }
+        setMuscleValues([]);
+        setMuscleOpen(false);
+        if (exerciseDescription) exerciseDescription.value = descriptionTemplate;
+        if (exerciseVideo) exerciseVideo.value = "";
+        if (saveExercise) saveExercise.textContent = "Сохранить упражнение";
+        setSelectedTariffs(defaultTariffs);
+        setExerciseStatus("", null);
+        applyTrainerScope();
+        syncExerciseType();
+      };
+
+      const buildUrl = (path) => (
+        initData ? `${path}?initData=${encodeURIComponent(initData)}` : path
+      );
+
+      goHome?.addEventListener("click", () => {
+        window.location.href = buildUrl("admin_programs.html");
+      });
+
+      goPrograms?.addEventListener("click", () => {
+        window.location.href = buildUrl("admin_program_create.html");
+      });
+
+      goClients?.addEventListener("click", () => {
+        window.location.href = buildUrl("admin_clients.html");
+      });
+
+      exerciseType?.addEventListener("change", syncExerciseType);
+      muscleToggle?.addEventListener("click", () => {
+        if (!muscleOptions || muscleToggle.disabled) return;
+        setMuscleOpen(muscleOptions.hidden);
+      });
+      muscleOptions?.addEventListener("change", () => {
+        updateMuscleToggle();
+      });
+      document.addEventListener("click", (event) => {
+        if (!musclePicker || !muscleOptions || muscleOptions.hidden) return;
+        if (!musclePicker.contains(event.target)) {
+          setMuscleOpen(false);
+        }
+      });
+      resetExercise?.addEventListener("click", () => clearExerciseForm());
+      reloadExercises?.addEventListener("click", () => loadExercises());
+      exerciseVideoUpload?.addEventListener("click", () => exerciseVideoFile?.click());
+      exerciseVideoFile?.addEventListener("change", async () => {
+        const file = exerciseVideoFile.files?.[0];
+        exerciseVideoFile.value = "";
+        if (!file) return;
+        if (exerciseVideoUpload) exerciseVideoUpload.disabled = true;
+        const url = await uploadAdminMedia({ kind: "exercise_video", file });
+        if (url && exerciseVideo) exerciseVideo.value = url;
+        if (exerciseVideoUpload) exerciseVideoUpload.disabled = false;
+      });
+
+      const deleteExercise = async (exercise) => {
+        if (!exercise || !apiBase || !initData) return;
+        const title = exercise.title || "Упражнение";
+        if (!window.confirm(`Удалить упражнение "${title}"?`)) return;
+        setExerciseStatus("Удаляем упражнение...", null);
+        try {
+          const res = await fetch(`${apiBase}/api/admin/exercises/${exercise.id}?initData=${encodeURIComponent(initData)}`, {
+            method: "DELETE"
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) {
+            if (json?.error === "in_use") {
+              setExerciseStatus("Нельзя удалить: упражнение используется в программах.", false);
+            } else if (json?.error === "not_found") {
+              setExerciseStatus("Упражнение уже удалено.", false);
+            } else {
+              setExerciseStatus("Не удалось удалить упражнение.", false);
+            }
+            return;
+          }
+          exerciseLibrary = exerciseLibrary.filter((item) => item.id !== exercise.id);
+          renderExerciseList(exerciseLibrary);
+          if (currentExerciseId === exercise.id) {
+            currentExerciseId = null;
+            clearExerciseForm();
+          }
+          setExerciseStatus("Упражнение удалено.", true);
+        } catch (err) {
+          console.error(err);
+          setExerciseStatus("Ошибка сети при удалении упражнения.", false);
+        }
+      };
+
+      exerciseList?.addEventListener("click", (event) => {
+        const deleteBtn = event.target.closest("[data-ex-delete]");
+        if (deleteBtn) {
+          const id = Number(deleteBtn.dataset.exDelete);
+          const exercise = exerciseLibrary.find((item) => item.id === id);
+          if (exercise) deleteExercise(exercise);
+          return;
+        }
+        const editBtn = event.target.closest("[data-ex-edit]");
+        if (!editBtn) return;
+        const id = Number(editBtn.dataset.exEdit);
+        const exercise = exerciseLibrary.find((item) => item.id === id);
+        if (!exercise) return;
+        if (isTrainer && trainerScope && trainerScope !== "both" && exercise.type !== trainerScope) {
+          setExerciseStatus("У тебя нет прав редактировать упражнение другого типа.", false);
+          return;
+        }
+        currentExerciseId = id;
+        if (exerciseTitle) exerciseTitle.value = exercise.title || "";
+        if (exerciseType) exerciseType.value = exercise.type || "gym";
+        setMuscleValues(
+          Array.isArray(exercise.muscles) && exercise.muscles.length
+            ? exercise.muscles
+            : (exercise.muscle ? [exercise.muscle] : [])
+        );
+        if (exerciseDescription) {
+          exerciseDescription.value = exercise.description || descriptionTemplate;
+        }
+        if (exerciseVideo) exerciseVideo.value = exercise.videoUrl || "";
+        if (saveExercise) saveExercise.textContent = "Сохранить изменения";
+        setSelectedTariffs(exercise.tariffs || []);
+        setExerciseStatus("Редактирование упражнения.", true);
+        syncExerciseType();
+        if (exerciseCard && typeof exerciseCard.scrollIntoView === "function") {
+          exerciseCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+
+      saveExercise?.addEventListener("click", async () => {
+        if (!apiBase) {
+          setExerciseStatus("Не найден API_BASE. Проверь env.js.", false);
+          return;
+        }
+        if (!initData) {
+          setExerciseStatus("Нет initData. Открой админку внутри Telegram.", false);
+          return;
+        }
+
+        const selectedMuscles = getSelectedMuscles();
+        const payload = {
+          title: exerciseTitle?.value.trim() || "",
+          type: exerciseType?.value || "gym",
+          muscles: selectedMuscles,
+          muscle: selectedMuscles[0] || "",
+          description: exerciseDescription?.value.trim() || "",
+          videoUrl: exerciseVideo?.value.trim() || "",
+          tariffs: getSelectedTariffs()
+        };
+
+        if (isTrainer && trainerScope && trainerScope !== "both") {
+          payload.type = trainerScope;
+        }
+
+        if (!payload.title) {
+          setExerciseStatus("Заполни название упражнения.", false);
+          return;
+        }
+
+        saveExercise.disabled = true;
+        setExerciseStatus("Сохраняем упражнение...", null);
+
+        try {
+          const url = currentExerciseId
+            ? `${apiBase}/api/admin/exercises/${currentExerciseId}`
+            : `${apiBase}/api/admin/exercises`;
+          const method = currentExerciseId ? "PUT" : "POST";
+
+          const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData, exercise: payload })
+          });
+
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || !json?.ok) {
+            setExerciseStatus("Не удалось сохранить упражнение.", false);
+            saveExercise.disabled = false;
+            return;
+          }
+
+          clearExerciseForm();
+          await loadExercises();
+          setExerciseStatus("Упражнение сохранено.", true);
+        } catch (err) {
+          console.error(err);
+          setExerciseStatus("Ошибка сети при сохранении упражнения.", false);
+        } finally {
+          saveExercise.disabled = false;
+        }
+      });
+
+      const checkAccess = async () => {
+        if (!apiBase) {
+          setAccess(false, "Нет API_BASE. Проверь env.js и конфиг.");
+          return;
+        }
+        if (!initData) {
+          setAccess(false, "Открой админку через Telegram, чтобы получить initData.");
+          return;
+        }
+        try {
+          const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) {
+            setAccess(false, "Не удалось подтвердить доступ.");
+            return;
+          }
+          const role = json?.profile?.role || "user";
+          const canTrain = Boolean(json?.profile?.canTrain);
+          trainerScope = "both";
+          isTrainer = false;
+          if (!canTrain) {
+            setAccess(false, "Доступ закрыт. Нужна роль admin или sadmin.");
+            return;
+          }
+          const accessText = role === "sadmin"
+            ? "Доступ подтвержден. Роль: суперадмин."
+            : "Доступ подтвержден. Можно работать с упражнениями.";
+          setAccess(true, accessText);
+          clearExerciseForm();
+          if (isTrainer) applyTrainerScope();
+          await loadExercises();
+        } catch (err) {
+          console.error(err);
+          setAccess(false, "Ошибка сети при проверке доступа.");
+        }
+      };
+
+      syncExerciseType();
+      checkAccess();
+
+      try {
+        tg?.ready?.();
+        tg?.expand?.();
+      } catch (_) {}
+    })();
+  </script>
+</body>
+</html>

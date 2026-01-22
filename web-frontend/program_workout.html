@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fit Dew — Тренировка</title>
+
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js?v=20260115"></script>
+  <script src="programs_data.js?v=20260115"></script>
+
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --bg-soft: #141417;
+      --text: #f4f1e8;
+      --muted: #c6c0b2;
+      --card: #1b1b1f;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f6e5a6;
+      --accent-strong: #f2d17c;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-lg: 28px;
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+      --transition: 0.3s ease;
+    }
+
+    html.light {
+      --bg: #f4f1e6;
+      --bg-soft: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8cc7a;
+      --accent-strong: #ddb965;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(520px 280px at 15% 8%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(440px 320px at 90% 20%, rgba(154, 215, 202, 0.12), transparent 65%),
+        radial-gradient(420px 300px at 40% 90%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
+    }
+
+    .workout-screen {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 22px 18px 140px;
+    }
+
+    .page-header {
+      display: grid;
+      gap: 10px;
+    }
+
+    .back-btn {
+      width: fit-content;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
+    }
+
+    .page-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .summary-card {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 8px;
+    }
+
+    .summary-tag {
+      width: fit-content;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    html.light .summary-tag {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .summary-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.3rem, 5vw, 1.8rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .summary-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .exercise-list {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .exercise-item {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      align-items: flex-start;
+      position: relative;
+      width: 100%;
+      border: none;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .exercise-marker {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      font-size: 0.8rem;
+      position: relative;
+    }
+
+    .exercise-line {
+      position: absolute;
+      left: 17px;
+      top: 38px;
+      width: 2px;
+      height: calc(100% + 10px);
+      background: rgba(243, 213, 139, 0.45);
+    }
+
+    .exercise-item:last-child .exercise-line {
+      display: none;
+    }
+
+    .exercise-card {
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.22);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 6px;
+    }
+
+    html.light .exercise-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .exercise-title {
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .exercise-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .exercise-arrow {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    html.light .exercise-arrow {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .exercise-details {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .empty-state {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: var(--radius);
+      border: 1px dashed var(--card-border);
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .video-modal {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      width: min(560px, 96vw);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 10px;
+      max-height: 86vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: env(safe-area-inset-bottom);
+    }
+
+    .video-modal video {
+      width: 100%;
+      max-height: 55vh;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    .video-title {
+      margin: 12px 0 6px;
+      font-weight: 700;
+    }
+
+    .video-text {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .video-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .video-link {
+      color: var(--accent-strong);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .video-link:hover {
+      text-decoration: underline;
+    }
+
+    .video-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .modal-close {
+      position: static;
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-text {
+      display: grid;
+      gap: 12px;
+    }
+
+    .desc-block strong {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .desc-block div {
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+html.light
+html.light
+@media (max-width: 520px) {
+      .workout-screen { padding-left: 14px; padding-right: 14px; }
+      .exercise-item { grid-template-columns: 36px 1fr; }
+      .exercise-marker { width: 32px; height: 32px; font-size: 0.75rem; }
+      .exercise-line { left: 15px; }
+      .video-modal { max-height: 80dvh; }
+      .video-modal video { max-height: 50dvh; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="workout-screen">
+    <header class="page-header">
+      <button class="back-btn" id="backBtn" type="button">Назад</button>
+      <span class="page-eyebrow">Тренировка</span>
+      <h1 class="page-title" id="workoutTitle">Тренировка</h1>
+      <p class="page-subtitle" id="programTitle"></p>
+    </header>
+
+    <section class="summary-card">
+      <span class="summary-tag" id="programTag">КРОССФИТ</span>
+      <h2 class="summary-title" id="workoutHeading">Тренировка</h2>
+      <p class="summary-note" id="workoutDescription"></p>
+    </section>
+
+    <section class="exercise-list" id="exerciseList"></section>
+    <div class="empty-state" id="emptyState" style="display: none;">Упражнения скоро появятся.</div>
+  </div>
+
+  <div id="videoModal" class="modal" aria-hidden="true">
+    <div class="video-modal" role="dialog" aria-modal="true">
+      <video id="exerciseVideo" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
+      <h3 class="video-title" id="videoTitle"></h3>
+      <div class="video-text" id="videoDesc"></div>
+      <p class="video-note" id="videoNote">Видео пока не добавлено.</p>
+      <div class="video-actions">
+        <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+      const fallback = window.PROGRAMS_FALLBACK || [];
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("slug");
+      const workoutId = params.get("workout");
+      const backTarget = params.get("back") || "";
+      const initData = params.get("initData") || "";
+      const isAndroid = /Android/i.test(navigator.userAgent);
+
+      const byId = (id) => document.getElementById(id);
+      const backBtn = byId("backBtn");
+      const emptyState = byId("emptyState");
+      const list = byId("exerciseList");
+      const videoModal = byId("videoModal");
+      const videoEl = byId("exerciseVideo");
+      const videoTitle = byId("videoTitle");
+      const videoDesc = byId("videoDesc");
+      const videoNote = byId("videoNote");
+      const closeVideo = byId("closeVideo");
+      let currentVideoRequest = 0;
+      let currentVideoUrl = "";
+
+      const isYandexPublicLink = (url) => {
+        try {
+          const host = new URL(url).hostname;
+          return host === "disk.yandex.ru" || host === "yadi.sk" || host.endsWith(".yandex.ru");
+        } catch (_) {
+          return false;
+        }
+      };
+
+      const resolveVideoUrl = async (url) => {
+        if (!url) return null;
+        if (!isYandexPublicLink(url)) return url;
+        try {
+          const res = await fetch(`${apiBase}/api/yadisk/resolve?publicUrl=${encodeURIComponent(url)}`);
+          const json = await res.json().catch(() => ({}));
+          if (json?.ok && json.href) return json.href;
+        } catch (err) {
+          console.warn("Yandex resolve failed:", err);
+        }
+        return null;
+      };
+
+      const showVideoLink = (href, message) => {
+        if (!videoNote) return;
+        videoNote.innerHTML = "";
+        if (message) {
+          const text = document.createElement("span");
+          text.textContent = message;
+          videoNote.appendChild(text);
+          videoNote.appendChild(document.createElement("br"));
+        }
+        const link = document.createElement("a");
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.className = "video-link";
+        link.textContent = "Открыть видео";
+        videoNote.appendChild(link);
+      };
+
+      const escapeHtml = (value) => (
+        String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;")
+      );
+
+      const formatText = (value) => escapeHtml(value).replace(/\n/g, "<br>");
+
+      const splitDescription = (raw) => {
+        const text = String(raw || "").replace(/\r\n/g, "\n").trim();
+        if (!text) return { how: "", tip: "" };
+        const tipRegex = /(?:^|\n)\s*Совет\s*:/i;
+        const tipMatch = text.match(tipRegex);
+        let how = text;
+        let tip = "";
+        if (tipMatch && typeof tipMatch.index === "number") {
+          how = text.slice(0, tipMatch.index);
+          tip = text.slice(tipMatch.index).replace(tipRegex, "");
+        }
+        how = how.replace(/Как\s+выполнять\s*:/i, "").trim();
+        tip = tip.replace(/Совет\s*:/i, "").trim();
+        if (!how && !tip) {
+          how = text;
+        }
+        return { how, tip };
+      };
+
+      const buildDescriptionHtml = (raw) => {
+        const sections = splitDescription(raw);
+        const howText = sections.how || raw || "-";
+        const tipText = sections.tip || "-";
+        return `
+          <div class="desc-block">
+            <strong>Как выполнять:</strong>
+            <div>${formatText(howText)}</div>
+          </div>
+          <div class="desc-block">
+            <strong>Совет:</strong>
+            <div>${formatText(tipText)}</div>
+          </div>
+        `;
+      };
+
+      if (backBtn) {
+        backBtn.addEventListener("click", () => {
+          if (slug) {
+            const query = new URLSearchParams();
+            query.set("slug", slug);
+            if (backTarget) query.set("back", backTarget);
+            if (initData) query.set("initData", initData);
+            window.location.href = `program_detail.html?${query.toString()}`;
+            return;
+          }
+          if (backTarget) {
+            window.location.href = backTarget;
+            return;
+          }
+          window.location.href = "programs.html";
+        });
+      }
+
+      const openVideo = async (exercise) => {
+        if (!videoModal) return;
+        currentVideoRequest += 1;
+        const requestId = currentVideoRequest;
+        const title = exercise?.title || "Упражнение";
+        const description = exercise?.description || exercise?.details || "";
+        videoTitle.textContent = title;
+        if (videoDesc) {
+          videoDesc.innerHTML = buildDescriptionHtml(description || "Описание появится позже.");
+        }
+
+        if (videoEl) {
+          videoEl.pause();
+          videoEl.removeAttribute("src");
+          videoEl.style.display = "none";
+        }
+        if (videoNote) {
+          videoNote.style.display = "block";
+          videoNote.textContent = "Загружаем видео...";
+        }
+
+        videoModal.classList.add("show");
+        videoModal.setAttribute("aria-hidden", "false");
+
+        if (!exercise?.videoUrl) {
+          currentVideoUrl = "";
+          if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
+          return;
+        }
+
+        currentVideoUrl = exercise.videoUrl || "";
+        const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
+        if (requestId != currentVideoRequest) return;
+        currentVideoUrl = resolvedUrl || exercise.videoUrl || "";
+
+        if (resolvedUrl && videoEl) {
+          videoEl.src = resolvedUrl;
+          videoEl.style.display = "block";
+          videoEl.onerror = () => {
+            if (requestId != currentVideoRequest) return;
+            showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
+          };
+          videoEl.onloadeddata = () => {
+            if (requestId != currentVideoRequest) return;
+            if (videoNote) videoNote.style.display = "none";
+          };
+          videoEl.load();
+          const playAttempt = videoEl.play();
+          if (playAttempt && typeof playAttempt.catch === "function") {
+            playAttempt.catch(() => {
+              if (requestId != currentVideoRequest) return;
+              showVideoLink(resolvedUrl, "Не удалось запустить видео.");
+            });
+          }
+        } else {
+          showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
+        }
+      };
+
+      const closeVideoModal = () => {
+        if (!videoModal) return;
+        currentVideoRequest += 1;
+        currentVideoUrl = "";
+        videoModal.classList.remove("show");
+        videoModal.setAttribute("aria-hidden", "true");
+        if (videoEl) {
+          videoEl.pause();
+          videoEl.removeAttribute("src");
+        }
+        if (videoNote) {
+          videoNote.textContent = "";
+        }
+      };
+
+      if (closeVideo) closeVideo.addEventListener("click", closeVideoModal);
+      if (videoModal) {
+        videoModal.addEventListener("click", (e) => {
+          if (e.target === videoModal) closeVideoModal();
+        });
+      }
+
+      const findWorkout = (program, target) => {
+        if (!program || !Array.isArray(program.weeks)) return null;
+        for (const week of program.weeks) {
+          const workouts = Array.isArray(week.workouts) ? week.workouts : [];
+          for (const workout of workouts) {
+            const id = workout.id ?? `${week.index}-${workout.index}`;
+            if (String(id) === String(target)) {
+              return workout;
+            }
+          }
+        }
+        return null;
+      };
+
+      const renderWorkout = (program, workout) => {
+        if (program) {
+          byId("programTitle").textContent = program.title || "";
+          byId("programTag").textContent = program.type === "gym" ? "ЗАЛ" : "КРОССФИТ";
+        }
+        if (workout) {
+          byId("workoutTitle").textContent = workout.title || "Тренировка";
+          byId("workoutHeading").textContent = workout.title || "Тренировка";
+          byId("workoutDescription").textContent = workout.description || "";
+        }
+
+        list.innerHTML = "";
+        const exercises = Array.isArray(workout?.exercises) ? workout.exercises : [];
+        if (!exercises.length) {
+          emptyState.style.display = "block";
+          return;
+        }
+        emptyState.style.display = "none";
+
+        exercises.forEach((exercise) => {
+          const item = document.createElement("button");
+          item.className = "exercise-item";
+          item.type = "button";
+          const label = exercise.label || String(exercise.order || "");
+          const details = exercise.details ? `<p class="exercise-details">${exercise.details}</p>` : "";
+          item.innerHTML = `
+            <div class="exercise-marker">
+              ${label}
+              <span class="exercise-line"></span>
+            </div>
+            <div class="exercise-card">
+              <div class="exercise-head">
+                <p class="exercise-title">${exercise.title || "Упражнение"}</p>
+                <span class="exercise-arrow">?</span>
+              </div>
+              ${details}
+            </div>
+          `;
+          item.addEventListener("click", () => openVideo(exercise));
+          list.appendChild(item);
+        });
+      };
+
+      const loadWorkout = async () => {
+        const fallbackProgram = fallback[0] || null;
+        const targetSlug = slug || fallbackProgram?.slug;
+
+        if (API_BASE && targetSlug) {
+          try {
+            const res = await fetch(`${API_BASE}/api/programs/${encodeURIComponent(targetSlug)}`);
+            const json = await res.json().catch(() => ({}));
+            if (json?.ok && json.program) {
+              const workout = findWorkout(json.program, workoutId);
+              return renderWorkout(json.program, workout || null);
+            }
+          } catch (err) {
+            console.warn("Workout fetch failed:", err);
+          }
+        }
+
+        const program = fallback.find((item) => item.slug === targetSlug) || fallbackProgram;
+        const workout = findWorkout(program, workoutId) || (program?.weeks?.[0]?.workouts?.[0] || null);
+        renderWorkout(program, workout);
+      };
+
+      loadWorkout();
+
+      try {
+        tg?.ready?.();
+        tg?.expand?.();
+      } catch (_) {}
+    })();
+  </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,1599 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RosApp — дневник питания</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --bg-soft: #141417;
+      --text: #f4f1e8;
+      --muted: #c6c0b2;
+      --card: #1b1b1f;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f6e5a6;
+      --accent-strong: #f2d17c;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-lg: 26px;
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+      --transition: 0.3s ease;
+    }
+
+    html.light {
+      --bg: #f4f1e6;
+      --bg-soft: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8cc7a;
+      --accent-strong: #ddb965;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(520px 280px at 15% 8%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(420px 300px at 80% 85%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
+    }
+
+    .diary-screen {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 22px 18px calc(32px + env(safe-area-inset-bottom));
+      display: grid;
+      gap: 18px;
+    }
+
+    .lock-shell {
+      display: grid;
+      gap: 18px;
+      position: relative;
+    }
+
+    .lock-note {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+    }
+
+    .lock-note[hidden] {
+      display: none;
+    }
+
+    .lock-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    html.light .lock-badge {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .lock-badge svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .lock-note-content {
+      display: grid;
+      gap: 4px;
+    }
+
+    .lock-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .lock-text {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    body.is-locked .lock-shell {
+      pointer-events: none;
+    }
+
+    body.is-locked .fab {
+      pointer-events: none;
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .fog-lock {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fog-lock::before,
+    .fog-lock::after {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      border-radius: inherit;
+      background:
+        radial-gradient(320px 120px at 20% 30%, rgba(255, 255, 255, 0.22), transparent 60%),
+        radial-gradient(240px 160px at 80% 20%, rgba(255, 255, 255, 0.18), transparent 65%),
+        radial-gradient(260px 180px at 60% 80%, rgba(255, 255, 255, 0.15), transparent 70%);
+      opacity: 0.45;
+      animation: fogDrift 9s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .fog-lock::after {
+      opacity: 0.3;
+      animation-duration: 12s;
+      mix-blend-mode: screen;
+    }
+
+    .fog-lock > * {
+      filter: blur(2px) saturate(0.95);
+      opacity: 0.7;
+      transform: scale(1);
+    }
+
+    html.light .fog-lock::before,
+    html.light .fog-lock::after {
+      background:
+        radial-gradient(320px 120px at 20% 30%, rgba(0, 0, 0, 0.12), transparent 60%),
+        radial-gradient(240px 160px at 80% 20%, rgba(0, 0, 0, 0.1), transparent 65%),
+        radial-gradient(260px 180px at 60% 80%, rgba(0, 0, 0, 0.08), transparent 70%);
+      mix-blend-mode: multiply;
+    }
+
+    @keyframes fogDrift {
+      0% { transform: translateX(-8%) translateY(0); }
+      50% { transform: translateX(8%) translateY(-3%); }
+      100% { transform: translateX(-8%) translateY(0); }
+    }
+
+    .diary-header {
+      display: grid;
+      gap: 10px;
+    }
+
+    .back-btn {
+      width: fit-content;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .diary-header h1 {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.3rem, 5vw, 1.8rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .diary-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .date-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .date-title {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .date-sub {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .ghost-btn {
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    html.light .ghost-btn {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .week-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .week-nav {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      font-family: inherit;
+    }
+
+    html.light .week-nav {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .week-days {
+      flex: 1;
+      min-width: 0;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(46px, 1fr);
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .week-days::-webkit-scrollbar {
+      display: none;
+    }
+
+    .week-day {
+      border: 1px solid var(--card-border);
+      scroll-snap-align: center;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 8px 6px;
+      display: grid;
+      gap: 4px;
+      justify-items: center;
+      cursor: pointer;
+      color: var(--text);
+      position: relative;
+      font-family: inherit;
+    }
+
+    html.light .week-day {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .week-day .dow {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .week-day .dom {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .week-day.is-active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      border-color: transparent;
+    }
+
+    .week-day.is-active .dow {
+      color: rgba(27, 27, 27, 0.7);
+    }
+
+    .week-day.has-data::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #1b1b1b;
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+    }
+
+    html.light .week-day.has-data::after {
+      background: #1b1b1b;
+    }
+
+    .calendar-card {
+      background: var(--card);
+      min-width: 0;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .calendar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .calendar-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .calendar-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .calendar-nav {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      font-family: inherit;
+    }
+
+    html.light .calendar-nav {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .calendar-day {
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      position: relative;
+      font-family: inherit;
+    }
+
+    html.light .calendar-day {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .calendar-day.is-out {
+      opacity: 0.4;
+    }
+
+    .calendar-day.is-selected {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      border-color: transparent;
+    }
+
+    .calendar-day.is-today {
+      box-shadow: inset 0 0 0 2px rgba(243, 213, 139, 0.6);
+    }
+
+    .calendar-day.has-data::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #1b1b1b;
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+    }
+
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .chart-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .chart-head h2 {
+      margin: 0;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .chart-range {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .chart-svg {
+      width: 100%;
+      height: 120px;
+      display: block;
+    }
+
+    .chart-grid {
+      stroke: rgba(255, 255, 255, 0.08);
+      stroke-width: 1;
+    }
+
+    html.light .chart-grid {
+      stroke: rgba(0, 0, 0, 0.08);
+    }
+
+    .chart-line {
+      fill: none;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chart-dot {
+      r: 2.6;
+    }
+
+    .chart-selected {
+      stroke: rgba(255, 255, 255, 0.2);
+      stroke-width: 1;
+    }
+
+    html.light .chart-selected {
+      stroke: rgba(0, 0, 0, 0.18);
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    :root {
+      --chart-kcal: #f6e5a6;
+      --chart-protein: #8fd0c5;
+      --chart-fat: #f6b28a;
+      --chart-carb: #8ea7ff;
+    }
+
+    html.light {
+      --chart-kcal: #d6a93f;
+      --chart-protein: #3aa492;
+      --chart-fat: #dd7f4f;
+      --chart-carb: #556dd8;
+    }
+
+    .chart-kcal { stroke: var(--chart-kcal); }
+    .chart-protein { stroke: var(--chart-protein); }
+    .chart-fat { stroke: var(--chart-fat); }
+    .chart-carb { stroke: var(--chart-carb); }
+    .dot-kcal { fill: var(--chart-kcal); }
+    .dot-protein { fill: var(--chart-protein); }
+    .dot-fat { fill: var(--chart-fat); }
+    .dot-carb { fill: var(--chart-carb); }
+
+    .summary-card {
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      display: grid;
+      gap: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .summary-value {
+      font-size: clamp(1.6rem, 6vw, 2rem);
+      font-weight: 800;
+    }
+
+    .summary-unit {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .summary-macros {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .macro-pill {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 14px;
+      padding: 8px 12px;
+      min-width: 70px;
+      display: grid;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .macro-pill span {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .macro-pill strong {
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .history-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .history-head h2 {
+      margin: 0;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .history-range {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .history-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 10px 12px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      font-family: inherit;
+    }
+
+    html.light .history-item {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .history-item.is-active {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+    }
+
+    .history-date {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .history-macro {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .history-item.is-active .history-macro {
+      color: rgba(27, 27, 27, 0.7);
+    }
+
+    .history-kcal {
+      font-size: 0.85rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .comment-card {
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      display: grid;
+      gap: 8px;
+    }
+
+    html.light .comment-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .comment-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .comment-text {
+      font-size: 0.95rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .diary-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .form-grid.three {
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      font-size: 0.85rem;
+      min-width: 0;
+    }
+
+    .field span {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .field input {
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px 12px;
+      font-size: 1rem;
+      color: var(--text);
+      width: 100%;
+      min-width: 0;
+    }
+
+    html.light .field input {
+      background: rgba(0, 0, 0, 0.05);
+      color: #1b1b1b;
+    }
+
+    .note {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .save-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .save-status {
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-height: 18px;
+    }
+
+    .fab {
+      position: fixed;
+      right: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      z-index: 120;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      box-shadow: var(--shadow);
+    }
+
+    .fab:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .fab-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.18);
+      font-size: 18px;
+      line-height: 1;
+    }
+html.light
+html.light
+@media (max-width: 520px) {
+      .summary-value { font-size: 1.6rem; }
+      .diary-header h1 { font-size: 1.5rem; }
+      .form-grid.three { grid-template-columns: 1fr; }
+      .week-strip { gap: 6px; }
+      .week-nav { width: 30px; height: 30px; border-radius: 9px; }
+      .week-days { grid-auto-columns: minmax(38px, 1fr); }
+      .calendar-day { height: 34px; font-size: 0.8rem; }
+      .chart-svg { height: 100px; }
+    }
+
+    @media (max-width: 420px) {
+      .fab { padding: 10px 12px; }
+      .fab-text { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="diary-screen">
+    <header class="diary-header">
+      <button class="back-btn" id="backHome" type="button">Назад</button>
+      <h1>Дневник питания</h1>
+      <p>Заполни калории и БЖУ - показатели сразу появятся на главной.</p>
+    </header>
+
+    <div class="lock-note" id="lockNote" hidden>
+      <div class="lock-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img" focusable="false" aria-hidden="true">
+          <path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/>
+        </svg>
+      </div>
+      <div class="lock-note-content">
+        <div class="lock-title">Дневник питания закрыт</div>
+        <p class="lock-text">Доступно на тарифе Оптимальный и Максимум.</p>
+      </div>
+    </div>
+
+    <div class="lock-shell" id="lockShell">
+      <div class="date-toolbar">
+        <div>
+          <div class="date-title" id="currentDateLabel">Сегодня</div>
+          <div class="date-sub" id="currentDateSub"></div>
+        </div>
+        <button class="ghost-btn" id="goToday" type="button">Сегодня</button>
+      </div>
+
+      <div class="week-strip">
+        <button class="week-nav" id="prevWeek" type="button" aria-label="Предыдущая неделя">&lt;</button>
+        <div class="week-days" id="weekStrip"></div>
+        <button class="week-nav" id="nextWeek" type="button" aria-label="Следующая неделя">&gt;</button>
+      </div>
+
+      <section class="calendar-card">
+        <div class="calendar-head">
+          <div class="calendar-title" id="calendarTitle">Месяц</div>
+          <div class="calendar-actions">
+            <button class="calendar-nav" id="prevMonth" type="button" aria-label="Предыдущий месяц">&lt;</button>
+            <button class="calendar-nav" id="nextMonth" type="button" aria-label="Следующий месяц">&gt;</button>
+          </div>
+        </div>
+        <div class="calendar-weekdays">
+          <span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+
+      <section class="summary-card">
+        <div>
+          <div class="summary-value" id="previewKcal">0</div>
+          <div class="summary-unit">ККАЛ</div>
+        </div>
+        <div class="summary-macros">
+          <div class="macro-pill">
+            <span>Б</span>
+            <strong id="previewProtein">0</strong>
+          </div>
+          <div class="macro-pill">
+            <span>Ж</span>
+            <strong id="previewFat">0</strong>
+          </div>
+          <div class="macro-pill">
+            <span>У</span>
+            <strong id="previewCarb">0</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="chart-card">
+        <div class="chart-head">
+          <h2>Тренд недели</h2>
+          <span class="chart-range" id="chartRange"></span>
+        </div>
+        <svg class="chart-svg" id="weeklyChart" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot" style="background: var(--chart-kcal)"></span>ККАЛ</span>
+          <span class="legend-item"><span class="legend-dot" style="background: var(--chart-protein)"></span>Б</span>
+          <span class="legend-item"><span class="legend-dot" style="background: var(--chart-fat)"></span>Ж</span>
+          <span class="legend-item"><span class="legend-dot" style="background: var(--chart-carb)"></span>У</span>
+        </div>
+      </section>
+
+      <section class="history-card">
+        <div class="history-head">
+          <h2>История недели</h2>
+          <span class="history-range" id="historyRange"></span>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+
+      <section class="form-card" id="formCard">
+        <form id="diaryForm" class="diary-form" autocomplete="off">
+        <div class="form-grid">
+          <label class="field">
+            <span>Калории</span>
+            <input id="inputKcal" type="number" inputmode="numeric" min="0" step="1" placeholder="0" />
+          </label>
+        </div>
+        <p class="note">Вес указывается в профиле.</p>
+
+        <div class="form-grid three">
+          <label class="field">
+            <span>Белки (г)</span>
+            <input id="inputProtein" type="number" inputmode="decimal" min="0" step="1" placeholder="0" />
+          </label>
+          <label class="field">
+            <span>Жиры (г)</span>
+            <input id="inputFat" type="number" inputmode="decimal" min="0" step="1" placeholder="0" />
+          </label>
+          <label class="field">
+            <span>Углеводы (г)</span>
+            <input id="inputCarb" type="number" inputmode="decimal" min="0" step="1" placeholder="0" />
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>Вода (л)</span>
+            <input id="inputWater" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0" />
+          </label>
+          <label class="field">
+            <span>Приемы пищи</span>
+            <input id="inputMeals" type="number" inputmode="numeric" min="0" step="1" placeholder="0" />
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button class="save-btn" type="submit">Сохранить</button>
+        </div>
+        <p class="save-status" id="saveStatus"></p>
+      </form>
+      <div class="comment-card" id="commentCard">
+        <div class="comment-title">Комментарий куратора</div>
+        <div class="comment-text" id="trainerComment">Комментариев пока нет.</div>
+      </div>
+    </section>
+    </div>
+  </div>
+
+  <button class="fab" id="jumpToForm" type="button" aria-label="Перейти к вводу данных">
+    <span class="fab-icon">+</span>
+    <span class="fab-text">Внести данные</span>
+  </button>
+
+  
+
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const qs = new URLSearchParams(location.search);
+
+      function buildInitData() {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+
+        return p.toString();
+      }
+
+      const initData = buildInitData();
+      const byId = (id) => document.getElementById(id);
+      const inputs = {
+        kcal: byId("inputKcal"),
+        protein: byId("inputProtein"),
+        fat: byId("inputFat"),
+        carb: byId("inputCarb"),
+        water: byId("inputWater"),
+        meals: byId("inputMeals")
+      };
+
+      const preview = {
+        kcal: byId("previewKcal"),
+        protein: byId("previewProtein"),
+        fat: byId("previewFat"),
+        carb: byId("previewCarb")
+      };
+      const form = byId("diaryForm");
+      const status = byId("saveStatus");
+      const back = byId("backHome");
+      const jumpToForm = byId("jumpToForm");
+      const formCard = byId("formCard");
+      const lockNote = byId("lockNote");
+      const lockShell = byId("lockShell");
+      const trainerComment = byId("trainerComment");
+
+      const dateLabelEl = byId("currentDateLabel");
+      const dateSubEl = byId("currentDateSub");
+      const weekStripEl = byId("weekStrip");
+      const prevWeekBtn = byId("prevWeek");
+      const nextWeekBtn = byId("nextWeek");
+      const goTodayBtn = byId("goToday");
+      const historyRangeEl = byId("historyRange");
+      const historyListEl = byId("historyList");
+      const chartRangeEl = byId("chartRange");
+      const chartSvgEl = byId("weeklyChart");
+      const calendarTitleEl = byId("calendarTitle");
+      const calendarGridEl = byId("calendarGrid");
+      const prevMonthBtn = byId("prevMonth");
+      const nextMonthBtn = byId("nextMonth");
+
+      const readNumber = (value) => {
+        if (value === null || value === undefined || value === "") return null;
+        const normalized = String(value).replace(",", ".");
+        const num = Number(normalized);
+        return Number.isFinite(num) ? num : null;
+      };
+
+      const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+      const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
+
+      const applyLockState = (locked) => {
+        isLocked = locked;
+        document.body.classList.toggle("is-locked", locked);
+        if (lockNote) lockNote.hidden = !locked;
+        if (lockShell) lockShell.classList.toggle("fog-lock", locked);
+        if (form) {
+          form.querySelectorAll("input, select, textarea, button").forEach((el) => {
+            el.disabled = locked;
+          });
+        }
+        if (jumpToForm) jumpToForm.disabled = locked;
+      };
+
+      const loadUserTariff = async () => {
+        const qpTariff = qs.get("tariff");
+        if (qpTariff) return qpTariff;
+        if (!API_BASE || !initData) return "";
+        try {
+          const url = `${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          return json?.profile?.tariffName || "";
+        } catch (e) {
+          console.warn("Ошибка загрузки тарифа", e);
+          return "";
+        }
+      };
+
+      const formatWhole = (value, fallback = "0") => {
+        if (!Number.isFinite(value)) return fallback;
+        return Math.round(value).toLocaleString("ru-RU");
+      };
+
+      const daysShort = ["ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС"];
+      const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+      const monthsShort = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+
+      const toYMD = (date) => {
+        const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      };
+
+      const parseYMD = (value) => new Date(`${value}T00:00:00`);
+
+      const addDays = (date, offset) => {
+        const d = new Date(date);
+        d.setDate(d.getDate() + offset);
+        return d;
+      };
+
+      const startOfWeek = (date) => {
+        const d = new Date(date);
+        const day = (d.getDay() + 6) % 7;
+        d.setDate(d.getDate() - day);
+        return d;
+      };
+
+      const isSameDay = (a, b) => (
+        a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate()
+      );
+
+      let selectedDate = new Date();
+      let weekStart = startOfWeek(selectedDate);
+      let historyMap = {};
+      let monthMap = {};
+      let currentMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      let isLocked = false;
+
+      const formatDateLabel = (date) => {
+        const today = new Date();
+        const yesterday = addDays(today, -1);
+        if (isSameDay(date, today)) return "Сегодня";
+        if (isSameDay(date, yesterday)) return "Вчера";
+        return `${date.getDate()} ${monthsShort[date.getMonth()]}`;
+      };
+
+      const formatDateSub = (date) => `${date.getDate()} ${monthsShort[date.getMonth()]} ${date.getFullYear()}`;
+
+      const updateDateLabels = () => {
+        if (dateLabelEl) dateLabelEl.textContent = formatDateLabel(selectedDate);
+        if (dateSubEl) dateSubEl.textContent = formatDateSub(selectedDate);
+      };
+
+      const updateHistoryRange = () => {
+        const end = addDays(weekStart, 6);
+        const label = `${weekStart.getDate()} ${monthsShort[weekStart.getMonth()]} — ${end.getDate()} ${monthsShort[end.getMonth()]}`;
+        if (historyRangeEl) historyRangeEl.textContent = label;
+        if (chartRangeEl) chartRangeEl.textContent = label;
+      };
+
+      const updateCalendarTitle = () => {
+        if (calendarTitleEl) {
+          calendarTitleEl.textContent = `${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
+        }
+      };
+
+      const renderCalendar = () => {
+        if (!calendarGridEl) return;
+        calendarGridEl.innerHTML = "";
+        const first = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const start = startOfWeek(first);
+        const todayKey = toYMD(new Date());
+        const selectedKey = toYMD(selectedDate);
+
+        for (let i = 0; i < 42; i += 1) {
+          const date = addDays(start, i);
+          const key = toYMD(date);
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "calendar-day";
+          if (date.getMonth() !== currentMonth.getMonth()) btn.classList.add("is-out");
+          if (key === selectedKey) btn.classList.add("is-selected");
+          if (key === todayKey) btn.classList.add("is-today");
+          if (monthMap[key]) btn.classList.add("has-data");
+          btn.textContent = String(date.getDate());
+          btn.addEventListener("click", () => {
+            selectedDate = parseYMD(key);
+            weekStart = startOfWeek(selectedDate);
+            updateDateLabels();
+            if (date.getMonth() !== currentMonth.getMonth() || date.getFullYear() !== currentMonth.getFullYear()) {
+              currentMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+              loadMonthHistory();
+            } else {
+              renderCalendar();
+            }
+            loadHistory();
+            loadEntry(key);
+          });
+          calendarGridEl.appendChild(btn);
+        }
+      };
+
+      const renderWeeklyChart = () => {
+        if (!chartSvgEl) return;
+        const width = 300;
+        const height = 120;
+        const padX = 12;
+        const padY = 12;
+        const xStep = (width - padX * 2) / 6;
+
+        const valuesFor = (key) => {
+          const arr = [];
+          for (let i = 0; i < 7; i += 1) {
+            const date = addDays(weekStart, i);
+            const entry = historyMap[toYMD(date)];
+            arr.push(readNumber(entry?.[key]));
+          }
+          return arr;
+        };
+
+        const buildSegments = (values) => {
+          const valid = values.filter((v) => Number.isFinite(v));
+          const maxRaw = valid.length ? Math.max(...valid) : 1;
+          const max = maxRaw > 0 ? maxRaw : 1;
+          const segments = [];
+          let current = [];
+          values.forEach((v, idx) => {
+            if (Number.isFinite(v)) {
+              const x = padX + idx * xStep;
+              const y = padY + (1 - (v / max)) * (height - padY * 2);
+              current.push({ x, y });
+            } else if (current.length) {
+              segments.push(current);
+              current = [];
+            }
+          });
+          if (current.length) segments.push(current);
+          return { segments, max };
+        };
+
+        const series = [
+          { key: "kcal", line: "chart-kcal", dot: "dot-kcal" },
+          { key: "protein", line: "chart-protein", dot: "dot-protein" },
+          { key: "fat", line: "chart-fat", dot: "dot-fat" },
+          { key: "carb", line: "chart-carb", dot: "dot-carb" }
+        ];
+
+        let svg = "";
+        [0.25, 0.5, 0.75].forEach((p) => {
+          const y = padY + (height - padY * 2) * p;
+          svg += `<line class="chart-grid" x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}" />`;
+        });
+
+        const selectedIndex = Math.round((selectedDate - weekStart) / 86400000);
+        if (selectedIndex >= 0 && selectedIndex <= 6) {
+          const x = padX + selectedIndex * xStep;
+          svg += `<line class="chart-selected" x1="${x}" y1="${padY}" x2="${x}" y2="${height - padY}" />`;
+        }
+
+        series.forEach((item) => {
+          const values = valuesFor(item.key);
+          const { segments, max } = buildSegments(values);
+          segments.forEach((seg) => {
+            const points = seg.map((p) => `${p.x},${p.y}`).join(" ");
+            svg += `<polyline class="chart-line ${item.line}" points="${points}" />`;
+          });
+          const scale = max > 0 ? max : 1;
+          values.forEach((val, idx) => {
+            if (!Number.isFinite(val)) return;
+            const x = padX + idx * xStep;
+            const y = padY + (1 - (val / scale)) * (height - padY * 2);
+            svg += `<circle class="chart-dot ${item.dot}" cx="${x}" cy="${y}" r="2.6" />`;
+          });
+        });
+
+        chartSvgEl.innerHTML = svg;
+      };
+      const renderWeekStrip = () => {
+        if (!weekStripEl) return;
+        weekStripEl.innerHTML = "";
+        for (let i = 0; i < 7; i += 1) {
+          const dayDate = addDays(weekStart, i);
+          const key = toYMD(dayDate);
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "week-day";
+          if (key === toYMD(selectedDate)) btn.classList.add("is-active");
+          if (historyMap[key]) btn.classList.add("has-data");
+          btn.innerHTML = `<span class="dow">${daysShort[i]}</span><span class="dom">${dayDate.getDate()}</span>`;
+          btn.addEventListener("click", () => {
+            selectedDate = parseYMD(key);
+            updateDateLabels();
+            renderWeekStrip();
+            renderHistory();
+            loadEntry(key);
+          });
+          weekStripEl.appendChild(btn);
+        }
+      };
+
+      const renderHistory = () => {
+        if (!historyListEl) return;
+        historyListEl.innerHTML = "";
+        for (let i = 0; i < 7; i += 1) {
+          const dayDate = addDays(weekStart, i);
+          const key = toYMD(dayDate);
+          const entry = historyMap[key];
+          const kcalValue = readNumber(entry?.kcal);
+          const kcalText = kcalValue === null ? "— ккал" : `${formatWhole(kcalValue)} ккал`;
+          const protein = formatWhole(readNumber(entry?.protein), "0");
+          const fat = formatWhole(readNumber(entry?.fat), "0");
+          const carb = formatWhole(readNumber(entry?.carb), "0");
+          const macroText = entry ? `Б ${protein} · Ж ${fat} · У ${carb}` : "Нет данных";
+
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "history-item";
+          if (key === toYMD(selectedDate)) row.classList.add("is-active");
+          row.innerHTML = `
+            <div>
+              <div class="history-date">${formatDateLabel(dayDate)}</div>
+              <div class="history-macro">${macroText}</div>
+            </div>
+            <div class="history-kcal">${kcalText}</div>
+          `;
+          row.addEventListener("click", () => {
+            selectedDate = parseYMD(key);
+            updateDateLabels();
+            renderWeekStrip();
+            renderHistory();
+            loadEntry(key);
+          });
+          historyListEl.appendChild(row);
+        }
+        renderWeeklyChart();
+      };
+
+      const updatePreview = () => {
+        const kcal = readNumber(inputs.kcal?.value);
+        const protein = readNumber(inputs.protein?.value);
+        const fat = readNumber(inputs.fat?.value);
+        const carb = readNumber(inputs.carb?.value);
+        if (preview.kcal) preview.kcal.textContent = formatWhole(kcal);
+        if (preview.protein) preview.protein.textContent = formatWhole(protein);
+        if (preview.fat) preview.fat.textContent = formatWhole(fat);
+        if (preview.carb) preview.carb.textContent = formatWhole(carb);
+      };
+
+      const applyEntry = (entry = {}) => {
+        const setValue = (el, value) => {
+          if (!el) return;
+          el.value = value ?? "";
+        };
+
+        setValue(inputs.kcal, entry.kcal);
+        setValue(inputs.protein, entry.protein);
+        setValue(inputs.fat, entry.fat);
+        setValue(inputs.carb, entry.carb);
+        setValue(inputs.water, entry.waterLiters);
+        setValue(inputs.meals, entry.mealsCount);
+        updatePreview();
+      };
+
+      const loadHistory = async () => {
+        if (isLocked || !API_BASE || !initData) return;
+        const from = toYMD(weekStart);
+        const to = toYMD(addDays(weekStart, 6));
+        try {
+          const url = `${API_BASE}/api/nutrition/history?initData=${encodeURIComponent(initData)}&from=${from}&to=${to}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          historyMap = {};
+          if (json?.ok && Array.isArray(json.entries)) {
+            json.entries.forEach((entry) => {
+              if (entry?.date) historyMap[entry.date] = entry;
+            });
+          }
+          updateHistoryRange();
+          renderWeekStrip();
+          renderHistory();
+        } catch (e) {
+          console.warn("Ошибка загрузки истории", e);
+        }
+      };
+
+      const loadMonthHistory = async () => {
+        if (isLocked || !API_BASE || !initData) return;
+        const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        const from = toYMD(start);
+        const to = toYMD(end);
+        try {
+          const url = `${API_BASE}/api/nutrition/history?initData=${encodeURIComponent(initData)}&from=${from}&to=${to}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          monthMap = {};
+          if (json?.ok && Array.isArray(json.entries)) {
+            json.entries.forEach((entry) => {
+              if (entry?.date) monthMap[entry.date] = entry;
+            });
+          }
+          updateCalendarTitle();
+          renderCalendar();
+        } catch (e) {
+          console.warn("Ошибка загрузки календаря", e);
+        }
+      };
+
+      const loadEntry = async (dateKey) => {
+        if (isLocked || !API_BASE || !initData) return;
+        const key = dateKey || toYMD(selectedDate);
+        try {
+          const url = `${API_BASE}/api/nutrition?initData=${encodeURIComponent(initData)}&date=${key}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          if (json?.ok && json.entry) {
+            applyEntry(json.entry);
+          } else {
+            applyEntry({});
+          }
+          if (trainerComment) {
+            trainerComment.textContent = json?.comment ? json.comment : "Комментариев пока нет.";
+          }
+        } catch (e) {
+          console.warn("Ошибка загрузки дневника питания", e);
+        }
+      };
+
+      const saveEntry = async () => {
+        if (isLocked) {
+          showAlert("Дневник питания недоступен на базовом тарифе.");
+          return false;
+        }
+        if (!API_BASE || !initData) return false;
+        const payload = {
+          initData,
+          date: toYMD(selectedDate),
+          kcal: readNumber(inputs.kcal?.value),
+          protein: readNumber(inputs.protein?.value),
+          fat: readNumber(inputs.fat?.value),
+          carb: readNumber(inputs.carb?.value),
+          water: readNumber(inputs.water?.value),
+          meals: readNumber(inputs.meals?.value)
+        };
+        const res = await fetch(`${API_BASE}/api/nutrition`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json().catch(() => ({}));
+        if (json?.ok) {
+          await loadHistory();
+          await loadMonthHistory();
+        }
+        return !!json?.ok;
+      };
+
+      if (form) {
+        form.addEventListener("input", updatePreview);
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const ok = await saveEntry();
+          if (status) status.textContent = ok ? "Сохранено" : "Ошибка сохранения";
+          setTimeout(() => { if (status) status.textContent = ""; }, 2000);
+        });
+      }
+
+      const shiftWeek = (direction) => {
+        const selectedIndex = Math.max(0, Math.min(6, Math.round((selectedDate - weekStart) / 86400000)));
+        weekStart = addDays(weekStart, direction * 7);
+        selectedDate = addDays(weekStart, selectedIndex);
+        updateDateLabels();
+        if (selectedDate.getMonth() !== currentMonth.getMonth() || selectedDate.getFullYear() !== currentMonth.getFullYear()) {
+          currentMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+          loadMonthHistory();
+        } else {
+          renderCalendar();
+        }
+        loadHistory();
+        loadEntry(toYMD(selectedDate));
+      };
+
+      if (prevWeekBtn) prevWeekBtn.addEventListener("click", () => shiftWeek(-1));
+      if (nextWeekBtn) nextWeekBtn.addEventListener("click", () => shiftWeek(1));
+      if (goTodayBtn) {
+        goTodayBtn.addEventListener("click", () => {
+          selectedDate = new Date();
+          weekStart = startOfWeek(selectedDate);
+          currentMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+          updateDateLabels();
+          loadHistory();
+          loadMonthHistory();
+          loadEntry(toYMD(selectedDate));
+        });
+      }
+
+      if (prevMonthBtn) {
+        prevMonthBtn.addEventListener("click", () => {
+          currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+          loadMonthHistory();
+        });
+      }
+      if (nextMonthBtn) {
+        nextMonthBtn.addEventListener("click", () => {
+          currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+          loadMonthHistory();
+        });
+      }
+
+      if (back) back.addEventListener("click", () => { window.location.href = "index.html"; });
+
+      if (jumpToForm && formCard) {
+        jumpToForm.addEventListener("click", () => {
+          formCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      }
+
+      const init = async () => {
+        try {
+          if (tg) {
+            tg.ready?.();
+            tg.expand?.();
+          }
+          const tariff = await loadUserTariff();
+          applyLockState(isBasicTariff(tariff));
+
+          updateDateLabels();
+          updateHistoryRange();
+          updateCalendarTitle();
+          renderWeekStrip();
+          renderHistory();
+          renderWeeklyChart();
+          renderCalendar();
+
+          if (isLocked) return;
+          await loadHistory();
+          await loadMonthHistory();
+          await loadEntry(toYMD(selectedDate));
+        } catch (e) {
+          console.warn("Ошибка инициализации дневника питания", e);
+        }
+      };
+
+      const goBack = () => {
+        if (history.length > 1) {
+          history.back();
+        } else {
+          window.location.href = "index.html";
+        }
+      };
+
+      init();
+    })();
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+

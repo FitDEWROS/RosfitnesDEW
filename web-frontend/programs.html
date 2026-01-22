@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fit Dew — Программы тренировок</title>
+
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <script src="programs_data.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --bg-soft: #141417;
+      --text: #f4f1e8;
+      --muted: #c6c0b2;
+      --card: #1b1b1f;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f6e5a6;
+      --accent-strong: #f2d17c;
+      --accent-cool: #9ad7ca;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-lg: 26px;
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+      --transition: 0.3s ease;
+    }
+
+    html.light {
+      --bg: #f4f1e6;
+      --bg-soft: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8cc7a;
+      --accent-strong: #ddb965;
+      --accent-cool: #6ab6a7;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(520px 280px at 15% 8%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(440px 320px at 90% 20%, rgba(154, 215, 202, 0.12), transparent 65%),
+        radial-gradient(420px 300px at 40% 90%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.03), transparent 40%);
+      z-index: -3;
+    }
+
+    .programs-screen {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 22px 18px 140px;
+    }
+
+    .page-header {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(145deg, #1f1f22, #121214);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    html.light .page-header {
+      background: #ffffff;
+    }
+
+    .page-header::after {
+      content: "";
+      position: absolute;
+      inset: -80px;
+      background: radial-gradient(circle at 20% 120%, rgba(243, 213, 139, 0.35), transparent 70%);
+      opacity: 0.8;
+      z-index: 0;
+    }
+
+    .page-header > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .back-btn {
+      width: fit-content;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
+    }
+
+    .back-btn:hover {
+      box-shadow: 0 12px 24px rgba(243, 213, 139, 0.45);
+    }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .program-list {
+      margin-top: 20px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .program-card {
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 14px;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .program-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .program-hero {
+      position: relative;
+      padding: 18px;
+      min-height: 140px;
+      display: grid;
+      gap: 8px;
+      color: #1b1b1b;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    }
+
+    .program-hero.cover-gym {
+      background: linear-gradient(135deg, #cbe7ba 0%, #a7d3a5 100%);
+    }
+
+    .program-hero.cover-crossfit {
+      background: linear-gradient(135deg, #f6e5a6 0%, #f1c873 100%);
+    }
+
+    .program-hero.has-cover {
+      color: #f7f4ea;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .program-hero.has-cover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.68) 100%);
+      z-index: 0;
+    }
+
+    .program-hero.has-cover > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .program-hero.has-cover .program-badge {
+      background: rgba(0, 0, 0, 0.35);
+      color: inherit;
+    }
+
+    .program-badge {
+      width: fit-content;
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .program-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.1rem, 4vw, 1.4rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .program-subtitle {
+      margin: 0;
+      font-size: 0.85rem;
+      opacity: 0.75;
+    }
+
+    .program-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 18px;
+    }
+
+    .meta-chip {
+      border-radius: 999px;
+      padding: 6px 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    html.light .meta-chip {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .program-summary {
+      padding: 0 18px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+
+    .program-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 18px 18px;
+    }
+
+    .coach {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .coach-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.18);
+      color: #1b1b1b;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border: 2px solid rgba(0, 0, 0, 0.12);
+    }
+
+    .coach-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .coach-role {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .open-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: rgba(0, 0, 0, 0.12);
+      color: #1b1b1b;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: var(--radius);
+      border: 1px dashed var(--card-border);
+      color: var(--muted);
+      text-align: center;
+      display: none;
+    }
+html.light
+html.light
+@media (max-width: 520px) {
+      .programs-screen { padding-left: 14px; padding-right: 14px; }
+      .program-footer { flex-direction: column; align-items: flex-start; }
+      .open-btn { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="programs-screen">
+    <header class="page-header">
+      <button id="backBtn" class="back-btn" type="button">Назад</button>
+      <span class="eyebrow">Программы</span>
+      <h1 class="page-title">Планы тренировок</h1>
+      <p class="page-subtitle">Выбери формат и стартуй сегодня.</p>
+    </header>
+
+    <section class="program-list" id="programList"></section>
+    <div class="empty-state" id="emptyState">Пока нет программ для этого типа.</div>
+  </div>
+
+  
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const fallback = window.PROGRAMS_FALLBACK || [];
+
+      const params = new URLSearchParams(window.location.search);
+      const programList = document.getElementById("programList");
+      const emptyState = document.getElementById("emptyState");
+      const backBtn = document.getElementById("backBtn");
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+
+        return p.toString();
+      };
+
+      const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+      const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
+
+      const fetchUserProfile = async () => {
+        if (!API_BASE || !tg) return "";
+        const initData = buildInitData();
+        if (!initData) return "";
+        try {
+          const res = await fetch(`${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          return json?.profile || null;
+        } catch (err) {
+          console.warn("Tariff fetch failed:", err);
+          return null;
+        }
+      };
+      const isStaffProfile = (profile) => {
+        if (!profile) return false;
+        const role = profile.role;
+        return role === "admin" || role === "sadmin" || role === "curator" || Boolean(profile.isCurator);
+      };
+
+      const normalizeScope = (value) => (value === "gym" || value === "crossfit" || value === "both" ? value : "both");
+
+      const normalizeType = (value) => (value === "gym" || value === "crossfit" ? value : "gym");
+      const storedMode = normalizeType(localStorage.getItem("training_mode") || "gym");
+      let initialType = normalizeType(params.get("type") || storedMode);
+
+      if (backBtn) {
+        backBtn.addEventListener("click", () => {
+          window.location.href = "index.html";
+        });
+      }
+
+      const getCoachInitials = (name) => {
+        if (!name) return "FD";
+        return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
+      };
+
+      const getCoverUrl = (value) => {
+        if (!value) return "";
+        const trimmed = value.trim();
+        return /^(https?:)?\/\//i.test(trimmed) ? trimmed : "";
+      };
+
+      const renderPrograms = (programs) => {
+        programList.innerHTML = "";
+        if (!programs.length) {
+          emptyState.style.display = "block";
+          return;
+        }
+        emptyState.style.display = "none";
+
+        programs.forEach((program) => {
+          const card = document.createElement("article");
+          const typeClass = program.type === "gym" ? "cover-gym" : "cover-crossfit";
+          const weeks = program.weeksCount ? `${program.weeksCount} недель` : "План";
+          const frequency = program.frequency || "3 трен/нед";
+          const level = program.level || "Новички";
+          const gender = program.gender || "Универсальная";
+
+          card.className = "program-card";
+          const coachName = program.authorName || "Тестов Тест Тестович";
+          const coachRole = program.authorRole || "Куратор Fit Dew";
+
+          card.innerHTML = `
+            <div class="program-hero ${typeClass}">
+              <span class="program-badge">${program.type === "gym" ? "ЗАЛ" : "КРОССФИТ"}</span>
+              <h3 class="program-title">${program.title || "Программа"}</h3>
+              <p class="program-subtitle">${program.subtitle || ""}</p>
+            </div>
+            <div class="program-meta">
+              <span class="meta-chip">${weeks}</span>
+              <span class="meta-chip">${frequency}</span>
+              <span class="meta-chip">${level}</span>
+              <span class="meta-chip">${gender}</span>
+            </div>
+            <p class="program-summary">${program.summary || ""}</p>
+            <div class="program-footer">
+              <div class="coach">
+                <div class="coach-avatar">${getCoachInitials(coachName)}</div>
+                <div>
+                  <div class="coach-name">${coachName}</div>
+                  <div class="coach-role">${coachRole}</div>
+                </div>
+              </div>
+              <button class="open-btn" type="button">Открыть</button>
+            </div>
+          `;
+
+            const coverUrl = getCoverUrl(program.coverImage);
+            if (coverUrl) {
+              const hero = card.querySelector(".program-hero");
+              hero.classList.add("has-cover");
+              hero.style.backgroundImage = `url("${coverUrl}")`;
+            }
+
+            card.addEventListener("click", () => {
+            const slug = program.slug || "";
+            if (!slug) return;
+            window.location.href = `program_detail.html?slug=${encodeURIComponent(slug)}`;
+          });
+          programList.appendChild(card);
+        });
+      };
+
+      const loadPrograms = async (type, tariff) => {
+        if (API_BASE) {
+          try {
+            const query = new URLSearchParams();
+            if (type) query.set("type", type);
+            if (tariff) query.set("tariff", tariff);
+            const res = await fetch(`${API_BASE}/api/programs?${query.toString()}`);
+            const json = await res.json().catch(() => ({}));
+            if (json?.ok && Array.isArray(json.programs)) {
+              return json.programs;
+            }
+          } catch (err) {
+            console.warn("Programs fetch failed:", err);
+          }
+        }
+
+        const filtered = type ? fallback.filter((item) => item.type === type) : fallback.slice();
+        if (!tariff) return filtered;
+        return filtered.filter((item) => {
+          const list = Array.isArray(item.tariffs) ? item.tariffs : [];
+          return !list.length || list.includes(tariff);
+        });
+      };
+
+      const applyType = async (type) => {
+        const profile = await fetchUserProfile();
+        let tariff = profile?.tariffName || "";
+        let effectiveType = type;
+        const isStaff = profile && isStaffProfile(profile);
+        if (isStaff) {
+          const scope = normalizeScope(profile.trainerScope);
+          if (scope === "both") {
+            effectiveType = "";
+          } else {
+            effectiveType = scope;
+            localStorage.setItem("training_mode", scope);
+          }
+          tariff = "";
+        } else {
+          localStorage.setItem("training_mode", type);
+          if (profile && isBasicTariff(tariff)) {
+            const forced = normalizeType(profile.trainingMode || "gym");
+            if (forced !== type) {
+              const label = forced === "crossfit" ? "\u041a\u0440\u043e\u0441\u0441\u0444\u0438\u0442" : "\u0417\u0430\u043b";
+              showAlert(`\u041d\u0430 \u0431\u0430\u0437\u043e\u0432\u043e\u043c \u0442\u0430\u0440\u0438\u0444\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0442\u043e\u043b\u044c\u043a\u043e \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435: ${label}.`);
+            }
+            effectiveType = forced;
+            localStorage.setItem("training_mode", forced);
+          }
+        }
+        const programs = await loadPrograms(effectiveType, tariff);
+        renderPrograms(programs);
+      };
+
+      applyType(initialType);
+
+      try {
+        tg?.ready?.();
+        tg?.expand?.();
+      } catch (_) {}
+    })();
+  </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../web-backend/node_modules/.prisma/client"
+}
+
+generator python {
+  provider = "prisma-client-py"
+}
+
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  tg_id           BigInt   @unique
+  username        String?
+  first_name      String?
+  last_name       String?
+  heightCm        Int?      @db.Integer
+  weightKg        Float?    @db.DoublePrecision
+  age             Int?      @db.SmallInt
+  email           String?
+  phone           String?
+  agreed_offer    Boolean   @default(false)
+  tariffName      String?
+  tariffExpiresAt DateTime?
+  tariffReminderFor DateTime?
+  trainingMode    String    @default("gym")
+  role            UserRole  @default(user)
+  trainerScope    TrainerScope?
+  isCurator       Boolean   @default(false)
+  trainerId       Int?
+  trainer         User?     @relation("UserTrainer", fields: [trainerId], references: [id])
+  trainees        User[]    @relation("UserTrainer")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+  fatsecret_token FatSecretToken?
+  nutritionEntries NutritionEntry[]
+  nutritionComments NutritionComment[]
+  authoredNutritionComments NutritionComment[] @relation("NutritionCommentAuthor")
+  reviewedNutritionEntries NutritionEntry[] @relation("NutritionEntryReviewer")
+  notifications   Notification[]
+  authoredPrograms TrainingProgram[] @relation("TrainingProgramAuthor")
+  chatThreadsAsClient ChatThread[] @relation("ChatClient")
+  chatThreadsAsCurator ChatThread[] @relation("ChatCurator")
+  chatMessages   ChatMessage[] @relation("ChatMessageSender")
+}
+
+model FatSecretToken {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       Int      @unique
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String?
+  tokenType    String?
+  createdAt    DateTime @default(now())
+}
+
+model NutritionEntry {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  date       String   @db.VarChar(10)
+  kcal       Int?
+  protein    Float?
+  fat        Float?
+  carb       Float?
+  waterLiters Float?
+  mealsCount Int?
+  reviewedAt DateTime?
+  reviewedBy User?    @relation("NutritionEntryReviewer", fields: [reviewedById], references: [id])
+  reviewedById Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model NutritionComment {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  author    User?    @relation("NutritionCommentAuthor", fields: [authorId], references: [id])
+  authorId  Int?
+  date      String   @db.VarChar(10)
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  type      String
+  title     String?
+  message   String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt])
+}
+
+model ChatThread {
+  id        Int      @id @default(autoincrement())
+  client    User     @relation("ChatClient", fields: [clientId], references: [id], onDelete: Cascade)
+  clientId  Int
+  curator   User     @relation("ChatCurator", fields: [curatorId], references: [id], onDelete: Cascade)
+  curatorId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  ChatMessage[]
+
+  @@unique([clientId, curatorId])
+  @@index([clientId])
+  @@index([curatorId])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  threadId  Int
+  sender    User     @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId  Int
+  text      String?
+  mediaKey  String?
+  mediaType String?
+  mediaName String?
+  mediaSize Int?
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+
+  @@index([threadId, createdAt])
+  @@index([senderId])
+}
+
+enum TrainingProgramType {
+  gym
+  crossfit
+}
+
+enum UserRole {
+  user
+  admin
+  sadmin
+  curator
+}
+
+enum TrainerScope {
+  gym
+  crossfit
+  both
+}
+
+model TrainingProgram {
+  id          Int                  @id @default(autoincrement())
+  slug        String               @unique
+  title       String
+  type        TrainingProgramType
+  tariffs     String[]             @default([])
+  subtitle    String?
+  summary     String?
+  description String?
+  level       String?
+  gender      String?
+  frequency   String?
+  weeksCount  Int?
+  coverImage  String?
+  authorUserId Int?
+  authorUser  User?                @relation("TrainingProgramAuthor", fields: [authorUserId], references: [id])
+  authorName  String?
+  authorRole  String?
+  authorAvatar String?
+  weeks       ProgramWeek[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model Exercise {
+  id          Int      @id @default(autoincrement())
+  title       String
+  type        String   @default("gym")
+  tariffs     String[] @default([])
+  muscle      String?
+  muscles     String[] @default([])
+  description String?
+  videoUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProgramWeek {
+  id        Int             @id @default(autoincrement())
+  program   TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  programId Int
+  index     Int
+  title     String?
+  workouts  ProgramWorkout[]
+
+  @@unique([programId, index])
+}
+
+model ProgramWorkout {
+  id        Int           @id @default(autoincrement())
+  week      ProgramWeek   @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  weekId    Int
+  index     Int
+  title     String
+  description String?
+  exercises ProgramExercise[]
+
+  @@unique([weekId, index])
+}
+
+model ProgramExercise {
+  id       Int           @id @default(autoincrement())
+  workout  ProgramWorkout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutId Int
+  order    Int
+  label    String?
+  title    String
+  details  String?
+  description String?
+  videoUrl String?
+
+  @@unique([workoutId, order])
+}

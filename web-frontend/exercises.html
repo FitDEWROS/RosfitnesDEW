@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RosApp — Упражнения</title>
+
+  <!-- ✅ Единое подключение общей темы -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <script src="env.js?v=20260115"></script>
+</head>
+
+<body>
+  <div class="wrap">
+    <header class="header header--split">
+      <button id="btnBackNav" class="back-btn" type="button">Назад</button>
+      <div class="view-toggle" role="tablist" aria-label="Вид страницы">
+        <button class="view-toggle-btn is-active" data-view="map" role="tab" aria-selected="true">Силуэт</button>
+        <button class="view-toggle-btn" data-view="list" role="tab" aria-selected="false">Список</button>
+      </div>
+    </header>
+
+    <main class="muscle-wrap" aria-live="polite">
+      <div id="mapView" class="map-view">
+        <div class="view-switch" role="tablist" aria-label="Выбор вида тела">
+          <button id="btnFront" class="active" role="tab" aria-selected="true">Вид спереди</button>
+          <button id="btnBack" role="tab" aria-selected="false">Вид сзади</button>
+          <button id="btnDebug" class="debug-toggle">Режим отладки</button>
+        </div>
+
+        <div id="frontView" class="canvas" style="display:block">
+          <object id="svgFront" class="svg-host" type="image/svg+xml" data="front.svg?v=3"></object>
+        </div>
+
+        <div id="backView" class="canvas" style="display:none">
+          <object id="svgBack" class="svg-host" type="image/svg+xml" data="back.svg?v=3"></object>
+        </div>
+
+        <section id="info" class="info" aria-live="polite">
+          <h3>Выбери мышцу</h3>
+          <p class="legend">Нажми на область на силуэте, чтобы увидеть упражнения.</p>
+        </section>
+      </div>
+
+      <section id="listView" class="exercise-list-view" hidden>
+                        <div class="list-head">
+          <div class="list-title-group">
+            <span class="header-eyebrow">Упражнения</span>
+            <h3 class="list-title">Зал</h3>
+          </div>
+          <span class="muted list-subtitle">Каталог упражнений</span>
+          <div class="density-toggle" role="group" aria-label="Колонки">
+            <span class="density-label">Колонки</span>
+            <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
+          </div>
+        </div>
+        <div class="exercise-list" id="exerciseList" data-cols="2"></div>
+        <div class="empty-state" id="exerciseEmpty" hidden>Пока нет упражнений.</div>
+      </section>
+    </main>
+  </div>
+
+  <div id="videoModal" class="modal" aria-hidden="true">
+    <div class="video-modal" role="dialog" aria-modal="true">
+<video id="exerciseVideo" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
+      <h3 class="video-title" id="videoTitle"></h3>
+      <div class="video-desc" id="videoDesc"></div>
+      <p class="video-note" id="videoNote">Видео пока не добавлено.</p>
+      <div class="video-actions">
+        <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
+      </div>
+
+    </div>
+  </div>
+
+  
+
+  <script>
+    /* === 🌗 Тема === */
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+
+    /* === 🔙 Назад === */
+    document.getElementById("btnBackNav").addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+
+    window.addEventListener("popstate", () => window.location.href = "index.html");
+    history.pushState({ page: "exercises" }, "", window.location.href);
+
+    const tg = window.Telegram?.WebApp || null;
+    const API_BASE = window.ENV?.API_BASE || "";
+    const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+    const mapView = document.getElementById("mapView");
+    const listView = document.getElementById("listView");
+    const viewButtons = document.querySelectorAll("[data-view]");
+    const exerciseList = document.getElementById("exerciseList");
+    const exerciseEmpty = document.getElementById("exerciseEmpty");
+    const videoModal = document.getElementById("videoModal");
+    const videoEl = document.getElementById("exerciseVideo");
+    const videoTitle = document.getElementById("videoTitle");
+    const videoDesc = document.getElementById("videoDesc");
+    const videoNote = document.getElementById("videoNote");
+    const closeVideo = document.getElementById("closeVideo");
+    const densityButton = document.querySelector(".density-btn");
+    const densityOrder = ["1", "2", "4"];
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+
+    const buildInitData = () => {
+      const raw = tg?.initData || "";
+      if (raw && raw.length > 0) return raw;
+
+      const u = tg?.initDataUnsafe || null;
+      if (!u || !u.hash) return "";
+
+      const p = new URLSearchParams();
+      if (u.query_id) p.set("query_id", u.query_id);
+      if (u.user) p.set("user", JSON.stringify(u.user));
+      if (u.auth_date) p.set("auth_date", String(u.auth_date));
+      if (u.start_param) p.set("start_param", u.start_param);
+      if (u.chat_type) p.set("chat_type", u.chat_type);
+      if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+      p.set("hash", u.hash);
+      return p.toString();
+    };
+
+    const fetchUserProfile = async () => {
+      if (!apiBase || !tg) return null;
+      const initData = buildInitData();
+      if (!initData) return null;
+      try {
+        const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
+        const json = await res.json().catch(() => ({}));
+        return json?.profile || null;
+      } catch (err) {
+        console.warn("profile fetch failed", err);
+        return null;
+      }
+    };
+
+    const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
+
+    const isStaffProfile = (profile) => {
+      if (!profile) return false;
+      const role = profile.role;
+      return role === "admin" || role === "sadmin" || role === "curator" || Boolean(profile.isCurator);
+    };
+
+    const normalizeScope = (value) => (value === "gym" || value === "crossfit" || value === "both" ? value : "both");
+
+    const enforceBaseAccess = async () => {
+      const profile = await fetchUserProfile();
+      if (!profile) return true;
+      if (isStaffProfile(profile)) {
+        const scope = normalizeScope(profile.trainerScope);
+        if (scope === "crossfit") {
+          localStorage.setItem("training_mode", "crossfit");
+          window.location.replace("crossfit_exercises.html");
+          return false;
+        }
+        if (scope === "gym") {
+          localStorage.setItem("training_mode", "gym");
+        }
+        return true;
+      }
+      if (!isBasicTariff(profile.tariffName)) return true;
+      const mode = profile.trainingMode === "crossfit" ? "crossfit" : "gym";
+      localStorage.setItem("training_mode", mode);
+      if (mode !== "gym") {
+        showAlert("\u042d\u0442\u043e\u0442 \u0440\u0430\u0437\u0434\u0435\u043b \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0442\u043e\u043b\u044c\u043a\u043e \u0434\u043b\u044f \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u041a\u0440\u043e\u0441\u0441\u0444\u0438\u0442.");
+        window.location.replace("crossfit_exercises.html");
+        return false;
+      }
+      return true;
+    };
+
+    const applyDensity = (cols) => {
+      if (!exerciseList) return;
+      exerciseList.dataset.cols = cols;
+      if (densityButton) {
+        densityButton.dataset.cols = cols;
+        densityButton.textContent = cols;
+        densityButton.setAttribute("aria-label", `Колонки: ${cols}`);
+      }
+    };
+
+    if (exerciseList && densityButton) {
+      const savedCols = localStorage.getItem("exercise_cols") || "2";
+      applyDensity(savedCols);
+      densityButton.addEventListener("click", () => {
+        const current = densityButton.dataset.cols || "2";
+        const idx = densityOrder.indexOf(current);
+        const next = densityOrder[(idx + 1) % densityOrder.length];
+        localStorage.setItem("exercise_cols", next);
+        applyDensity(next);
+      });
+    }
+
+    /* === ⚙️ Основная логика === */
+    const btnFront = document.getElementById('btnFront');
+    const btnBack  = document.getElementById('btnBack');
+    const btnDebug = document.getElementById('btnDebug');
+    const front    = document.getElementById('frontView');
+    const back     = document.getElementById('backView');
+    const info     = document.getElementById('info');
+
+    let debugMode = false;
+    let exerciseLibrary = [];
+    let lastGroup = null;
+    let currentVideoRequest = 0;
+    let currentVideoUrl = "";
+
+    const setInfoVisible = (visible) => {
+      if (!info) return;
+      info.hidden = !visible;
+      info.classList.toggle("is-hidden", !visible);
+      info.setAttribute("aria-hidden", visible ? "false" : "true");
+    };
+
+    const showInfo = () => setInfoVisible(true);
+    const hideInfo = () => setInfoVisible(false);
+
+    hideInfo();
+
+    btnDebug.onclick = () => {
+      debugMode = !debugMode;
+      btnDebug.classList.toggle("active", debugMode);
+      btnDebug.textContent = debugMode ? "Отладка: ВКЛ" : "Режим отладки";
+    };
+
+    function setView(isFront){
+      front.style.display = isFront ? "block" : "none";
+      back.style.display  = isFront ? "none" : "block";
+      btnFront.classList.toggle('active', isFront);
+      btnBack.classList.toggle('active', !isFront);
+      btnFront.setAttribute('aria-selected', String(isFront));
+      btnBack.setAttribute('aria-selected', String(!isFront));
+      hideInfo();
+    }
+
+    btnFront.onclick = () => setView(true);
+    btnBack.onclick  = () => setView(false);
+
+    const muscleKeywords = {
+      traps: ["трапец", "трап", "шраг"],
+      chest: ["груд", "жим", "отжим", "сведение"],
+      delts: ["дельт", "плеч", "развод", "жим"],
+      biceps: ["бицепс", "сгиб", "подъем", "подъём"],
+      forearm: ["предплеч", "кист", "хват"],
+      abs: ["пресс", "скруч", "планк", "кор"],
+      quads: ["квадриц", "присед", "выпад", "жим ног"],
+      adductors: ["привод", "сведение", "внутр"],
+      tibialis: ["передн", "голен", "берц", "тибиал"],
+      upperBack: ["верх спин", "ромб", "лопат", "тяга горизонт", "сведение лопат"],
+      triceps: ["трицепс", "разгиб", "француз"],
+      lats: ["широч", "подтяг", "тяга верхн", "тяга к поясу"],
+      erectors: ["поясниц", "нижн спин", "гиперэкст", "разгиб"],
+      glutes: ["ягод", "мост", "таз"],
+      hams: ["хамстр", "задн бедр", "румын", "сгиб"],
+      calves: ["икр", "носок"]
+    };
+
+    const GROUPS = {
+      traps: ["traps-left", "traps-right"],
+      chest: ["chest-left", "chest-right"],
+      delts: ["delts-left", "delts-right"],
+      biceps: ["biceps-left", "biceps-right"],
+      forearm: ["forearm-left-1", "forearm-left-2", "forearm-left-3", "forearm-right-1", "forearm-right-2", "forearm-right-3"],
+      abs: ["abs-1","abs-2","abs-3","abs-4","abs-5","abs-6","abs-7","abs-8"],
+      quads: ["quads-left-1","quads-left-2", "quads-right-1", "quads-right-2"],
+      adductors: ["adductors-left-1", "adductors-left-2", "adductors-right-1", "adductors-right-2"],
+      tibialis: ["tibialis-left-1","tibialis-left-2","tibialis-left-3", "tibialis-right-1", "tibialis-right-2", "tibialis-right-3"],
+      upperBack: ["upper-back-left-1", "upper-back-left-2", "upper-back-right-1", "upper-back-right-2"],
+      triceps: ["triceps-left", "triceps-right"],
+      lats: ["lats-left", "lats-right"],
+      erectors: ["lower-back-left", "lower-back-right"],
+      glutes: ["glutes-left", "glutes-right"],
+      hams: ["hams-left", "hams-right"],
+      calves: ["calves-left", "calves-right"]
+    };
+
+    function findGroup(id){
+      for (let key in GROUPS){
+        if (GROUPS[key].includes(id)) return key;
+      }
+      return null;
+    }
+
+    const normalizeMuscleName = (value) => (
+      (value || "").toLowerCase().replace(/\s+/g, " ").trim()
+    );
+
+    const emptyExercisesMessage = "\u041d\u0435\u0442 \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0439.";
+    const defaultExerciseTitle = "\u0423\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0435";
+    const generalMuscleName = "\u041e\u0431\u0449\u0430\u044f";
+
+    const getExerciseMuscles = (exercise) => {
+      if (!exercise) return [];
+      if (Array.isArray(exercise.muscles) && exercise.muscles.length) return exercise.muscles;
+      if (exercise.muscle) return [exercise.muscle];
+      return [];
+    };
+
+    const getEffectiveMuscles = (exercise) => (
+      getExerciseMuscles(exercise)
+        .map(normalizeMuscleName)
+        .filter((muscle) => muscle && muscle !== normalizeMuscleName(generalMuscleName))
+    );
+
+    const getExercisesForGroup = (groupKey) => {
+      if (!exerciseLibrary.length) {
+        return { items: [], message: emptyExercisesMessage };
+      }
+      const targetMuscle = normalizeMuscleName(humanName(groupKey));
+      let matches = exerciseLibrary.filter((exercise) => {
+        const muscles = getEffectiveMuscles(exercise);
+        return muscles.includes(targetMuscle);
+      });
+
+      if (!matches.length) {
+        const keywords = muscleKeywords[groupKey] || [];
+        if (!keywords.length) {
+          return { items: [], message: emptyExercisesMessage };
+        }
+        matches = exerciseLibrary.filter((exercise) => {
+          if (getEffectiveMuscles(exercise).length) return false;
+          const haystack = `${exercise.title || ""} ${exercise.description || ""}`.toLowerCase();
+          return keywords.some((word) => haystack.includes(word));
+        });
+      }
+
+      if (!matches.length) {
+        return { items: [], message: emptyExercisesMessage };
+      }
+      return { items: matches, message: emptyExercisesMessage };
+    };
+
+    const renderInfoList = (groupKey) => {
+      if (!info) return;
+      const data = getExercisesForGroup(groupKey);
+      info.innerHTML = "";
+      const titleEl = document.createElement("h3");
+      titleEl.textContent = humanName(groupKey);
+      info.appendChild(titleEl);
+      showInfo();
+
+      if (!data.items.length) {
+        const empty = document.createElement("p");
+        empty.className = "legend";
+        empty.textContent = data.message;
+        info.appendChild(empty);
+        return;
+      }
+
+      const listEl = document.createElement("ul");
+      listEl.className = "muscle-list";
+      data.items.forEach((exercise) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "muscle-item";
+        if (exercise && exercise.id !== undefined && exercise.id !== null) {
+          btn.dataset.exId = String(exercise.id);
+        }
+        const exIndex = exerciseLibrary.indexOf(exercise);
+        if (exIndex >= 0) {
+          btn.dataset.exIndex = String(exIndex);
+        }
+        btn.textContent = exercise.title || defaultExerciseTitle;
+        li.appendChild(btn);
+        listEl.appendChild(li);
+      });
+      info.appendChild(listEl);
+    };
+
+    function attachHandlers(obj){
+      obj.addEventListener("load", () => {
+        const svgDoc = obj.contentDocument || obj.getSVGDocument();
+        if (!svgDoc) return;
+
+        Object.values(GROUPS).flat().forEach(id => {
+          const el = svgDoc.getElementById(id);
+          if (el) el.classList.add('muscle');
+        });
+
+        svgDoc.querySelectorAll("path").forEach((el, idx) => {
+          if (!el.id) el.id = "auto-path-" + idx;
+
+          el.addEventListener("pointerdown", () => {
+            svgDoc.querySelectorAll(".muscle.active, .muscle-test")
+                  .forEach(m => m.classList.remove("active","muscle-test"));
+
+            const groupKey = findGroup(el.id);
+
+            if (debugMode) {
+              const list = groupKey ? GROUPS[groupKey] : [el.id];
+              list.forEach(gid => {
+                const g = svgDoc.getElementById(gid);
+                if (!g) return;
+                g.classList.add("muscle-test");
+                const d = g.getAttribute("d") || "";
+                const match = d.match(/M\s*([0-9.\-]+),\s*([0-9.\-]+)/i);
+                const coords = match ? `X=${match[1]}, Y=${match[2]}` : "не найдены";
+                alert(`Мышца: ${gid}\n${coords}`);
+              });
+              return;
+            }
+
+            if (groupKey) {
+              lastGroup = groupKey;
+              GROUPS[groupKey].forEach(gid => {
+                const g = svgDoc.getElementById(gid);
+                if (g) g.classList.add("active");
+              });
+              renderInfoList(groupKey);
+            }
+          });
+        });
+
+        const svgRoot = svgDoc.documentElement;
+        if (svgRoot) {
+          svgRoot.addEventListener("pointerdown", (event) => {
+            const target = event.target;
+            if (target && typeof target.closest === "function" && target.closest(".muscle")) return;
+            hideInfo();
+          });
+        }
+      });
+    }
+
+    attachHandlers(document.getElementById("svgFront"));
+    attachHandlers(document.getElementById("svgBack"));
+
+    if (mapView) {
+      mapView.addEventListener("pointerdown", (event) => {
+        if (!info || info.classList.contains("is-hidden")) return;
+        if (info.contains(event.target)) return;
+        const target = event.target;
+        if (target && typeof target.closest === "function" && target.closest(".svg-host")) return;
+        hideInfo();
+      });
+    }
+
+    function humanName(key){
+      const map = {
+        traps: "Трапециевидная мышца",
+        chest: "Большая грудная мышца",
+        delts: "Дельтовидная мышца",
+        biceps: "Двуглавая мышца плеча (бицепс)",
+        forearm: "Мышцы предплечья",
+        abs: "Прямая мышца живота",
+        quads: "Мышцы квадрицепса",
+        adductors: "Приводящая мышца",
+        tibialis: "Передняя группа мышц голени",
+        upperBack: "Мышцы верха спины",
+        triceps: "Трехглавая мышца плеча (трицепс)",
+        lats: "Широчайшая мышца спины",
+        erectors: "Мышцы низа спины",
+        glutes: "Большая ягодичная мышца",
+        hams: "Хамстринги (мышцы задней части бедра)",
+        calves: "Икроножная мышца"
+      };
+      return map[key] || key;
+    }
+
+    const setupPreview = (previewEl, card, previewUrl) => {
+      if (!previewEl || !previewUrl) return false;
+      let primed = false;
+      let ready = false;
+      const showPreview = () => {
+        if (ready) return;
+        if (previewEl.videoWidth > 0 && previewEl.videoHeight > 0 && previewEl.currentTime > 0) {
+          ready = true;
+          card.classList.add("has-preview");
+        }
+      };
+
+      const prime = () => {
+        if (primed) return;
+        primed = true;
+        previewEl.muted = true;
+        previewEl.playsInline = true;
+        previewEl.preload = "metadata";
+        const src = previewUrl.includes("#") ? previewUrl : `${previewUrl}#t=0.1`;
+        previewEl.src = src;
+
+        previewEl.addEventListener("loadedmetadata", () => {
+          try {
+            const seekTo = Math.min(0.1, (previewEl.duration || 1) / 10);
+            previewEl.currentTime = seekTo;
+          } catch (_) {}
+          if (previewEl.requestVideoFrameCallback) {
+            previewEl.requestVideoFrameCallback(() => {
+              previewEl.pause();
+              showPreview();
+            });
+          }
+        }, { once: true });
+        previewEl.addEventListener("timeupdate", () => {
+          previewEl.pause();
+          showPreview();
+        }, { once: true });
+        previewEl.addEventListener("seeked", showPreview, { once: true });
+        previewEl.addEventListener("error", () => {
+          previewEl.removeAttribute("src");
+        }, { once: true });
+
+        try {
+          previewEl.load();
+          if (isAndroid) {
+            const playAttempt = previewEl.play();
+            if (playAttempt && typeof playAttempt.catch === "function") {
+              playAttempt.catch(() => {});
+            }
+          }
+        } catch (_) {}
+
+        setTimeout(() => {
+          if (!ready) {
+            previewEl.removeAttribute("src");
+            previewEl.load();
+          }
+        }, 1500);
+      };
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              observer.disconnect();
+              prime();
+            }
+          });
+        }, { rootMargin: "200px" });
+        observer.observe(card);
+      } else {
+        prime();
+      }
+
+      return true;
+    };
+
+    const renderExerciseList = (items) => {
+      if (!exerciseList) return;
+      exerciseList.innerHTML = "";
+      if (!items.length) {
+        if (exerciseEmpty) exerciseEmpty.hidden = false;
+        return;
+      }
+      if (exerciseEmpty) exerciseEmpty.hidden = true;
+      items.forEach((exercise, i) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "exercise-card";
+        const letter = (exercise.title || "У").slice(0, 1);
+        const hasVideo = Boolean(exercise.videoUrl);
+        const previewUrl = exercise.videoUrl && !isYandexPublicLink(exercise.videoUrl) ? exercise.videoUrl : "";
+        card.innerHTML = `
+          <div class="thumb">
+            <div class="thumb-placeholder">${letter}</div>
+            <video class="thumb-video" muted playsinline preload="metadata"></video>
+            <div class="thumb-overlay"><span class="play-icon">&#9654;</span></div>
+            <span class="thumb-chip">${hasVideo ? "Видео" : "Без видео"}</span>
+          </div>
+          <div class="card-body">
+            <h3>${exercise.title || "Упражнение"}</h3>
+            <div class="card-hint">Открыть описание</div>
+          </div>
+        `;
+        const previewEl = card.querySelector(".thumb-video");
+        if (previewEl && previewUrl) {
+          setupPreview(previewEl, card, previewUrl);
+        } else if (previewEl) {
+          previewEl.remove();
+        }
+        card.addEventListener("click", () => openVideo(exercise));
+        exerciseList.appendChild(card);
+        setTimeout(() => {
+          card.style.opacity = 1;
+          card.style.transform = "translateY(0)";
+        }, 90 * i);
+      });
+    };
+
+    const loadExercises = async () => {
+      if (!apiBase) return;
+      try {
+        const res = await fetch(`${apiBase}/api/exercises?type=gym`);
+        const json = await res.json().catch(() => ({}));
+        if (!json?.ok || !Array.isArray(json.exercises)) return;
+        exerciseLibrary = json.exercises;
+        renderExerciseList(exerciseLibrary);
+        if (lastGroup) {
+          renderInfoList(lastGroup);
+        }
+      } catch (err) {
+        console.warn("exercises load failed", err);
+      }
+    };
+
+    const isYandexPublicLink = (url) => {
+      try {
+        const host = new URL(url).hostname;
+        return host === "disk.yandex.ru" || host === "yadi.sk" || host.endsWith(".yandex.ru");
+      } catch (_) {
+        return false;
+      }
+    };
+
+    const resolveVideoUrl = async (url) => {
+      if (!url) return null;
+      if (!isYandexPublicLink(url)) return url;
+      try {
+        const res = await fetch(`${apiBase}/api/yadisk/resolve?publicUrl=${encodeURIComponent(url)}`);
+        const json = await res.json().catch(() => ({}));
+        if (json?.ok && json.href) return json.href;
+      } catch (err) {
+        console.warn("Yandex resolve failed:", err);
+      }
+      return null;
+    };
+
+        const showVideoLink = (href, message) => {
+      if (!videoNote) return;
+      videoNote.innerHTML = "";
+      if (message) {
+        const text = document.createElement("span");
+        text.textContent = message;
+        videoNote.appendChild(text);
+        videoNote.appendChild(document.createElement("br"));
+      }
+      const link = document.createElement("a");
+      link.href = href;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.className = "video-link";
+      link.textContent = "Открыть видео";
+      videoNote.appendChild(link);
+    };
+
+    const escapeHtml = (value) => (
+      String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+    );
+
+    const formatText = (value) => escapeHtml(value).replace(/\n/g, "<br>");
+
+    const splitDescription = (raw) => {
+      const text = String(raw || "").replace(/\r\n/g, "\n").trim();
+      if (!text) return { how: "", tip: "" };
+      const tipRegex = /(?:^|\n)\s*Совет\s*:/i;
+      const tipMatch = text.match(tipRegex);
+      let how = text;
+      let tip = "";
+      if (tipMatch && typeof tipMatch.index === "number") {
+        how = text.slice(0, tipMatch.index);
+        tip = text.slice(tipMatch.index).replace(tipRegex, "");
+      }
+      how = how.replace(/Как\s+выполнять\s*:/i, "").trim();
+      tip = tip.replace(/Совет\s*:/i, "").trim();
+      if (!how && !tip) {
+        how = text;
+      }
+      return { how, tip };
+    };
+
+    const buildDescriptionHtml = (raw) => {
+      const sections = splitDescription(raw);
+      const howText = sections.how || raw || "-";
+      const tipText = sections.tip || "-";
+      return `
+        <div class="desc-block">
+          <strong>Как выполнять:</strong>
+          <div>${formatText(howText)}</div>
+        </div>
+        <div class="desc-block">
+          <strong>Совет:</strong>
+          <div>${formatText(tipText)}</div>
+        </div>
+      `;
+    };
+
+    const openVideo = async (exercise) => {
+      if (!videoModal) return;
+      currentVideoRequest += 1;
+      const requestId = currentVideoRequest;
+      if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
+      if (videoDesc) {
+        videoDesc.innerHTML = buildDescriptionHtml(exercise?.description || "");
+      }
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.removeAttribute("src");
+        videoEl.style.display = "none";
+      }
+      if (videoNote) {
+        videoNote.style.display = "block";
+        videoNote.textContent = "Загружаем видео...";
+      }
+
+      videoModal.classList.add("show");
+      videoModal.setAttribute("aria-hidden", "false");
+
+      if (!exercise?.videoUrl) {
+        currentVideoUrl = "";
+        if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
+        return;
+      }
+
+      currentVideoUrl = exercise.videoUrl || "";
+      const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
+      if (requestId !== currentVideoRequest) return;
+      currentVideoUrl = resolvedUrl || exercise.videoUrl || "";
+
+      if (resolvedUrl && videoEl) {
+        videoEl.src = resolvedUrl;
+        videoEl.style.display = "block";
+        videoEl.onerror = () => {
+          if (requestId !== currentVideoRequest) return;
+          showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
+        };
+
+        videoEl.onloadeddata = () => {
+          if (requestId !== currentVideoRequest) return;
+          if (videoNote) {
+            videoNote.style.display = "block";
+            videoNote.textContent = "Нажмите на видео, чтобы запустить.";
+          }
+        };
+        videoEl.onplaying = () => {
+          if (requestId !== currentVideoRequest) return;
+          if (videoNote) videoNote.style.display = "none";
+        };
+        videoEl.load();
+        const playAttempt = videoEl.play();
+        if (playAttempt && typeof playAttempt.catch === "function") {
+          playAttempt.catch(() => {
+            if (requestId !== currentVideoRequest) return;
+            showVideoLink(resolvedUrl, "Нажмите на видео или откройте по ссылке.");
+          });
+        }
+      } else {
+        showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
+      }
+    };
+
+    if (info) {
+      info.addEventListener("click", (event) => {
+        const button = event.target.closest(".muscle-item");
+        if (!button) return;
+        const exId = button.dataset.exId;
+        let exercise = null;
+        if (exId) {
+          exercise = exerciseLibrary.find((item) => String(item.id) === exId);
+        }
+        if (!exercise && button.dataset.exIndex) {
+          const idx = Number(button.dataset.exIndex);
+          if (!Number.isNaN(idx)) {
+            exercise = exerciseLibrary[idx];
+          }
+        }
+        if (exercise) openVideo(exercise);
+      });
+    }
+
+    const closeVideoModal = () => {
+      if (!videoModal) return;
+      currentVideoRequest += 1;
+      currentVideoUrl = "";
+      videoModal.classList.remove("show");
+      videoModal.setAttribute("aria-hidden", "true");
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.removeAttribute("src");
+      }
+    };
+
+    if (closeVideo) closeVideo.addEventListener("click", closeVideoModal);
+    if (videoModal) {
+      videoModal.addEventListener("click", (e) => {
+        if (e.target === videoModal) closeVideoModal();
+      });
+    }
+
+    const setViewMode = (mode) => {
+      const isList = mode === "list";
+      if (mapView) {
+        mapView.hidden = isList;
+        mapView.classList.toggle("is-hidden", isList);
+        mapView.setAttribute("aria-hidden", isList ? "true" : "false");
+      }
+      if (listView) {
+        listView.hidden = !isList;
+        listView.classList.toggle("is-hidden", !isList);
+        listView.setAttribute("aria-hidden", isList ? "false" : "true");
+      }
+      viewButtons.forEach((btn) => {
+        const active = btn.dataset.view === mode;
+        btn.classList.toggle("is-active", active);
+        btn.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      document.body.classList.toggle("map-mode", !isList);
+      localStorage.setItem("exercise_view", mode);
+    };
+
+    viewButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = btn.dataset.view;
+        setViewMode(mode);
+      });
+    });
+
+    const initPage = async () => {
+      const allowed = await enforceBaseAccess();
+      if (!allowed) return;
+      const savedView = localStorage.getItem("exercise_view") || "map";
+      setViewMode(savedView);
+      loadExercises();
+    };
+
+    initPage();
+  </script>
+</body>
+</html>
+

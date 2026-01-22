@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Fit Dew - Клиенты</title>
+
+  <script>
+
+    (function() {
+
+      const savedTheme = localStorage.getItem("theme") || "dark";
+
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+
+    })();
+
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <script src="env.js"></script>
+
+  <style>
+
+    :root {
+
+      --bg: #0b0f14;
+
+      --card: rgba(24, 27, 34, 0.9);
+
+      --card-border: rgba(255, 255, 255, 0.08);
+
+      --text: #f3f4f7;
+
+      --muted: rgba(255, 255, 255, 0.55);
+
+      --accent: #f2d17c;
+
+      --accent-strong: #f0c266;
+
+      --ok: #7ee0a8;
+
+      --warn: #f3c76a;
+
+      --shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
+
+      --radius: 18px;
+
+    }
+
+
+
+    html.light {
+
+      --bg: #f4f1e9;
+
+      --card: rgba(255, 255, 255, 0.9);
+
+      --card-border: rgba(0, 0, 0, 0.06);
+
+      --text: #121212;
+
+      --muted: rgba(0, 0, 0, 0.55);
+
+    }
+
+
+
+    * { box-sizing: border-box; }
+
+    body {
+
+      margin: 0;
+
+      font-family: "Manrope", sans-serif;
+
+      background: var(--bg);
+
+      color: var(--text);
+
+    }
+
+
+
+    .admin-screen {
+
+      max-width: 1100px;
+
+      margin: 0 auto;
+
+      padding: 28px 20px 60px;
+
+      display: grid;
+
+      gap: 18px;
+
+    }
+
+
+
+    .page-header {
+
+      display: grid;
+
+      gap: 8px;
+
+    }
+
+
+
+    .header-top {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 12px;
+
+      flex-wrap: wrap;
+
+    }
+
+
+
+    .eyebrow {
+
+      font-size: 0.7rem;
+
+      letter-spacing: 0.25em;
+
+      text-transform: uppercase;
+
+      color: var(--muted);
+
+    }
+
+
+
+    .page-title {
+
+      margin: 0;
+
+      font-family: "Exo 2", sans-serif;
+
+      font-size: 1.6rem;
+
+    }
+
+
+
+    .page-subtitle {
+
+      margin: 0;
+
+      color: var(--muted);
+
+    }
+
+
+
+    .status-pill {
+
+      padding: 6px 12px;
+
+      border-radius: 999px;
+
+      border: 1px solid var(--card-border);
+
+      font-size: 0.75rem;
+
+      letter-spacing: 0.1em;
+
+      text-transform: uppercase;
+
+    }
+
+    .status-pill.ok { border-color: rgba(126, 224, 168, 0.5); color: #7ee0a8; }
+
+    .status-pill.bad { border-color: rgba(255, 110, 110, 0.5); color: #ff9b9b; }
+
+
+
+    .section-card {
+
+      background: var(--card);
+
+      border: 1px solid var(--card-border);
+
+      border-radius: var(--radius);
+
+      padding: 18px;
+
+      box-shadow: var(--shadow);
+
+    }
+
+
+
+    .section-head {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 12px;
+
+      flex-wrap: wrap;
+
+      margin-bottom: 12px;
+
+    }
+
+
+
+    .section-title {
+
+      margin: 0;
+
+      font-size: 1.1rem;
+
+    }
+
+
+
+    .actions {
+
+      display: flex;
+
+      gap: 10px;
+
+      flex-wrap: wrap;
+
+    }
+
+
+
+    .btn-outline {
+
+      padding: 10px 14px;
+
+      border-radius: 14px;
+
+      border: 1px solid var(--card-border);
+
+      background: transparent;
+
+      color: var(--text);
+
+      cursor: pointer;
+
+      font-weight: 600;
+
+    }
+
+
+
+    .search-row {
+
+      display: grid;
+
+      grid-template-columns: minmax(0, 1fr);
+
+      gap: 12px;
+
+    }
+
+
+
+    .search-input {
+
+      padding: 12px 14px;
+
+      border-radius: 14px;
+
+      border: 1px solid var(--card-border);
+
+      background: rgba(0, 0, 0, 0.15);
+
+      color: var(--text);
+
+    }
+
+
+
+    html.light .search-input {
+
+      background: rgba(0, 0, 0, 0.04);
+
+    }
+
+
+
+    .client-list {
+
+      display: grid;
+
+      gap: 12px;
+
+    }
+
+
+
+    .client-card {
+
+      display: grid;
+
+      gap: 10px;
+
+      padding: 14px 16px;
+
+      border-radius: 16px;
+
+      border: 1px solid var(--card-border);
+
+      background: rgba(0, 0, 0, 0.18);
+
+      cursor: pointer;
+
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    }
+
+
+
+    html.light .client-card {
+
+      background: rgba(0, 0, 0, 0.03);
+
+    }
+
+
+
+    .client-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.25);
+    }
+
+
+    .client-head {
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 10px;
+
+    }
+
+
+
+    .client-name {
+
+      font-weight: 700;
+
+      font-size: 1rem;
+
+    }
+
+
+
+    .status-dot {
+
+      width: 10px;
+
+      height: 10px;
+
+      border-radius: 50%;
+
+      background: rgba(255, 255, 255, 0.2);
+
+      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+
+    }
+
+
+
+    .status-dot.is-filled {
+
+      background: var(--ok);
+
+      box-shadow: 0 0 0 4px rgba(126, 224, 168, 0.2);
+
+    }
+
+
+
+    .status-dot.is-reviewed {
+
+      background: #7ab8ff;
+
+      box-shadow: 0 0 0 4px rgba(122, 184, 255, 0.2);
+
+    }
+
+
+
+    .chat-indicator {
+
+      min-width: 18px;
+
+      height: 18px;
+
+      padding: 0 6px;
+
+      border-radius: 999px;
+
+      background: #f2d17c;
+
+      color: #1b1b1b;
+
+      font-size: 0.65rem;
+
+      display: grid;
+
+      place-items: center;
+
+      font-weight: 700;
+
+    }
+
+
+
+    .client-head-actions {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+    }
+
+
+
+    .client-meta {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+
+      gap: 8px;
+
+      font-size: 0.85rem;
+
+    }
+
+
+
+    .meta-label {
+
+      color: var(--muted);
+
+      font-size: 0.65rem;
+
+      letter-spacing: 0.18em;
+
+      text-transform: uppercase;
+
+    }
+
+
+
+    .meta-value {
+
+      font-weight: 600;
+
+    }
+
+
+
+    .empty-state {
+
+      text-align: center;
+
+      color: var(--muted);
+
+      padding: 24px;
+
+    }
+
+
+
+    @media (max-width: 640px) {
+
+      .admin-screen { padding: 22px 16px 50px; }
+
+      .client-meta { grid-template-columns: 1fr; }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="admin-screen">
+    <header class="page-header">
+
+      <div class="header-top">
+
+        <span class="eyebrow">Админка</span>
+
+      </div>
+
+      <h1 class="page-title">Клиенты</h1>
+
+      <p class="page-subtitle">Назначай куратора, смотри питание и статусы заполнения.</p>
+
+    </header>
+
+
+
+    <section class="section-card" id="clientsCard" hidden>
+
+      <div class="section-head">
+
+        <h2 class="section-title">Список клиентов</h2>
+
+        <div class="actions">
+
+          <button class="btn-outline" id="goHome" type="button">Назад</button>
+
+          <button class="btn-outline" id="reloadClients" type="button">Обновить</button>
+
+        </div>
+
+      </div>
+
+      <div class="search-row">
+
+        <input class="search-input" id="searchInput" type="text" placeholder="Поиск по имени или @username">
+
+      </div>
+
+      <div class="client-list" id="clientList"></div>
+
+      <div class="empty-state" id="emptyState" hidden>Клиенты не найдены.</div>
+
+    </section>
+
+  </div>
+
+  <script>
+    (function() {
+
+      const tg = window.Telegram?.WebApp || null;
+
+      const API_BASE = window.ENV?.API_BASE || "";
+
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+
+      const params = new URLSearchParams(window.location.search);
+
+
+
+      const accessStatus = document.getElementById("accessStatus");
+
+      const accessMessage = document.getElementById("accessMessage");
+      const clientsCard = document.getElementById("clientsCard");
+      const clientList = document.getElementById("clientList");
+      const emptyState = document.getElementById("emptyState");
+      const searchInput = document.getElementById("searchInput");
+      const reloadClients = document.getElementById("reloadClients");
+      const goHome = document.getElementById("goHome");
+
+
+      const buildInitData = () => {
+
+        const raw = tg?.initData || "";
+
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+
+        if (u.query_id) p.set("query_id", u.query_id);
+
+        if (u.user) p.set("user", JSON.stringify(u.user));
+
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+
+        if (u.start_param) p.set("start_param", u.start_param);
+
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+
+        p.set("hash", u.hash);
+
+        return p.toString();
+
+      };
+
+
+
+      const initData = tg?.initData || params.get("initData") || buildInitData() || "";
+
+      let clients = [];
+
+
+
+      const buildUrl = (path) => {
+
+        if (!initData) return path;
+
+        const joiner = path.includes("?") ? "&" : "?";
+
+        return `${path}${joiner}initData=${encodeURIComponent(initData)}`;
+
+      };
+
+
+
+      const setAccess = (ok, message) => {
+
+        if (accessStatus) {
+          accessStatus.textContent = ok ? "Доступ открыт" : "Нет доступа";
+          accessStatus.classList.toggle("ok", ok);
+          accessStatus.classList.toggle("bad", !ok);
+        }
+
+        if (accessMessage) {
+          accessMessage.textContent = message;
+        }
+
+        if (clientsCard) clientsCard.hidden = !ok;
+
+      };
+
+
+
+      const renderClients = () => {
+        if (!clientList) return;
+        const query = (searchInput?.value || "").toLowerCase().trim();
+        const filtered = !query
+
+          ? clients
+
+          : clients.filter((client) => {
+
+              const name = [client.first_name, client.last_name].filter(Boolean).join(" ");
+
+              const isCuratorRole = client.role === "curator" || client.role === "trainer" || client.isCurator;
+              const roleLabel = isCuratorRole
+
+                ? "Тренер"
+
+                : client.role === "admin"
+
+                  ? "Админ"
+
+                  : client.role === "sadmin"
+
+                    ? "Суперадмин"
+
+                    : "Пользователь";
+
+              const roleText = roleLabel;
+              const bits = [
+
+                name,
+
+                client.username ? `@${client.username}` : "",
+
+                client.tariffName || "",
+
+                client.trainingMode || "",
+
+                roleText
+
+              ].join(" ").toLowerCase();
+
+              return bits.includes(query);
+
+            });
+
+
+
+        clientList.innerHTML = "";
+
+        if (!filtered.length) {
+
+          emptyState.hidden = false;
+
+          return;
+
+        }
+
+        emptyState.hidden = true;
+
+
+
+        filtered.forEach((client) => {
+          const card = document.createElement("article");
+
+          card.className = "client-card";
+
+
+
+          const fullName = [client.first_name, client.last_name].filter(Boolean).join(" ") || "Без имени";
+
+
+          const modeLabel = client.trainingMode === "crossfit" ? "Кроссфит" : "Зал";
+
+          const isCuratorRole = client.role === "curator" || client.role === "trainer" || client.isCurator;
+          const isStaffRole = client.role === "admin" || client.role === "sadmin" || client.role === "trainer" || isCuratorRole;
+          const trainerName = isStaffRole ? "\u041d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f" : (client.trainer?.name || "\u041d\u0435 \u043d\u0430\u0437\u043d\u0430\u0447\u0435\u043d");
+              const roleLabel = isCuratorRole
+
+            ? "Тренер"
+
+            : client.role === "admin"
+
+              ? "Админ"
+
+              : client.role === "sadmin"
+
+                ? "Суперадмин"
+
+                : "Пользователь";
+
+          const roleText = roleLabel;
+          const tariff = isStaffRole ? "\u041d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f" : (client.tariffName || "\u2014");
+
+
+          const statusDot = client.hasTodayNutritionReviewed
+
+            ? "status-dot is-reviewed"
+
+            : client.hasTodayNutrition
+
+              ? "status-dot is-filled"
+
+              : "status-dot";
+
+          const hasCurator = Boolean(client.trainer?.id);
+          const unreadChatCount = Number(client.unreadChatCount) || 0;
+
+          const chatIndicator = hasCurator && unreadChatCount > 0
+
+            ? `<span class="chat-indicator">${unreadChatCount > 99 ? "99+" : unreadChatCount}</span>`
+
+            : "";
+
+
+
+          card.innerHTML = `
+
+            <div class="client-head">
+
+              <div>
+
+                <div class="client-name">${fullName}</div>
+
+                <div class="meta-label">${client.username ? `@${client.username}` : "без username"}</div>
+
+              </div>
+
+              <div class="client-head-actions">
+
+                ${chatIndicator}
+
+                <div class="${statusDot}" title="Питание за сегодня"></div>
+
+              </div>
+
+            
+            </div>
+
+            <div class="client-meta">
+
+              <div>
+
+                <div class="meta-label">Тариф</div>
+
+                <div class="meta-value">${tariff}</div>
+
+              </div>
+
+              <div>
+
+                <div class="meta-label">Тип</div>
+
+                <div class="meta-value">${modeLabel}</div>
+
+              </div>
+
+              <div>
+
+                <div class="meta-label">Роль</div>
+
+                <div class="meta-value">${roleText}</div>
+
+              </div>
+
+              <div>
+
+                <div class="meta-label">Куратор</div>
+
+                <div class="meta-value">${trainerName}</div>
+
+              </div>
+
+            </div>
+
+          `;
+
+
+
+          card.addEventListener("click", () => {
+
+            window.location.href = buildUrl(`admin_client.html?clientId=${client.id}`);
+
+          });
+
+
+
+          clientList.appendChild(card);
+
+        });
+
+      };
+
+
+      const loadClients = async () => {
+        if (!apiBase || !initData) return;
+
+        try {
+
+          const url = `${apiBase}/api/admin/clients?initData=${encodeURIComponent(initData)}`;
+
+          const res = await fetch(url);
+
+          const json = await res.json().catch(() => ({}));
+
+          if (!json?.ok) {
+
+            accessMessage.textContent = "Не удалось загрузить клиентов.";
+
+            return;
+
+          }
+
+          clients = Array.isArray(json.clients) ? json.clients : [];
+
+          renderClients();
+
+        } catch (e) {
+
+          console.error("Ошибка загрузки клиентов", e);
+
+        }
+      };
+
+      const checkAccess = async () => {
+
+        if (!apiBase) {
+
+          setAccess(false, "Нет API_BASE. Проверь env.js и конфиг.");
+
+          return;
+
+        }
+
+        if (!initData) {
+
+          setAccess(false, "Открой админку через Telegram, чтобы получить initData.");
+
+          return;
+
+        }
+
+        try {
+
+          const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
+
+          const json = await res.json().catch(() => ({}));
+
+                    const canCurate = Boolean(json?.profile?.canCurate);
+
+          if (!canCurate) {
+
+            setAccess(false, "Доступ закрыт. Нужна роль admin или куратор.");
+
+            return;
+
+          }
+
+setAccess(true, "Доступ подтвержден.");
+
+          await loadClients();
+
+        } catch (e) {
+
+          setAccess(false, "Ошибка проверки доступа.");
+
+        }
+
+      };
+
+
+
+      searchInput?.addEventListener("input", renderClients);
+
+      reloadClients?.addEventListener("click", loadClients);
+
+      goHome?.addEventListener("click", () => {
+
+        window.location.href = buildUrl("admin_programs.html");
+
+      });
+
+
+
+      checkAccess();
+
+    })();
+
+  </script>
+
+</body>
+
+</html>
+
+
+
+
+
+
+

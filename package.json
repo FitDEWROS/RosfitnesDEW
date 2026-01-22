@@ -1,0 +1,15 @@
+{
+  "name": "telegram-webapp",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "mkdir -p build && cp -r web-frontend/* build/"
+  },
+  "devDependencies": {
+    "prisma": "^6.16.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.971.0",
+    "@aws-sdk/s3-request-presigner": "^3.971.0",
+    "@prisma/client": "^6.16.3"
+  }
+}

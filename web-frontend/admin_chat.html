@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fit Dew — Чат</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --card: rgba(24, 27, 34, 0.92);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f7;
+      --muted: rgba(255, 255, 255, 0.55);
+      --accent: #f2d17c;
+      --accent-strong: #f0c266;
+      --shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
+      --radius: 18px;
+    }
+
+    html.light {
+      --bg: #f4f1e9;
+      --card: rgba(255, 255, 255, 0.92);
+      --card-border: rgba(0, 0, 0, 0.06);
+      --text: #121212;
+      --muted: rgba(0, 0, 0, 0.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .screen {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 18px 60px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title {
+      margin: 0;
+      font-family: "Exo 2", sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .back-btn {
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.2);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    html.light .back-btn {
+      background: rgba(0, 0, 0, 0.06);
+      color: #1b1b1b;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 60vh;
+      position: relative;
+    }
+
+    .chat-window {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .chat-scroll-top {
+      position: fixed;
+      right: 18px;
+      bottom: calc(96px + env(safe-area-inset-bottom));
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      border: none;
+      background: var(--accent);
+      color: #1b1b1b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 50;
+    }
+    .chat-scroll-top.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .chat-scroll-top svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chat-bubble {
+      max-width: 80%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.14);
+      color: var(--text);
+      align-self: flex-start;
+      word-break: break-word;
+    }
+
+    .chat-bubble video {
+      width: 100%;
+      border-radius: 12px;
+      background: #000;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .chat-bubble img {
+      width: 100%;
+      border-radius: 12px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .chat-bubble.is-mine {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+    }
+    .chat-status {
+      margin-top: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 2px;
+      line-height: 1;
+      font-size: 12px;
+      opacity: 0.6;
+      text-align: right;
+    }
+    .chat-status svg {
+      width: auto;
+      height: 12px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      display: block;
+    }
+    .chat-status.is-read {
+      opacity: 0.9;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .chat-attach {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.12);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .chat-attach svg {
+      width: 18px;
+      height: 18px;
+    }
+    .chat-attach .chat-attach-emoji {
+      display: none;
+      font-size: 18px;
+      line-height: 1;
+    }
+    @supports (-webkit-touch-callout: none) {
+      .chat-attach svg {
+        display: none;
+      }
+      .chat-attach .chat-attach-emoji {
+        display: block;
+      }
+    }
+
+    .chat-input {
+      flex: 1;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.12);
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 16px;
+    }
+
+    .chat-send {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.85rem;
+      min-height: 18px;
+    }
+  
+    @media (max-width: 640px) {
+      .screen { padding: 18px 14px 48px; }
+      .header { flex-direction: column; align-items: flex-start; }
+      .back-btn { width: 100%; text-align: center; }
+      .card { min-height: calc(100dvh - 220px); }
+      .chat-input-row { flex-wrap: wrap; }
+      .chat-input { width: 100%; min-width: 0; }
+      .chat-send { width: 100%; }
+    }
+</style>
+</head>
+<body>
+  <div class="screen">
+    <div class="header">
+      <div>
+        <h1 class="title">Чат с клиентом</h1>
+        <div class="subtitle" id="chatSubtitle">Онлайн консультация</div>
+      </div>
+      <button id="goBack" class="back-btn" type="button">Назад</button>
+    </div>
+
+    <section class="card">
+      <div id="chatMessages" class="chat-window"></div>
+      <button id="chatScrollTop" class="chat-scroll-top" type="button" aria-label="&#1053;&#1072;&#1074;&#1077;&#1088;&#1093;">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 14l6-6 6 6"/>
+        </svg>
+      </button>
+      <div class="chat-input-row">
+        <button id="chatAttach" class="chat-attach" type="button" aria-label="Прикрепить фото или видео">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21.44 11.05l-8.49 8.49a5 5 0 0 1-7.07-7.07l8.49-8.49a3.5 3.5 0 0 1 4.95 4.95l-8.49 8.49a2 2 0 1 1-2.83-2.83l8.49-8.48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="chat-attach-emoji" aria-hidden="true">&#128206;</span>
+        </button>
+        <input id="chatInput" class="chat-input" type="text" placeholder="Напишите сообщение..." maxlength="1000" />
+        <button id="chatSend" class="chat-send" type="button">Отправить</button>
+      </div>
+      <input id="chatFile" type="file" accept="video/*,image/*" hidden />
+      <div id="chatStatus" class="status"></div>
+    </section>
+  </div>
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+      const params = new URLSearchParams(window.location.search);
+      const clientId = Number(params.get("clientId"));
+
+      const chatMessages = document.getElementById("chatMessages");
+      const chatScrollTop = document.getElementById("chatScrollTop");
+      const chatInput = document.getElementById("chatInput");
+      const chatSend = document.getElementById("chatSend");
+      const chatAttach = document.getElementById("chatAttach");
+      const chatFile = document.getElementById("chatFile");
+      const chatStatus = document.getElementById("chatStatus");
+      const chatSubtitle = document.getElementById("chatSubtitle");
+      const goBack = document.getElementById("goBack");
+
+      let initData = "";
+      let chatLastId = 0;
+      let chatPollTimer = null;
+      let statusTimer = null;
+
+      const showStatus = (message) => {
+        if (!chatStatus) return;
+        chatStatus.textContent = message;
+        if (statusTimer) clearTimeout(statusTimer);
+        statusTimer = setTimeout(() => { chatStatus.textContent = ""; }, 2500);
+      };
+
+      const explainUploadError = (code) => {
+        switch (code) {
+          case "invalid_content_type":
+            return "Разрешены только фото или видео.";
+          case "invalid_size":
+            return "Файл больше 50 МБ.";
+          case "storage_not_configured":
+            return "Хранилище не настроено.";
+          case "upload_url_failed":
+            return "Не удалось получить ссылку для загрузки.";
+          case "no_thread":
+            return "Чат не найден.";
+          case "unauthorized":
+          case "forbidden":
+            return "Нет доступа.";
+          case "server_error":
+            return "Ошибка сервера.";
+          default:
+            return "Ошибка загрузки.";
+        }
+      };
+
+      const explainSendError = (code) => {
+        switch (code) {
+          case "missing_content":
+            return "Пустое сообщение.";
+          case "no_thread":
+            return "Чат не найден.";
+          case "unauthorized":
+          case "forbidden":
+            return "Нет доступа.";
+          case "server_error":
+            return "Ошибка сервера.";
+          default:
+            return "Ошибка отправки.";
+        }
+      };
+
+      const isChatTariff = (tariff) => ["\u041e\u043f\u0442\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439", "\u041c\u0430\u043a\u0441\u0438\u043c\u0443\u043c"].includes((tariff || "").trim());
+      const isTariffActive = (value) => {
+        if (!value) return true;
+        const dt = new Date(value);
+        if (Number.isNaN(dt.getTime())) return true;
+        return dt.getTime() > Date.now();
+      };
+
+      let chatBlocked = false;
+      const blockChat = (message) => {
+        if (chatBlocked) return;
+        chatBlocked = true;
+        if (chatInput) chatInput.disabled = true;
+        if (chatSend) chatSend.disabled = true;
+        if (chatAttach) chatAttach.disabled = true;
+        if (message) showStatus(message);
+      };
+
+      const checkChatAccess = async () => {
+        if (!apiBase || !initData || !clientId) return;
+        try {
+          const res = await fetch(`${apiBase}/api/admin/clients/${clientId}?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          const client = json?.client || null;
+          if (!client) return;
+          const tariffName = (client.tariffName || "").trim();
+          const allowed = isChatTariff(tariffName) && isTariffActive(client.tariffExpiresAt);
+          if (!allowed) blockChat("\u0427\u0430\u0442 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u043d\u0430 \u0431\u0430\u0437\u043e\u0432\u043e\u043c \u0442\u0430\u0440\u0438\u0444\u0435");
+        } catch (_) {}
+      };
+
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+        return p.toString();
+      };
+
+      const CHAT_STATUS_SINGLE_SVG = '<svg class="chat-tick" viewBox="0 0 16 12" aria-hidden="true" focusable="false"><path d="M1 6l4 4L15 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      const CHAT_STATUS_DOUBLE_SVG = '<svg class="chat-tick" viewBox="0 0 22 12" aria-hidden="true" focusable="false"><path d="M1 6l4 4L15 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 6l4 4L21 1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+      const updateChatStatus = (bubble, message) => {
+        if (!bubble) return;
+        const shouldShow = Boolean(message?.isMine);
+        let statusEl = bubble.querySelector(".chat-status");
+        if (!shouldShow) {
+          if (statusEl) statusEl.remove();
+          return;
+        }
+        if (!statusEl) {
+          statusEl = document.createElement("div");
+          statusEl.className = "chat-status";
+          bubble.appendChild(statusEl);
+        }
+        statusEl.innerHTML = message.readAt ? CHAT_STATUS_DOUBLE_SVG : CHAT_STATUS_SINGLE_SVG;
+        statusEl.classList.toggle("is-read", Boolean(message.readAt));
+      };
+
+      const renderChatMessage = (message) => {
+        if (!chatMessages || !message) return;
+        const existing = message.id ? chatMessages.querySelector(`[data-id="${message.id}"]`) : null;
+        if (existing) {
+          updateChatStatus(existing, message);
+          return;
+        }
+        const bubble = document.createElement("div");
+        bubble.className = `chat-bubble${message.isMine ? " is-mine" : ""}`;
+        if (message.id) bubble.dataset.id = String(message.id);
+        if (message.media?.url) {
+          const mediaType = message.media.type || "";
+          if (mediaType.startsWith("image/")) {
+            const image = document.createElement("img");
+            image.src = message.media.url;
+            image.alt = message.media.name || "Image";
+            image.loading = "lazy";
+            bubble.appendChild(image);
+          } else {
+            const video = document.createElement("video");
+            video.src = message.media.url;
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = "metadata";
+            bubble.appendChild(video);
+          }
+        }
+        if (message.text) {
+          const textEl = document.createElement("div");
+          textEl.textContent = message.text;
+          bubble.appendChild(textEl);
+        }
+        updateChatStatus(bubble, message);
+        chatMessages.appendChild(bubble);
+      };
+
+      const getChatScrollTarget = () => {
+        if (chatMessages && chatMessages.scrollHeight > chatMessages.clientHeight + 8) {
+          return { type: "inner", el: chatMessages };
+        }
+        return { type: "window" };
+      };
+
+      const scrollChatToBottom = () => {
+        if (!chatMessages) return;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        updateChatScrollTopVisibility();
+      };
+
+      const updateChatScrollTopVisibility = () => {
+        if (!chatScrollTop) return;
+        const target = getChatScrollTarget();
+        const top = target.type === "inner" ? target.el.scrollTop : window.scrollY;
+        chatScrollTop.classList.toggle("is-visible", top > 120);
+      };
+
+      const scrollChatToTop = () => {
+        const target = getChatScrollTarget();
+        if (target.type === "inner") {
+          target.el.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      };
+
+      const loadChatMessages = async (opts = {}) => {
+        if (!apiBase || !initData || !clientId) return;
+        const query = new URLSearchParams();
+        query.set("initData", initData);
+        query.set("clientId", String(clientId));
+        if (opts.afterId && Number.isFinite(opts.afterId)) query.set("afterId", String(opts.afterId));
+        if (opts.markRead === false) query.set("markRead", "0");
+        if (opts.includeLast) query.set("includeLast", "1");
+        try {
+          const res = await fetch(`${apiBase}/api/chat/messages?${query.toString()}`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) return;
+          if (json.counterpart?.name && chatSubtitle) {
+            chatSubtitle.textContent = `Клиент: ${json.counterpart.name}`;
+          }
+          const items = Array.isArray(json.messages) ? json.messages : [];
+          items.forEach((msg) => {
+            renderChatMessage(msg);
+            if (msg.id && msg.id > chatLastId) chatLastId = msg.id;
+          });
+          if (items.length) scrollChatToBottom();
+        } catch (e) {
+          console.warn("Ошибка загрузки чата", e);
+        }
+      };
+
+      const startChatPolling = () => {
+        if (chatPollTimer) return;
+        chatPollTimer = setInterval(() => {
+          loadChatMessages({ afterId: chatLastId, includeLast: true });
+        }, 3000);
+      };
+
+      const stopChatPolling = () => {
+        if (chatPollTimer) {
+          clearInterval(chatPollTimer);
+          chatPollTimer = null;
+        }
+      };
+
+      const sendChatPayload = async ({ text, media } = {}) => {
+        if (!apiBase || !initData || !clientId) return;
+        if (chatBlocked) { showStatus("Чат недоступен на базовом тарифе"); return; }
+        if (!text && !media) return;
+        if (chatSend) chatSend.disabled = true;
+        if (chatAttach) chatAttach.disabled = true;
+        try {
+          const payload = { initData, clientId };
+          if (text) payload.text = text;
+          if (media) {
+            payload.mediaKey = media.key;
+            payload.mediaType = media.type;
+            payload.mediaName = media.name;
+            payload.mediaSize = media.size;
+          }
+          const res = await fetch(`${apiBase}/api/chat/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json().catch(() => ({}));
+          if (json?.ok && json.message) {
+            renderChatMessage(json.message);
+            if (json.message.id && json.message.id > chatLastId) chatLastId = json.message.id;
+            scrollChatToBottom();
+          } else {
+            if (json?.error === "chat_not_allowed") {
+              blockChat("Чат недоступен на базовом тарифе");
+            }
+            showStatus(explainSendError(json?.error));
+          }
+        } catch (e) {
+          showStatus("Ошибка сети.");
+        } finally {
+          if (chatSend) chatSend.disabled = false;
+          if (chatAttach) chatAttach.disabled = false;
+        }
+      };
+
+      const uploadChatMedia = async (file) => {
+        if (!apiBase || !initData || !clientId || !file) {
+          showStatus("Нет данных для загрузки.");
+          return null;
+        }
+        const size = file.size || 0;
+        if (size <= 0) return null;
+        const fileType = file.type || "";
+        if (!fileType) {
+          showStatus("Не удалось определить тип файла.");
+          return null;
+        }
+        if (!fileType.startsWith("video/") && !fileType.startsWith("image/")) {
+          showStatus("Можно отправлять только фото или видео.");
+          return null;
+        }
+        if (size > 50 * 1024 * 1024) {
+          showStatus("Файл больше 50 МБ.");
+          return null;
+        }
+        try {
+          const res = await fetch(`${apiBase}/api/chat/upload-url`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              initData,
+              clientId,
+              fileName: file.name || "video.mp4",
+              contentType: fileType,
+              size
+            })
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok || !json.uploadUrl || !json.objectKey) {
+            showStatus(explainUploadError(json?.error));
+            return null;
+          }
+          const uploadRes = await fetch(json.uploadUrl, {
+            method: "PUT",
+          headers: { "Content-Type": fileType },
+          body: file
+        });
+          if (!uploadRes.ok) {
+            showStatus("Ошибка загрузки.");
+            return null;
+          }
+          return {
+            key: json.objectKey,
+          type: fileType,
+          name: file.name || "video.mp4",
+          size
+        };
+        } catch (e) {
+          showStatus("Ошибка сети.");
+          return null;
+        }
+      };
+
+      const sendChatMessage = async () => {
+        if (!chatInput) return;
+        const text = chatInput.value.trim();
+        if (!text) return;
+        chatInput.value = "";
+        await sendChatPayload({ text });
+      };
+
+      initData = tg?.initData || params.get("initData") || buildInitData() || "";
+
+      chatSend?.addEventListener("click", sendChatMessage);
+      chatInput?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendChatMessage();
+        }
+      });
+      chatAttach?.addEventListener("click", () => chatFile?.click());
+      chatFile?.addEventListener("change", async () => {
+        const file = chatFile.files?.[0];
+        chatFile.value = "";
+        if (!file) return;
+        const media = await uploadChatMedia(file);
+        if (media) {
+          await sendChatPayload({ media });
+        }
+      });
+      chatMessages?.addEventListener("scroll", updateChatScrollTopVisibility);
+      window.addEventListener("scroll", updateChatScrollTopVisibility);
+      chatScrollTop?.addEventListener("click", scrollChatToTop);
+      goBack?.addEventListener("click", () => {
+        stopChatPolling();
+        const backUrl = initData ? `admin_client.html?clientId=${clientId}&initData=${encodeURIComponent(initData)}` : `admin_client.html?clientId=${clientId}`;
+        window.location.href = backUrl;
+      });
+
+      if (!clientId) {
+        if (chatStatus) chatStatus.textContent = "Не выбран клиент";
+        return;
+      }
+
+      if (!initData) {
+        if (chatStatus) chatStatus.textContent = "Нет initData";
+        return;
+      }
+
+      loadChatMessages({ markRead: true }).then(() => startChatPolling());
+    })();
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fit Dew — Программа</title>
+
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <script src="programs_data.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --bg-soft: #141417;
+      --text: #f4f1e8;
+      --muted: #c6c0b2;
+      --card: #1b1b1f;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f6e5a6;
+      --accent-strong: #f2d17c;
+      --accent-cool: #9ad7ca;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-lg: 28px;
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+      --transition: 0.3s ease;
+    }
+
+    html.light {
+      --bg: #f4f1e6;
+      --bg-soft: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8cc7a;
+      --accent-strong: #ddb965;
+      --accent-cool: #6ab6a7;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(520px 280px at 15% 8%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(440px 320px at 90% 20%, rgba(154, 215, 202, 0.12), transparent 65%),
+        radial-gradient(420px 300px at 40% 90%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
+    }
+
+    .detail-screen {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 22px 18px 140px;
+    }
+
+    .page-header {
+      display: grid;
+      gap: 10px;
+    }
+
+    .back-btn {
+      width: fit-content;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
+    }
+
+    .page-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .hero {
+      margin-top: 18px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-cover {
+      position: relative;
+      padding: 24px 20px 20px;
+      color: #1b1b1b;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      display: grid;
+      gap: 12px;
+    }
+
+    .hero-cover.cover-gym {
+      background: linear-gradient(135deg, #cbe7ba 0%, #a7d3a5 100%);
+    }
+
+    .hero-cover.has-cover {
+      color: #f7f4ea;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .hero-cover.has-cover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.68) 100%);
+      z-index: 0;
+    }
+
+    .hero-cover.has-cover > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-cover.has-cover .tag,
+    .hero-cover.has-cover .stat-chip {
+      background: rgba(0, 0, 0, 0.35);
+      color: inherit;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.16);
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.3rem, 5vw, 1.8rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero-subtitle {
+      margin: 0;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    .hero-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .stat-chip {
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.12);
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .hero-footer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-top: 1px solid var(--card-border);
+      background: var(--card);
+    }
+
+    .coach-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.08);
+      border: 2px solid var(--accent);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    html.light .coach-avatar {
+      background: rgba(0, 0, 0, 0.06);
+      border-color: #e0b85e;
+    }
+
+    .coach-name {
+      font-weight: 700;
+    }
+
+    .coach-role {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .section {
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 12px;
+    }
+
+    .section h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .section p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+
+    .plan-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .weeks-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .week-card {
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      overflow: hidden;
+    }
+
+    html.light .week-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .week-toggle {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: inherit;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .week-title {
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .week-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .week-chevron {
+      transition: transform 0.25s ease;
+      font-size: 1.2rem;
+    }
+
+    .week-card[data-open="true"] .week-chevron {
+      transform: rotate(180deg);
+    }
+
+    .week-body {
+      display: none;
+      padding: 0 16px 16px;
+      gap: 10px;
+    }
+
+    .week-card[data-open="true"] .week-body {
+      display: grid;
+    }
+
+    .workout-card {
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.2);
+      color: inherit;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    html.light .workout-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .workout-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(243, 213, 139, 0.4);
+    }
+
+    .workout-title {
+      font-weight: 700;
+    }
+
+    .workout-subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .workout-arrow {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+    }
+html.light
+html.light
+@media (max-width: 520px) {
+      .detail-screen { padding-left: 14px; padding-right: 14px; }
+      .hero-footer { flex-direction: column; align-items: flex-start; }
+      .plan-head { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="detail-screen">
+    <header class="page-header">
+      <button class="back-btn" id="backBtn" type="button">Назад</button>
+      <span class="page-eyebrow">Программа</span>
+      <h1 class="page-title" id="programTitle">Программа</h1>
+      <p class="page-subtitle" id="programSubtitle"></p>
+    </header>
+
+    <section class="hero">
+      <div class="hero-cover" id="programCover">
+        <div class="hero-tags" id="programTags"></div>
+        <h2 class="hero-title" id="heroTitle">Программа</h2>
+        <p class="hero-subtitle" id="heroSubtitle"></p>
+        <div class="hero-stats" id="heroStats"></div>
+      </div>
+      <div class="hero-footer">
+        <div class="coach-avatar" id="coachAvatar">FD</div>
+        <div>
+          <div class="coach-name" id="coachName">Тестов Тест Тестович</div>
+          <div class="coach-role" id="coachRole">Куратор Fit Dew</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>О программе</h2>
+      <p id="programDescription"></p>
+    </section>
+
+    <section class="section">
+      <div class="plan-head">
+        <h2>Тренировочный план</h2>
+        <div class="page-subtitle" id="weeksCount"></div>
+      </div>
+      <div class="weeks-list" id="weeksList"></div>
+    </section>
+  </div>
+
+  
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const fallback = window.PROGRAMS_FALLBACK || [];
+
+      const byId = (id) => document.getElementById(id);
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("slug");
+      const backTarget = params.get("back") || "";
+      const initData = params.get("initData") || "";
+      const backBtn = byId("backBtn");
+
+      if (backBtn) {
+        backBtn.addEventListener("click", () => {
+          window.location.href = backTarget || "programs.html";
+        });
+      }
+
+      const getInitials = (name) => {
+        if (!name) return "FD";
+        return name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
+      };
+
+      const getCoverUrl = (value) => {
+        if (!value) return "";
+        const trimmed = value.trim();
+        return /^(https?:)?\/\//i.test(trimmed) ? trimmed : "";
+      };
+
+      const normalizeWorkoutId = (value) => (value === null || value === undefined ? "" : String(value));
+
+      const renderProgram = (program) => {
+        if (!program) return;
+
+        const typeLabel = program.type === "gym" ? "ЗАЛ" : "КРОССФИТ";
+        const tags = [
+          typeLabel,
+          program.level || "Новички",
+          program.gender || "Универсальная"
+        ];
+
+        byId("programTitle").textContent = program.title || "Программа";
+        byId("heroTitle").textContent = program.title || "Программа";
+        byId("programSubtitle").textContent = program.subtitle || "";
+        byId("heroSubtitle").textContent = program.subtitle || "";
+        byId("programDescription").textContent = program.description || program.summary || "";
+        byId("weeksCount").textContent = program.weeksCount ? `${program.weeksCount} недель` : "";
+
+        const cover = byId("programCover");
+        cover.classList.toggle("cover-gym", program.type === "gym");
+        const coverUrl = getCoverUrl(program.coverImage);
+        if (coverUrl) {
+          cover.classList.add("has-cover");
+          cover.style.backgroundImage = `url("${coverUrl}")`;
+        } else {
+          cover.classList.remove("has-cover");
+          cover.style.backgroundImage = "";
+        }
+
+        const tagContainer = byId("programTags");
+        tagContainer.innerHTML = tags.map((tag) => `<span class="tag">${tag}</span>`).join("");
+
+        const stats = [
+          program.frequency || "3 трен/нед",
+          program.weeksCount ? `${program.weeksCount} недель` : "План",
+          program.level || "Новички"
+        ];
+        byId("heroStats").innerHTML = stats.map((stat) => `<span class="stat-chip">${stat}</span>`).join("");
+
+        const coachName = program.authorName || "Тестов Тест Тестович";
+        byId("coachName").textContent = coachName;
+        byId("coachRole").textContent = program.authorRole || "Куратор Fit Dew";
+        byId("coachAvatar").textContent = getInitials(coachName);
+
+        const weeksList = byId("weeksList");
+        weeksList.innerHTML = "";
+
+        const weeks = Array.isArray(program.weeks) ? program.weeks : [];
+        weeks.forEach((week, idx) => {
+          const weekCard = document.createElement("article");
+          const workouts = Array.isArray(week.workouts) ? week.workouts : [];
+          const workoutsLabel = workouts.length ? `${workouts.length} тренировки` : "Планируется";
+
+          weekCard.className = "week-card";
+          weekCard.dataset.open = idx === 0 ? "true" : "false";
+          weekCard.innerHTML = `
+            <button class="week-toggle" type="button">
+              <div>
+                <div class="week-title">${week.title || `Неделя ${week.index || idx + 1}`}</div>
+                <div class="week-meta">${workoutsLabel}</div>
+              </div>
+              <div class="week-chevron">⌄</div>
+            </button>
+            <div class="week-body"></div>
+          `;
+
+          const body = weekCard.querySelector(".week-body");
+          workouts.forEach((workout) => {
+            const workoutCard = document.createElement("button");
+            const exerciseCount = Array.isArray(workout.exercises) ? workout.exercises.length : 0;
+            workoutCard.className = "workout-card";
+            workoutCard.type = "button";
+            workoutCard.innerHTML = `
+              <div>
+                <div class="workout-title">${workout.title || "Тренировка"}</div>
+                <div class="workout-subtitle">${exerciseCount} упражнений</div>
+              </div>
+              <div class="workout-arrow">›</div>
+            `;
+            const workoutId = normalizeWorkoutId(workout.id || workout.id === 0 ? workout.id : `${week.index}-${workout.index}`);
+            workoutCard.addEventListener("click", () => {
+              if (!workoutId) return;
+              const query = new URLSearchParams();
+              query.set("slug", program.slug);
+              query.set("workout", workoutId);
+              if (backTarget) query.set("back", backTarget);
+              if (initData) query.set("initData", initData);
+              window.location.href = `program_workout.html?${query.toString()}`;
+            });
+            body.appendChild(workoutCard);
+          });
+
+          weekCard.querySelector(".week-toggle").addEventListener("click", () => {
+            const isOpen = weekCard.dataset.open === "true";
+            weekCard.dataset.open = isOpen ? "false" : "true";
+          });
+
+          weeksList.appendChild(weekCard);
+        });
+      };
+
+      const loadProgram = async () => {
+        const fallbackProgram = fallback[0] || null;
+        const targetSlug = slug || fallbackProgram?.slug;
+        if (!targetSlug) return renderProgram(fallbackProgram);
+
+        if (API_BASE) {
+          try {
+            const res = await fetch(`${API_BASE}/api/programs/${encodeURIComponent(targetSlug)}`);
+            const json = await res.json().catch(() => ({}));
+            if (json?.ok && json.program) {
+              return renderProgram(json.program);
+            }
+          } catch (err) {
+            console.warn("Program fetch failed:", err);
+          }
+        }
+
+        const program = fallback.find((item) => item.slug === targetSlug) || fallbackProgram;
+        renderProgram(program);
+      };
+
+      loadProgram();
+
+      try {
+        tg?.ready?.();
+        tg?.expand?.();
+      } catch (_) {}
+    })();
+  </script>
+</body>
+</html>
+
+
+

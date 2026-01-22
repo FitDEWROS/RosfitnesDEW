@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fit Dew - Упражнения</title>
+
+  <!-- 🧩 Шрифты -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #111113;
+      --text: #ffffff;
+      --card: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.1);
+      --accent: #8b5cf6;
+    }
+    html.light {
+      --bg: #f5f7fa;
+      --text: #111113;
+      --card: #ffffff;
+      --card-border: rgba(0,0,0,0.1);
+      --accent: #3b82f6;
+    }
+
+    body.page-crossfit {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 🌈 Градиент-аура (тёмная тема — как было) */
+    .cf-header {
+      width: 100vw;
+      margin-left: calc(-50vw + 50%);
+      position: sticky;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      color: #fff;
+      background: rgba(17,17,19,0.55);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 2px 20px rgba(139,92,246,0.25);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      z-index: 20;
+    }
+    .cf-header::after {
+      content: "";
+      position: absolute;
+      inset: -80px;
+      background: radial-gradient(circle at 50% 100%, rgba(139,92,246,0.45), transparent 70%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* ☀️ Светлая тема (в стиле index.html, но мягче) */
+    html.light .cf-header {
+      background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(59,130,246,0.18));
+      backdrop-filter: blur(16px);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      color: #111;
+      width: 100%; /* было 100vw — теперь без артефактов */
+      margin-left: 0; /* убираем сдвиг */
+    }
+    html.light .cf-header::after {
+      background: radial-gradient(circle at 60% 100%, rgba(59,130,246,0.25), transparent 70%);
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .nav-btn:hover {
+      background: rgba(139,92,246,0.3);
+      box-shadow: 0 0 10px rgba(139,92,246,0.5);
+    }
+
+    /* Кнопка в светлой теме */
+    html.light .nav-btn {
+      border: 1px solid rgba(0,0,0,0.15);
+      color: #111;
+      background: rgba(255,255,255,0.6);
+    }
+    html.light .nav-btn:hover {
+      background: rgba(59,130,246,0.15);
+      box-shadow: 0 0 10px rgba(59,130,246,0.25);
+    }
+
+    .header-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: grid;
+      gap: 2px;
+      text-align: center;
+    }
+
+    .app-title {
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: 0.3px;
+    }
+
+    .wrap {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+      padding-bottom: 140px;
+    }
+
+    .list-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 16px 8px;
+    }
+
+    .density-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+    }
+
+    .density-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .density-btn {
+      border: none;
+      border-radius: 999px;
+      min-width: 28px;
+      height: 26px;
+      padding: 0 8px;
+      font-size: 0.75rem;
+      color: #1b1b1b;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      cursor: pointer;
+    }
+
+    .density-btn.is-active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+    }
+
+    /* 🏋️ Сетка упражнений */
+    .cf-main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 18px;
+      padding: 24px 16px 40px;
+      justify-items: center;
+      flex-grow: 1;
+    }
+
+    .exercise-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 260px;
+      overflow: hidden;
+      text-align: center;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    .exercise-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 6px 22px var(--accent);
+    }
+
+    .thumb {
+      position: relative;
+      height: 160px;
+      background: #000;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.8);
+      transition: transform 0.3s ease, filter 0.3s ease;
+    }
+    .exercise-card:hover img {
+      transform: scale(1.05);
+      filter: brightness(1);
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 2.2rem;
+      text-shadow: 0 0 10px rgba(0,0,0,0.6);
+      pointer-events: none;
+    }
+
+    .exercise-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 12px 0 6px;
+    }
+    .exercise-card p {
+      font-size: 0.9rem;
+      opacity: 0.85;
+      padding: 0 10px 12px;
+    }
+
+    /* 🎥 Видео-модалка */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.3s ease;
+    }
+    .modal.show { display: flex; }
+
+    .video-modal {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      display: grid;
+      gap: 10px;
+      animation: modalAppear 0.3s ease forwards;
+    }
+
+    @keyframes modalAppear {
+      from { opacity: 0; transform: translateY(20px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .video-modal video {
+      width: 100%;
+      height: auto;
+      max-height: 55vh;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .video-modal h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 6px 0 4px;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .video-modal p {
+      font-size: 0.9rem;
+      opacity: 0.85;
+      margin: 0 0 4px;
+      text-align: center;
+      color: var(--text);
+    }
+
+    .video-note {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      text-align: center;
+      margin: 6px 0 0;
+    }
+
+    .video-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .thumb-letter {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      font-size: 2.2rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+      color: #f6f2e7;
+      background: linear-gradient(135deg, rgba(243, 213, 139, 0.55), rgba(143, 208, 197, 0.4));
+    }
+
+    /* ❌ Кнопка закрытия */
+    .close {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 26px;
+      color: var(--text);
+      opacity: 0.7;
+      cursor: pointer;
+      background: rgba(0,0,0,0.25);
+      border-radius: 50%;
+      padding: 3px 9px;
+      transition: 0.25s;
+    }
+    .close:hover { opacity: 1; }
+
+    /* 📱 Мобильное выравнивание */
+    @media (max-width: 600px) {
+      .video-modal {
+        width: calc(100% - 32px);
+        margin: 0 auto;
+        padding: 12px;
+        border-radius: 14px;
+        max-height: 80dvh; /* ✅ адаптация под телеграм и notch */
+        overflow-y: auto;
+      }
+
+      .video-modal video {
+        max-height: 50dvh;
+        border-radius: 10px;
+      }
+
+      .close {
+        top: 10px;
+        right: 10px;
+        font-size: 28px;
+      }
+}
+
+
+
+      .cf-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      justify-content: initial;
+    }
+
+    .header-title {
+      position: static;
+      transform: none;
+      justify-self: center;
+      padding: 0 12px;
+      line-height: 1.05;
+    }
+
+    .header-spacer {
+      width: 86px;
+      height: 1px;
+    }
+
+
+    .back-btn {
+      width: fit-content;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
+    }
+</style>
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --text: #f6f2e7;
+      --muted: #c6c0b2;
+      --card: #1a1a1d;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f3d58b;
+      --accent-strong: #f1c65a;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+    }
+
+    html.light {
+      --bg: #f4f1e6;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8c86a;
+      --accent-strong: #ddb24d;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    body.page-crossfit {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      position: relative;
+    }
+
+    body.page-crossfit::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(500px 280px at 15% 10%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(420px 320px at 85% 20%, rgba(143, 208, 197, 0.12), transparent 65%),
+        radial-gradient(420px 300px at 40% 90%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
+    }
+
+    .cf-header {
+      width: auto;
+      margin: 16px;
+      border-radius: 24px;
+      background: linear-gradient(145deg, #1f1f22, #121214);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      color: var(--text);
+    }
+
+    .cf-header::after {
+      background: radial-gradient(circle at 20% 120%, rgba(243, 213, 139, 0.35), transparent 70%);
+    }
+
+    html.light .cf-header {
+      background: #ffffff;
+      color: #1b1b1b;
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: var(--shadow);
+    }
+
+    html.light .cf-header::after {
+      background: radial-gradient(circle at 30% 120%, rgba(232, 200, 106, 0.28), transparent 70%);
+    }
+
+    .nav-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      border: none;
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
+    }
+
+    .nav-btn:hover {
+      background: #f0d07a;
+      box-shadow: 0 12px 24px rgba(243, 213, 139, 0.4);
+    }
+
+    .app-title {
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .exercise-card {
+      background: linear-gradient(160deg, #1f1f22 0%, #121214 100%);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+    }
+
+    html.light .exercise-card {
+      background: #ffffff;
+    }
+
+    .exercise-card h3 {
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .exercise-card p {
+      color: var(--muted);
+    }
+
+    .empty-state {
+      width: 100%;
+      text-align: center;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px dashed var(--card-border);
+      color: var(--muted);
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    html.light .empty-state {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .thumb {
+      background: #0c0c0d;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .overlay {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: grid;
+      place-items: center;
+    }
+
+    .video-modal {
+      background: linear-gradient(160deg, rgba(26, 26, 28, 0.95), rgba(18, 18, 20, 0.95));
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+    }
+
+    html.light .video-modal {
+      background: #ffffff;
+    }
+
+    .close {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .header-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .cf-main {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .cf-main[data-cols="1"] {
+      grid-template-columns: 1fr;
+    }
+
+    .cf-main[data-cols="2"] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cf-main[data-cols="4"] {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    @media (max-width: 900px) {
+      .cf-main[data-cols="4"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .exercise-card {
+      padding: 0;
+      text-align: left;
+      border-radius: 22px;
+      overflow: hidden;
+      display: grid;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 12px 14px 16px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .card-hint {
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .thumb {
+      height: 180px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .thumb-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .thumb-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 2.4rem;
+      font-weight: 700;
+      font-family: var(--font-title);
+      color: #f6f2e7;
+      background: linear-gradient(135deg, rgba(243, 213, 139, 0.55), rgba(143, 208, 197, 0.4));
+      transition: opacity 0.3s ease;
+    }
+
+    .exercise-card.has-preview .thumb-video { opacity: 1; }
+    .exercise-card.has-preview .thumb-placeholder { opacity: 0; }
+
+    .thumb-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      pointer-events: none;
+    }
+
+    .play-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 1.1rem;
+    }
+
+    .thumb-chip {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    html.light .thumb-chip {
+      background: rgba(0, 0, 0, 0.12);
+      color: #1b1b1b;
+      border-color: rgba(0, 0, 0, 0.12);
+    }
+
+    .modal {
+      align-items: flex-end;
+      padding: 16px;
+    }
+
+    .video-modal {
+      width: min(560px, 96vw);
+      margin-bottom: env(safe-area-inset-bottom);
+      max-height: 86vh;
+      overflow-y: auto;
+      transform: translateY(28px);
+      opacity: 0;
+      animation: none;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .modal.show .video-modal {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .video-modal video {
+      max-height: 48vh;
+    }
+
+    .video-desc {
+      display: grid;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .desc-block strong {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .desc-block div {
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .video-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .modal-close {
+      position: static;
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+
+    html.light .modal-close {
+      background: rgba(0, 0, 0, 0.12);
+    }
+  </style>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js?v=20260115"></script>
+  <style>
+    .cf-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      justify-content: initial;
+    }
+
+    .header-title {
+      position: static;
+      transform: none;
+      justify-self: center;
+      padding: 0 12px;
+      line-height: 1.05;
+      text-align: center;
+    }
+
+    .header-spacer {
+      width: 86px;
+      height: 1px;
+    }
+  </style>
+</head>
+
+<body class="page-crossfit">
+  <!-- Шапка вынесена наружу, чтобы убрать белые края -->
+  <header class="cf-header">
+    <button id="backBtn" class="back-btn" type="button">Назад</button>
+    <div class="header-title">
+      <span class="header-eyebrow">Упражнения</span>
+      <span class="app-title">Кроссфит</span>
+    </div>
+  
+    <div class="header-spacer" aria-hidden="true"></div>
+</header>
+
+  <div class="wrap">
+    <div class="list-actions">
+      <div class="density-toggle" role="group" aria-label="Колонки">
+        <span class="density-label">Колонки</span>
+        <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
+      </div>
+    </div>
+    <main class="cf-main" id="exerciseList" aria-live="polite" data-cols="2"></main>
+  </div>
+
+  <div id="videoModal" class="modal" aria-hidden="true">
+    <div class="video-modal" role="dialog" aria-modal="true">
+<video id="exerciseVideo" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
+      <h3 id="videoTitle"></h3>
+      <div id="videoDesc" class="video-desc"></div>
+      <p id="videoNote" class="video-note"></p>
+      <div class="video-actions">
+        <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
+      </div>
+
+    </div>
+  </div>
+
+  
+
+  <script>
+    (function() {
+      const theme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", theme === "light");
+    })();
+
+    const tg = window.Telegram?.WebApp || null;
+    const API_BASE = window.ENV?.API_BASE || "";
+    const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+    const list = document.getElementById("exerciseList");
+    const densityButton = document.querySelector(".density-btn");
+    const densityOrder = ["1", "2", "4"];
+    const videoModal = document.getElementById("videoModal");
+    const videoEl = document.getElementById("exerciseVideo");
+    const videoTitle = document.getElementById("videoTitle");
+    const videoDesc = document.getElementById("videoDesc");
+    const videoNote = document.getElementById("videoNote");
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    let currentVideoRequest = 0;
+    let currentVideoUrl = "";
+    const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+
+    const buildInitData = () => {
+      const raw = tg?.initData || "";
+      if (raw && raw.length > 0) return raw;
+
+      const u = tg?.initDataUnsafe || null;
+      if (!u || !u.hash) return "";
+
+      const p = new URLSearchParams();
+      if (u.query_id) p.set("query_id", u.query_id);
+      if (u.user) p.set("user", JSON.stringify(u.user));
+      if (u.auth_date) p.set("auth_date", String(u.auth_date));
+      if (u.start_param) p.set("start_param", u.start_param);
+      if (u.chat_type) p.set("chat_type", u.chat_type);
+      if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+      p.set("hash", u.hash);
+      return p.toString();
+    };
+
+    const fetchUserProfile = async () => {
+      if (!apiBase || !tg) return null;
+      const initData = buildInitData();
+      if (!initData) return null;
+      try {
+        const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initData)}`);
+        const json = await res.json().catch(() => ({}));
+        return json?.profile || null;
+      } catch (err) {
+        console.warn("profile fetch failed", err);
+        return null;
+      }
+    };
+
+    const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
+
+    const isStaffProfile = (profile) => {
+      if (!profile) return false;
+      const role = profile.role;
+      return role === "admin" || role === "sadmin" || role === "curator" || Boolean(profile.isCurator);
+    };
+
+    const normalizeScope = (value) => (value === "gym" || value === "crossfit" || value === "both" ? value : "both");
+
+    const enforceBaseAccess = async () => {
+      const profile = await fetchUserProfile();
+      if (!profile) return true;
+      if (isStaffProfile(profile)) {
+        const scope = normalizeScope(profile.trainerScope);
+        if (scope === "gym") {
+          localStorage.setItem("training_mode", "gym");
+          window.location.replace("exercises.html");
+          return false;
+        }
+        if (scope === "crossfit") {
+          localStorage.setItem("training_mode", "crossfit");
+        }
+        return true;
+      }
+      if (!isBasicTariff(profile.tariffName)) return true;
+      const mode = profile.trainingMode === "crossfit" ? "crossfit" : "gym";
+      localStorage.setItem("training_mode", mode);
+      if (mode !== "crossfit") {
+        showAlert("\u042d\u0442\u043e\u0442 \u0440\u0430\u0437\u0434\u0435\u043b \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u0442\u043e\u043b\u044c\u043a\u043e \u0434\u043b\u044f \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u0417\u0430\u043b.");
+        window.location.replace("exercises.html");
+        return false;
+      }
+      return true;
+    };
+
+    const applyDensity = (cols) => {
+      if (!list) return;
+      list.dataset.cols = cols;
+      if (densityButton) {
+        densityButton.dataset.cols = cols;
+        densityButton.textContent = cols;
+        densityButton.setAttribute("aria-label", `Колонки: ${cols}`);
+      }
+    };
+
+    if (list && densityButton) {
+      const savedCols = localStorage.getItem("exercise_cols") || "2";
+      applyDensity(savedCols);
+      densityButton.addEventListener("click", () => {
+        const current = densityButton.dataset.cols || "2";
+        const idx = densityOrder.indexOf(current);
+        const next = densityOrder[(idx + 1) % densityOrder.length];
+        localStorage.setItem("exercise_cols", next);
+        applyDensity(next);
+      });
+    }
+
+    const isYandexPublicLink = (url) => {
+      try {
+        const host = new URL(url).hostname;
+        return host === "disk.yandex.ru" || host === "yadi.sk" || host.endsWith(".yandex.ru");
+      } catch (_) {
+        return false;
+      }
+    };
+
+    const resolveVideoUrl = async (url) => {
+      if (!url) return null;
+      if (!isYandexPublicLink(url)) return url;
+      try {
+        const res = await fetch(`${apiBase}/api/yadisk/resolve?publicUrl=${encodeURIComponent(url)}`);
+        const json = await res.json().catch(() => ({}));
+        if (json?.ok && json.href) return json.href;
+      } catch (err) {
+        console.warn("Yandex resolve failed:", err);
+      }
+      return null;
+    };
+
+    const showVideoLink = (href, message) => {
+      if (!videoNote) return;
+      videoNote.innerHTML = "";
+      if (message) {
+        const text = document.createElement("span");
+        text.textContent = message;
+        videoNote.appendChild(text);
+        videoNote.appendChild(document.createElement("br"));
+      }
+      const link = document.createElement("a");
+      link.href = href;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.className = "video-link";
+      link.textContent = "Открыть видео";
+      videoNote.appendChild(link);
+    };
+
+    const escapeHtml = (value) => (
+      String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+    );
+
+    const formatText = (value) => escapeHtml(value).replace(/\n/g, "<br>");
+
+    const splitDescription = (raw) => {
+      const text = String(raw || "").replace(/\r\n/g, "\n").trim();
+      if (!text) return { how: "", tip: "" };
+      const tipRegex = /(?:^|\n)\s*Совет\s*:/i;
+      const tipMatch = text.match(tipRegex);
+      let how = text;
+      let tip = "";
+      if (tipMatch && typeof tipMatch.index === "number") {
+        how = text.slice(0, tipMatch.index);
+        tip = text.slice(tipMatch.index).replace(tipRegex, "");
+      }
+      how = how.replace(/Как\s+выполнять\s*:/i, "").trim();
+      tip = tip.replace(/Совет\s*:/i, "").trim();
+      if (!how && !tip) {
+        how = text;
+      }
+      return { how, tip };
+    };
+
+    const buildDescriptionHtml = (raw) => {
+      const sections = splitDescription(raw);
+      const howText = sections.how || raw || "-";
+      const tipText = sections.tip || "-";
+      return `
+        <div class="desc-block">
+          <strong>Как выполнять:</strong>
+          <div>${formatText(howText)}</div>
+        </div>
+        <div class="desc-block">
+          <strong>Совет:</strong>
+          <div>${formatText(tipText)}</div>
+        </div>
+      `;
+    };
+
+    const setupPreview = (previewEl, card, previewUrl) => {
+      if (!previewEl || !previewUrl) return false;
+      let primed = false;
+      let ready = false;
+      const showPreview = () => {
+        if (ready) return;
+        if (previewEl.videoWidth > 0 && previewEl.videoHeight > 0 && previewEl.currentTime > 0) {
+          ready = true;
+          card.classList.add("has-preview");
+        }
+      };
+
+      const prime = () => {
+        if (primed) return;
+        primed = true;
+        previewEl.muted = true;
+        previewEl.playsInline = true;
+        previewEl.preload = "metadata";
+        const src = previewUrl.includes("#") ? previewUrl : `${previewUrl}#t=0.1`;
+        previewEl.src = src;
+
+        previewEl.addEventListener("loadedmetadata", () => {
+          try {
+            const seekTo = Math.min(0.1, (previewEl.duration || 1) / 10);
+            previewEl.currentTime = seekTo;
+          } catch (_) {}
+          if (previewEl.requestVideoFrameCallback) {
+            previewEl.requestVideoFrameCallback(() => {
+              previewEl.pause();
+              showPreview();
+            });
+          }
+        }, { once: true });
+        previewEl.addEventListener("timeupdate", () => {
+          previewEl.pause();
+          showPreview();
+        }, { once: true });
+        previewEl.addEventListener("seeked", showPreview, { once: true });
+        previewEl.addEventListener("error", () => {
+          previewEl.removeAttribute("src");
+        }, { once: true });
+
+        try {
+          previewEl.load();
+          if (isAndroid) {
+            const playAttempt = previewEl.play();
+            if (playAttempt && typeof playAttempt.catch === "function") {
+              playAttempt.catch(() => {});
+            }
+          }
+        } catch (_) {}
+
+        setTimeout(() => {
+          if (!ready) {
+            previewEl.removeAttribute("src");
+            previewEl.load();
+          }
+        }, 1500);
+      };
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              observer.disconnect();
+              prime();
+            }
+          });
+        }, { rootMargin: "200px" });
+        observer.observe(card);
+      } else {
+        prime();
+      }
+
+      return true;
+    };
+
+    const renderExercises = (items) => {
+      if (!list) return;
+      list.innerHTML = "";
+      if (!items.length) {
+        list.innerHTML = "<div class='empty-state'>Пока нет упражнений.</div>";
+        return;
+      }
+      items.forEach((exercise, i) => {
+        const card = document.createElement("div");
+        card.className = "exercise-card";
+        const letter = (exercise.title || "У").slice(0, 1);
+        const hasVideo = Boolean(exercise.videoUrl);
+        const previewUrl = exercise.videoUrl && !isYandexPublicLink(exercise.videoUrl) ? exercise.videoUrl : "";
+
+        card.innerHTML = `
+          <div class="thumb">
+            <div class="thumb-placeholder">${letter}</div>
+            <video class="thumb-video" muted playsinline preload="metadata"></video>
+            <div class="thumb-overlay"><span class="play-icon">&#9654;</span></div>
+            <span class="thumb-chip">${hasVideo ? "Видео" : "Без видео"}</span>
+          </div>
+          <div class="card-body">
+            <h3>${exercise.title || "Упражнение"}</h3>
+            <div class="card-hint">Открыть описание</div>
+          </div>
+        `;
+
+        const previewEl = card.querySelector(".thumb-video");
+        if (previewEl && previewUrl) {
+          setupPreview(previewEl, card, previewUrl);
+        } else if (previewEl) {
+          previewEl.remove();
+        }
+
+        card.addEventListener("click", () => openVideoModal(exercise));
+        list.appendChild(card);
+        setTimeout(() => { card.style.opacity = 1; card.style.transform = "translateY(0)"; }, 100 * i);
+      });
+    };
+
+    const loadExercises = async () => {
+      if (!apiBase) return;
+      try {
+        const res = await fetch(`${apiBase}/api/exercises?type=crossfit`);
+        const json = await res.json().catch(() => ({}));
+        if (json?.ok && Array.isArray(json.exercises)) {
+          renderExercises(json.exercises);
+        }
+      } catch (err) {
+        console.warn("exercises load failed", err);
+      }
+    };
+
+    document.getElementById("backBtn").addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+
+    const openVideoModal = async (exercise) => {
+      if (!videoModal) return;
+      currentVideoRequest += 1;
+      const requestId = currentVideoRequest;
+      if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
+      if (videoDesc) {
+        videoDesc.innerHTML = buildDescriptionHtml(exercise?.description || "");
+      }
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.removeAttribute("src");
+        videoEl.style.display = "none";
+      }
+      if (videoNote) {
+        videoNote.style.display = "block";
+        videoNote.textContent = "Загружаем видео...";
+      }
+      videoModal.classList.add("show");
+      videoModal.setAttribute("aria-hidden", "false");
+
+      if (!exercise?.videoUrl) {
+        currentVideoUrl = "";
+        if (videoNote) videoNote.textContent = "Видео пока не добавлено.";
+        return;
+      }
+
+      currentVideoUrl = exercise.videoUrl || "";
+      const resolvedUrl = await resolveVideoUrl(exercise.videoUrl);
+      if (requestId !== currentVideoRequest) return;
+      currentVideoUrl = resolvedUrl || exercise.videoUrl || "";
+
+      if (resolvedUrl && videoEl) {
+        videoEl.src = resolvedUrl;
+        videoEl.style.display = "block";
+        videoEl.onerror = () => {
+          if (requestId !== currentVideoRequest) return;
+          showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
+        };
+        videoEl.onloadeddata = () => {
+          if (requestId !== currentVideoRequest) return;
+          if (videoNote) {
+            videoNote.style.display = "block";
+            videoNote.textContent = "Нажмите на видео, чтобы запустить.";
+          }
+        };
+        videoEl.onplaying = () => {
+          if (requestId !== currentVideoRequest) return;
+          if (videoNote) videoNote.style.display = "none";
+        };
+        videoEl.load();
+        const playAttempt = videoEl.play();
+        if (playAttempt && typeof playAttempt.catch === "function") {
+          playAttempt.catch(() => {
+            if (requestId !== currentVideoRequest) return;
+            showVideoLink(resolvedUrl, "Нажмите на видео или откройте по ссылке.");
+          });
+        }
+      } else {
+        showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
+      }
+    };
+
+    document.getElementById("closeVideo").addEventListener("click", closeModal);
+    window.addEventListener("click", (e) => {
+      const modal = document.getElementById("videoModal");
+      if (e.target === modal) closeModal();
+    });
+
+    function closeModal() {
+      if (videoModal) {
+        videoModal.classList.remove("show");
+        videoModal.setAttribute("aria-hidden", "true");
+      }
+      currentVideoUrl = "";
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.removeAttribute("src");
+      }
+      if (videoNote) {
+        videoNote.textContent = "";
+      }
+    }
+
+    const initPage = async () => {
+      const allowed = await enforceBaseAccess();
+      if (!allowed) return;
+      loadExercises();
+    };
+
+    initPage();
+  </script>
+</body>
+</html>
+
+

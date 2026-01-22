@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fit Dew - &#1044;&#1086;&#1089;&#1090;&#1091;&#1087;&#1085;&#1099;&#1077; &#1087;&#1088;&#1086;&#1075;&#1088;&#1072;&#1084;&#1084;&#1099; &#1080; &#1091;&#1087;&#1088;&#1072;&#1078;&#1085;&#1077;&#1085;&#1080;&#1103;</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --bg-soft: #141417;
+      --text: #f4f1e8;
+      --muted: #c6c0b2;
+      --card: #1b1b1f;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #f6e5a6;
+      --accent-strong: #f2d17c;
+      --accent-cool: #9ad7ca;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --radius-lg: 26px;
+      --font-title: "Exo 2", sans-serif;
+      --font-body: "Manrope", sans-serif;
+      --transition: 0.3s ease;
+    }
+
+    html {
+      color-scheme: dark;
+    }
+    html.light {
+      color-scheme: light;
+      --bg: #f4f1e6;
+      --bg-soft: #ffffff;
+      --text: #1b1b1b;
+      --muted: #6f6a60;
+      --card: #ffffff;
+      --card-border: rgba(0, 0, 0, 0.08);
+      --accent: #e8cc7a;
+      --accent-strong: #ddb965;
+      --accent-cool: #6ab6a7;
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color var(--transition), color var(--transition);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      background:
+        radial-gradient(520px 280px at 15% 8%, rgba(243, 213, 139, 0.16), transparent 60%),
+        radial-gradient(440px 320px at 90% 20%, rgba(154, 215, 202, 0.12), transparent 65%),
+        radial-gradient(420px 300px at 40% 90%, rgba(243, 213, 139, 0.08), transparent 70%);
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.03), transparent 40%);
+      z-index: -3;
+    }
+
+    .admin-screen {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 22px 18px 70px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .page-header {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(145deg, #1f1f22, #121214);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    html.light .page-header {
+      background: #ffffff;
+    }
+
+    .page-header::after {
+      content: "";
+      position: absolute;
+      inset: -80px;
+      background: radial-gradient(circle at 20% 120%, rgba(243, 213, 139, 0.35), transparent 70%);
+      opacity: 0.8;
+      z-index: 0;
+    }
+
+    .page-header > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      color: var(--muted);
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .section-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 16px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: 1.05rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .btn-outline {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-outline:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(243, 213, 139, 0.45);
+    }
+
+    .section-body {
+      display: grid;
+      gap: 16px;
+    }
+
+    .group-block {
+      display: grid;
+      gap: 12px;
+    }
+
+    .group-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .group-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: 0.95rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card-grid.program-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .program-card {
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .program-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 36px rgba(0, 0, 0, 0.35);
+    }
+
+    .program-hero {
+      position: relative;
+      padding: 16px;
+      min-height: 140px;
+      display: grid;
+      gap: 8px;
+      color: #1b1b1b;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .program-hero.cover-gym {
+      background: linear-gradient(135deg, #cbe7ba 0%, #a7d3a5 100%);
+    }
+
+    .program-hero.cover-crossfit {
+      background: linear-gradient(135deg, #f6e5a6 0%, #f1c873 100%);
+    }
+
+    .program-hero.has-cover {
+      color: #f7f4ea;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .program-hero.has-cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.68));
+      z-index: 0;
+    }
+
+    .program-hero > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .program-hero.has-cover .program-subtitle {
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .program-badge {
+      width: fit-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: rgba(0, 0, 0, 0.18);
+      color: #1b1b1b;
+      align-self: start;
+      justify-self: start;
+    }
+
+    .program-hero.has-cover .program-badge {
+      background: rgba(0, 0, 0, 0.35);
+      color: inherit;
+    }
+
+    .program-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: 1.1rem;
+    }
+
+    .program-subtitle {
+      margin: 0;
+      color: rgba(0, 0, 0, 0.7);
+      font-size: 0.9rem;
+    }
+
+    .program-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 16px;
+    }
+
+    .program-summary {
+      margin: 0;
+      padding: 0 16px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .program-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 16px 16px;
+    }
+
+    .open-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      font-family: var(--font-title);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .exercise-card {
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      background: linear-gradient(160deg, #1f1f22 0%, #121214 100%);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    html.light .exercise-card {
+      background: #ffffff;
+    }
+
+    .exercise-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 26px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-title {
+      margin: 0;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .card-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .card-summary {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.35;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .meta-chip {
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      font-size: 0.75rem;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    html.light .meta-chip {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 8px 0 4px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 220;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .video-modal {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      width: min(520px, 92vw);
+      max-height: 82dvh;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 10px;
+    }
+
+    .video-modal video {
+      width: 100%;
+      max-height: 55vh;
+      border-radius: 12px;
+      background: #000;
+      object-fit: contain;
+    }
+
+    .video-title {
+      margin: 8px 0 2px;
+      font-weight: 700;
+    }
+
+    .video-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    .video-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .video-link {
+      color: var(--accent-strong);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .video-link:hover {
+      text-decoration: underline;
+    }
+
+    .video-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .modal-close {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 640px) {
+      .admin-screen { padding: 22px 16px 60px; }
+      .page-title { font-size: 1.6rem; }
+    }
+
+    @media (max-width: 600px) {
+      .video-modal {
+        width: calc(100% - 32px);
+        max-height: 84dvh;
+        padding: 12px;
+        border-radius: 14px;
+      }
+
+      .video-modal video {
+        max-height: 45dvh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-screen">
+    <header class="page-header">
+      <div class="header-top">
+        <span class="eyebrow">&#1040;&#1076;&#1084;&#1080;&#1085;&#1082;&#1072;</span>
+        <div class="actions">
+          <button class="btn-outline" id="goBack" type="button">&#1053;&#1072;&#1079;&#1072;&#1076;</button>
+        </div>
+      </div>
+      <h1 class="page-title" id="pageTitle">&#1044;&#1086;&#1089;&#1090;&#1091;&#1087;&#1085;&#1099;&#1077; &#1087;&#1088;&#1086;&#1075;&#1088;&#1072;&#1084;&#1084;&#1099; &#1080; &#1091;&#1087;&#1088;&#1072;&#1078;&#1085;&#1077;&#1085;&#1080;&#1103;</h1>
+      <p class="page-subtitle" id="pageSubtitle">&#1047;&#1072;&#1075;&#1088;&#1091;&#1078;&#1072;&#1077;&#1084; &#1076;&#1072;&#1085;&#1085;&#1099;&#1077; &#1082;&#1083;&#1080;&#1077;&#1085;&#1090;&#1072;...</p>
+    </header>
+
+    <section class="section-card" id="programsCard">
+      <div class="section-head">
+        <h2 class="section-title">&#1058;&#1088;&#1077;&#1085;&#1080;&#1088;&#1086;&#1074;&#1086;&#1095;&#1085;&#1099;&#1077; &#1087;&#1088;&#1086;&#1075;&#1088;&#1072;&#1084;&#1084;&#1099;</h2>
+      </div>
+      <div class="section-body" id="programList"></div>
+      <div class="empty-state" id="programEmpty" hidden>&#1053;&#1077;&#1090; &#1076;&#1086;&#1089;&#1090;&#1091;&#1087;&#1085;&#1099;&#1093; &#1087;&#1088;&#1086;&#1075;&#1088;&#1072;&#1084;&#1084;.</div>
+    </section>
+
+    <section class="section-card" id="exercisesCard">
+      <div class="section-head">
+        <h2 class="section-title">&#1059;&#1087;&#1088;&#1072;&#1078;&#1085;&#1077;&#1085;&#1080;&#1103;</h2>
+      </div>
+      <div class="section-body" id="exerciseList"></div>
+      <div class="empty-state" id="exerciseEmpty" hidden>&#1053;&#1077;&#1090; &#1076;&#1086;&#1089;&#1090;&#1091;&#1087;&#1085;&#1099;&#1093; &#1091;&#1087;&#1088;&#1072;&#1078;&#1085;&#1077;&#1085;&#1080;&#1081;.</div>
+    </section>
+  </div>
+
+  <div id="videoModal" class="modal" aria-hidden="true">
+    <div class="video-modal" role="dialog" aria-modal="true">
+      <video id="exerciseVideo" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
+      <h3 class="video-title" id="videoTitle"></h3>
+      <p class="video-desc" id="videoDesc"></p>
+      <p class="video-note" id="videoNote">&#1042;&#1080;&#1076;&#1077;&#1086; &#1087;&#1086;&#1082;&#1072; &#1085;&#1077; &#1076;&#1086;&#1073;&#1072;&#1074;&#1083;&#1077;&#1085;&#1086;.</p>
+      <div class="video-actions">
+        <button class="modal-close" id="closeVideo" type="button">&#1047;&#1072;&#1082;&#1088;&#1099;&#1090;&#1100;</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const APP_VERSION = window.ENV?.APP_VERSION || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+      const params = new URLSearchParams(window.location.search);
+      const clientId = Number(params.get("clientId") || params.get("id"));
+
+      const goBack = document.getElementById("goBack");
+      const pageSubtitle = document.getElementById("pageSubtitle");
+      const programList = document.getElementById("programList");
+      const programEmpty = document.getElementById("programEmpty");
+      const exerciseList = document.getElementById("exerciseList");
+      const exerciseEmpty = document.getElementById("exerciseEmpty");
+      const videoModal = document.getElementById("videoModal");
+      const videoEl = document.getElementById("exerciseVideo");
+      const videoTitle = document.getElementById("videoTitle");
+      const videoDesc = document.getElementById("videoDesc");
+      const videoNote = document.getElementById("videoNote");
+      const closeVideo = document.getElementById("closeVideo");
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+        return p.toString();
+      };
+
+      let initData = tg?.initData || params.get("initData") || buildInitData() || "";
+
+      const buildUrl = (path) => {
+        if (!initData) return path;
+        const joiner = path.includes("?") ? "&" : "?";
+        return `${path}${joiner}initData=${encodeURIComponent(initData)}`;
+      };
+
+      const normalizeType = (value) => (value === "gym" || value === "crossfit" ? value : "");
+      const formatMode = (value) => (value === "crossfit" ? "\u041a\u0440\u043e\u0441\u0441\u0444\u0438\u0442" : "\u0417\u0430\u043b");
+      const truncate = (value, limit) => {
+        const text = (value || "").trim();
+        if (!text) return "";
+        if (text.length <= limit) return text;
+        return `${text.slice(0, Math.max(0, limit - 3)).trim()}...`;
+      };
+      const getCoverUrl = (value) => {
+        if (!value) return "";
+        const trimmed = value.trim();
+        return /^(https?:)?\/\//i.test(trimmed) ? trimmed : "";
+      };
+
+      const setSubtitle = (text) => {
+        if (pageSubtitle) pageSubtitle.textContent = text;
+      };
+
+      const isStaffRole = (client) => {
+        if (!client) return false;
+        const role = client.role;
+        return role === "admin" || role === "sadmin" || role === "curator" || role === "trainer" || Boolean(client.isCurator);
+      };
+
+      const normalizeScope = (value) => (value === "gym" || value === "crossfit" || value === "both" ? value : "both");
+
+      const isFullAccessTariff = (value) => {
+        const lower = String(value || "").toLowerCase();
+        return lower.includes("\u043e\u043f\u0442\u0438\u043c")
+          || lower.includes("\u043c\u0430\u043a\u0441\u0438\u043c")
+          || lower.includes("optimal")
+          || lower.includes("maximum");
+      };
+
+      const buildTypeList = (client, tariffValue) => {
+        const isStaff = isStaffRole(client);
+        if (isStaff) {
+          const scope = normalizeScope(client.trainerScope);
+          if (scope === "both") return ["gym", "crossfit"];
+          return [scope];
+        }
+        if (isFullAccessTariff(tariffValue)) return ["gym", "crossfit"];
+        const mode = normalizeType(client.trainingMode);
+        return mode ? [mode] : ["gym", "crossfit"];
+      };
+
+      const orderTypes = (types) => ["gym", "crossfit"].filter((type) => types.includes(type));
+
+      let modalOpen = false;
+      let modalPushed = false;
+      let currentVideoRequest = 0;
+
+      const isYandexPublicLink = (url) => {
+        try {
+          const host = new URL(url).hostname;
+          return host === "disk.yandex.ru" || host === "yadi.sk" || host.endsWith(".yandex.ru");
+        } catch (_) {
+          return false;
+        }
+      };
+
+      const resolveVideoUrl = async (url) => {
+        if (!url) return null;
+        if (!isYandexPublicLink(url)) return url;
+        if (!apiBase) return null;
+        try {
+          const res = await fetch(`${apiBase}/api/yadisk/resolve?publicUrl=${encodeURIComponent(url)}`);
+          const json = await res.json().catch(() => ({}));
+          if (json?.ok && json.href) return json.href;
+        } catch (err) {
+          console.warn("Yandex resolve failed:", err);
+        }
+        return null;
+      };
+
+      const showVideoLink = (href, message) => {
+        if (!videoNote) return;
+        videoNote.innerHTML = "";
+        if (message) {
+          const text = document.createElement("span");
+          text.textContent = message;
+          videoNote.appendChild(text);
+          videoNote.appendChild(document.createElement("br"));
+        }
+        const link = document.createElement("a");
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.className = "video-link";
+        link.textContent = "\u0421\u0441\u044b\u043b\u043a\u0430 \u043d\u0430 \u0432\u0438\u0434\u0435\u043e";
+        videoNote.appendChild(link);
+      };
+
+      const openVideo = async (exercise) => {
+        if (!videoModal) return;
+        modalOpen = true;
+        currentVideoRequest += 1;
+        const requestId = currentVideoRequest;
+
+        if (!modalPushed) {
+          history.pushState({ modal: "exercise" }, "", window.location.href);
+          modalPushed = true;
+        }
+
+        videoModal.classList.add("show");
+        videoModal.setAttribute("aria-hidden", "false");
+        if (videoTitle) videoTitle.textContent = exercise?.title || "\u0423\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0435";
+        if (videoDesc) videoDesc.textContent = exercise?.description || "";
+        if (videoEl) {
+          videoEl.pause();
+          videoEl.removeAttribute("src");
+          videoEl.style.display = "none";
+        }
+        if (videoNote) {
+          videoNote.style.display = "block";
+          videoNote.textContent = "\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u0432\u0438\u0434\u0435\u043e...";
+        }
+
+        const rawUrl = exercise?.videoUrl || "";
+        if (!rawUrl) {
+          if (videoNote) videoNote.textContent = "\u0412\u0438\u0434\u0435\u043e \u043f\u043e\u043a\u0430 \u043d\u0435 \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u043e.";
+          return;
+        }
+
+        const resolvedUrl = await resolveVideoUrl(rawUrl);
+        if (requestId !== currentVideoRequest) return;
+        const sourceUrl = resolvedUrl || rawUrl;
+
+        if (videoEl) {
+          videoEl.onerror = () => {
+            if (videoEl) {
+              videoEl.style.display = "none";
+              videoEl.removeAttribute("src");
+            }
+            showVideoLink(rawUrl, "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u0432\u0438\u0434\u0435\u043e.");
+          };
+          videoEl.onloadeddata = () => {
+            if (videoNote) {
+              videoNote.style.display = "block";
+              videoNote.textContent = "\u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u043d\u0430 \u0432\u0438\u0434\u0435\u043e, \u0447\u0442\u043e\u0431\u044b \u0437\u0430\u043f\u0443\u0441\u0442\u0438\u0442\u044c.";
+            }
+          };
+          videoEl.onplaying = () => {
+            if (videoNote) videoNote.style.display = "none";
+          };
+          videoEl.src = sourceUrl;
+          videoEl.style.display = "block";
+          videoEl.load();
+          const playAttempt = videoEl.play();
+          if (playAttempt && typeof playAttempt.catch === "function") {
+            playAttempt.catch(() => {});
+          }
+        }
+
+        if (!resolvedUrl && isYandexPublicLink(rawUrl)) {
+          showVideoLink(rawUrl, "\u0412\u0438\u0434\u0435\u043e \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u043f\u043e \u0441\u0441\u044b\u043b\u043a\u0435.");
+        }
+      };
+
+      const closeVideoModal = (fromPopstate = false) => {
+        if (!videoModal || !modalOpen) return;
+        modalOpen = false;
+        videoModal.classList.remove("show");
+        videoModal.setAttribute("aria-hidden", "true");
+        if (videoEl) {
+          videoEl.pause();
+          videoEl.removeAttribute("src");
+          videoEl.style.display = "none";
+        }
+        if (videoNote) videoNote.textContent = "";
+        if (modalPushed && !fromPopstate) {
+          modalPushed = false;
+          history.back();
+          return;
+        }
+        modalPushed = false;
+      };
+
+      const buildProgramCard = (program) => {
+        const card = document.createElement("article");
+        card.className = "program-card";
+
+        const hero = document.createElement("div");
+        const typeClass = program.type === "crossfit" ? "cover-crossfit" : "cover-gym";
+        hero.className = `program-hero ${typeClass}`;
+
+        const badge = document.createElement("span");
+        badge.className = "program-badge";
+        badge.textContent = program.type === "crossfit" ? "\u041a\u0440\u043e\u0441\u0441\u0444\u0438\u0442" : "\u0417\u0430\u043b";
+
+        const title = document.createElement("h3");
+        title.className = "program-title";
+        title.textContent = program.title || "\u0411\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f";
+
+        hero.appendChild(badge);
+        hero.appendChild(title);
+
+        if (program.subtitle) {
+          const subtitle = document.createElement("p");
+          subtitle.className = "program-subtitle";
+          subtitle.textContent = program.subtitle;
+          hero.appendChild(subtitle);
+        }
+
+        const coverUrl = getCoverUrl(program.coverImage);
+        if (coverUrl) {
+          hero.classList.add("has-cover");
+          hero.style.backgroundImage = `url(\"${coverUrl}\")`;
+        }
+
+        const meta = document.createElement("div");
+        meta.className = "program-meta";
+        const chips = [];
+        if (program.weeksCount) chips.push(`${program.weeksCount} \u043d\u0435\u0434.`);
+        if (program.frequency) chips.push(program.frequency);
+        if (program.level) chips.push(program.level);
+        if (program.gender) chips.push(program.gender);
+
+        chips.slice(0, 4).forEach((chip) => {
+          const span = document.createElement("span");
+          span.className = "meta-chip";
+          span.textContent = chip;
+          meta.appendChild(span);
+        });
+
+        const summaryText = truncate(program.summary, 140);
+        const summary = document.createElement("p");
+        summary.className = "program-summary";
+        summary.textContent = summaryText;
+
+        const footer = document.createElement("div");
+        footer.className = "program-footer";
+        const openBtn = document.createElement("button");
+        openBtn.className = "open-btn";
+        openBtn.type = "button";
+        openBtn.textContent = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c";
+        footer.appendChild(openBtn);
+
+        card.appendChild(hero);
+        if (meta.childNodes.length) card.appendChild(meta);
+        if (summaryText) card.appendChild(summary);
+        card.appendChild(footer);
+
+        if (program.slug) {
+          const openProgram = () => {
+            const backUrl = buildUrl(`admin_client_available.html?clientId=${clientId}`);
+            const targetUrl = buildUrl(`program_detail.html?slug=${encodeURIComponent(program.slug)}&back=${encodeURIComponent(backUrl)}`);
+            window.location.href = targetUrl;
+          };
+          card.addEventListener("click", openProgram);
+          openBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openProgram();
+          });
+        } else {
+          openBtn.disabled = true;
+        }
+
+        return card;
+      };
+
+      const buildExerciseCard = (exercise) => {
+        const card = document.createElement("article");
+        card.className = "exercise-card";
+
+        const title = document.createElement("h3");
+        title.className = "card-title";
+        title.textContent = exercise.title || "\u0411\u0435\u0437 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u044f";
+
+        const metaRow = document.createElement("div");
+        metaRow.className = "meta-row";
+
+        const exerciseType = exercise.type === "crossfit" ? "crossfit" : "gym";
+        if (exerciseType === "crossfit") {
+          const muscles = Array.isArray(exercise.muscles) && exercise.muscles.length
+            ? exercise.muscles
+            : (exercise.muscle ? [exercise.muscle] : []);
+          const muscleLabel = muscles.join(", ");
+          if (muscleLabel) {
+            const chip = document.createElement("span");
+            chip.className = "meta-chip";
+            chip.textContent = muscleLabel;
+            metaRow.appendChild(chip);
+          }
+        }
+
+        const chip = document.createElement("span");
+        chip.className = "meta-chip";
+        chip.textContent = formatMode(exerciseType);
+        metaRow.appendChild(chip);
+
+        const summary = document.createElement("p");
+        summary.className = "card-summary";
+        summary.textContent = truncate(exercise.description, 120);
+
+        card.appendChild(title);
+        if (metaRow.childNodes.length) card.appendChild(metaRow);
+        if (summary.textContent) card.appendChild(summary);
+
+        card.addEventListener("click", () => openVideo(exercise));
+
+        return card;
+      };
+
+      const renderGrouped = (listEl, emptyEl, groups, buildCard, emptyText, gridClass) => {
+        if (!listEl) return;
+        listEl.innerHTML = "";
+        const safeGroups = Array.isArray(groups) ? groups : [];
+        if (!safeGroups.length) {
+          if (emptyEl) emptyEl.hidden = false;
+          return;
+        }
+
+        const useGroups = safeGroups.length > 1;
+        let totalCount = 0;
+
+        const addGrid = (container, items) => {
+          const grid = document.createElement("div");
+          grid.className = `card-grid ${gridClass}`;
+          if (items.length) {
+            items.forEach((item) => grid.appendChild(buildCard(item)));
+          } else {
+            const empty = document.createElement("div");
+            empty.className = "empty-state";
+            empty.textContent = emptyText;
+            grid.appendChild(empty);
+          }
+          container.appendChild(grid);
+        };
+
+        if (useGroups) {
+          safeGroups.forEach((group) => {
+            const block = document.createElement("div");
+            block.className = "group-block";
+
+            const head = document.createElement("div");
+            head.className = "group-head";
+            const title = document.createElement("h3");
+            title.className = "group-title";
+            title.textContent = group.label;
+            head.appendChild(title);
+            block.appendChild(head);
+
+            const items = Array.isArray(group.items) ? group.items : [];
+            totalCount += items.length;
+            addGrid(block, items);
+            listEl.appendChild(block);
+          });
+          if (emptyEl) emptyEl.hidden = true;
+          return;
+        }
+
+        const items = Array.isArray(safeGroups[0].items) ? safeGroups[0].items : [];
+        totalCount = items.length;
+        if (totalCount === 0) {
+          if (emptyEl) emptyEl.hidden = false;
+          return;
+        }
+        if (emptyEl) emptyEl.hidden = true;
+        addGrid(listEl, items);
+      };
+
+      const renderPrograms = (groups) => {
+        renderGrouped(
+          programList,
+          programEmpty,
+          groups,
+          buildProgramCard,
+          "\u041d\u0435\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0445 \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c.",
+          "program-grid"
+        );
+      };
+
+      const renderExercises = (groups) => {
+        renderGrouped(
+          exerciseList,
+          exerciseEmpty,
+          groups,
+          buildExerciseCard,
+          "\u041d\u0435\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u044b\u0445 \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0439.",
+          "exercise-grid"
+        );
+      };
+
+      const loadClient = async () => {
+        if (!apiBase || !initData || !clientId) return null;
+        try {
+          const url = `${apiBase}/api/admin/clients/${clientId}?initData=${encodeURIComponent(initData)}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) return null;
+          return json.client || null;
+        } catch (err) {
+          console.warn("Client fetch failed:", err);
+          return null;
+        }
+      };
+
+      const loadPrograms = async (type, tariff) => {
+        if (!apiBase) return [];
+        const query = new URLSearchParams();
+        if (type) query.set("type", type);
+        if (tariff) query.set("tariff", tariff);
+        try {
+          const res = await fetch(`${apiBase}/api/programs?${query.toString()}`);
+          const json = await res.json().catch(() => ({}));
+          return json?.ok && Array.isArray(json.programs) ? json.programs : [];
+        } catch (err) {
+          console.warn("Programs fetch failed:", err);
+          return [];
+        }
+      };
+
+      const loadExercises = async (type, tariff) => {
+        if (!apiBase) return [];
+        const query = new URLSearchParams();
+        if (type) query.set("type", type);
+        if (tariff) query.set("tariff", tariff);
+        try {
+          const res = await fetch(`${apiBase}/api/exercises?${query.toString()}`);
+          const json = await res.json().catch(() => ({}));
+          return json?.ok && Array.isArray(json.exercises) ? json.exercises : [];
+        } catch (err) {
+          console.warn("Exercises fetch failed:", err);
+          return [];
+        }
+      };
+
+      const init = async () => {
+        if (!apiBase) {
+          setSubtitle("\u041d\u0435\u0442 API_BASE. \u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 env.js.");
+          return;
+        }
+        if (!clientId) {
+          setSubtitle("\u041d\u0435 \u043f\u0435\u0440\u0435\u0434\u0430\u043d ID \u043a\u043b\u0438\u0435\u043d\u0442\u0430.");
+          return;
+        }
+        if (!initData) {
+          setSubtitle("\u041d\u0435\u0442 initData \u0438\u0437 Telegram.");
+          return;
+        }
+
+        const client = await loadClient();
+        if (!client) {
+          setSubtitle("\u041d\u0435\u0442 \u0434\u043e\u0441\u0442\u0443\u043f\u0430 \u0438\u043b\u0438 \u043a\u043b\u0438\u0435\u043d\u0442 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d.");
+          return;
+        }
+
+        const name = [client.first_name, client.last_name].filter(Boolean).join(" ") || "\u0411\u0435\u0437 \u0438\u043c\u0435\u043d\u0438";
+        const rawTariff = (client.tariffName || "").trim();
+        const isStaff = isStaffRole(client);
+        const orderedTypes = orderTypes(buildTypeList(client, rawTariff));
+        const types = orderedTypes.length ? orderedTypes : ["gym", "crossfit"];
+        const effectiveTariff = isStaff ? "" : rawTariff;
+
+        const typeLabel = types.length > 1
+          ? "\u0417\u0430\u043b + \u041a\u0440\u043e\u0441\u0441\u0444\u0438\u0442"
+          : (types[0] ? formatMode(types[0]) : "\u2014");
+        const tariffLabel = isStaff ? "\u041d\u0435 \u0442\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044f" : (rawTariff || "\u2014");
+
+        setSubtitle(`\u041a\u043b\u0438\u0435\u043d\u0442: ${name}. \u0422\u0438\u043f: ${typeLabel}. \u0422\u0430\u0440\u0438\u0444: ${tariffLabel}.`);
+
+        const [programGroups, exerciseGroups] = await Promise.all([
+          Promise.all(types.map(async (type) => ({
+            type,
+            label: formatMode(type),
+            items: await loadPrograms(type, effectiveTariff)
+          }))),
+          Promise.all(types.map(async (type) => ({
+            type,
+            label: formatMode(type),
+            items: await loadExercises(type, effectiveTariff)
+          })))
+        ]);
+
+        renderPrograms(programGroups);
+        renderExercises(exerciseGroups);
+
+        try {
+          tg?.ready?.();
+          tg?.expand?.();
+        } catch (_) {}
+      };
+
+      if (goBack) {
+        goBack.addEventListener("click", () => {
+          const backUrl = buildUrl(`admin_client.html?clientId=${clientId}`);
+          window.location.href = backUrl;
+        });
+      }
+
+      if (closeVideo) {
+        closeVideo.addEventListener("click", () => closeVideoModal());
+      }
+
+      if (videoModal) {
+        videoModal.addEventListener("click", (event) => {
+          if (event.target === videoModal) {
+            closeVideoModal();
+          }
+        });
+      }
+
+      window.addEventListener("popstate", () => {
+        if (modalOpen) {
+          closeVideoModal(true);
+        }
+      });
+
+      init();
+    })();
+  </script>
+</body>
+</html>
