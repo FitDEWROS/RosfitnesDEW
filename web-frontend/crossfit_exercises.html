@@ -133,8 +133,70 @@
     .list-actions {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: space-between;
+      gap: 12px;
       padding: 0 16px 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    .filter-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+    }
+    .filter-btn:active {
+      transform: scale(0.96);
+    }
+
+    .filter-panel {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-panel[hidden] {
+      display: none;
+    }
+    .filter-chip {
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+    .filter-chip.is-active {
+      color: #1b1b1b;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      border-color: transparent;
     }
 
     .density-toggle {
@@ -787,6 +849,22 @@
 
   <div class="wrap">
     <div class="list-actions">
+      <div class="filter-controls">
+        <button id="filterToggle" class="filter-btn" type="button" aria-label="Фильтры">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6h10M18 6h2M8 12h12M4 12h2M4 18h6M14 18h6"></path>
+            <circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"></circle>
+            <circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+            <circle cx="12" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+          </svg>
+        </button>
+        <div id="filterPanel" class="filter-panel" hidden>
+          <button class="filter-chip is-active" type="button" data-filter="dumbbells">Гантели</button>
+          <button class="filter-chip is-active" type="button" data-filter="barbell">Штанга</button>
+          <button class="filter-chip is-active" type="button" data-filter="kettlebells">Гири</button>
+          <button class="filter-chip is-active" type="button" data-filter="free">Свободные</button>
+        </div>
+      </div>
       <div class="density-toggle" role="group" aria-label="Колонки">
         <span class="density-label">Колонки</span>
         <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
@@ -822,6 +900,12 @@
     const list = document.getElementById("exerciseList");
     const densityButton = document.querySelector(".density-btn");
     const densityOrder = ["1", "2", "4"];
+    const filterToggle = document.getElementById("filterToggle");
+    const filterPanel = document.getElementById("filterPanel");
+    const filterButtons = Array.from(document.querySelectorAll(".filter-chip"));
+    const FILTER_KEYS = ["dumbbells", "barbell", "kettlebells", "free"];
+    let activeFilters = new Set(FILTER_KEYS);
+    let allExercises = [];
     const videoModal = document.getElementById("videoModal");
     const videoEl = document.getElementById("exerciseVideo");
     const videoTitle = document.getElementById("videoTitle");
@@ -1125,13 +1209,29 @@
       });
     };
 
+    const updateFilterUI = () => {
+      filterButtons.forEach((btn) => {
+        const key = btn.dataset.filter;
+        btn.classList.toggle("is-active", key && activeFilters.has(key));
+      });
+    };
+
+    const applyFilters = () => {
+      const showAll = activeFilters.size === 0 || activeFilters.size === FILTER_KEYS.length;
+      const filtered = showAll
+        ? allExercises
+        : allExercises.filter((exercise) => exercise.crossfitType && activeFilters.has(exercise.crossfitType));
+      renderExercises(filtered);
+    };
+
     const loadExercises = async () => {
       if (!apiBase) return;
       try {
         const res = await fetch(`${apiBase}/api/exercises?type=crossfit`);
         const json = await res.json().catch(() => ({}));
         if (json?.ok && Array.isArray(json.exercises)) {
-          renderExercises(json.exercises);
+          allExercises = json.exercises;
+          applyFilters();
         }
       } catch (err) {
         console.warn("exercises load failed", err);
@@ -1141,6 +1241,27 @@
     document.getElementById("backBtn").addEventListener("click", () => {
       window.location.href = "index.html";
     });
+
+    if (filterToggle && filterPanel) {
+      filterToggle.addEventListener("click", () => {
+        filterPanel.hidden = !filterPanel.hidden;
+      });
+    }
+    if (filterPanel) {
+      filterPanel.addEventListener("click", (event) => {
+        const btn = event.target.closest(".filter-chip");
+        if (!btn) return;
+        const key = btn.dataset.filter;
+        if (!key) return;
+        if (activeFilters.has(key)) {
+          activeFilters.delete(key);
+        } else {
+          activeFilters.add(key);
+        }
+        updateFilterUI();
+        applyFilters();
+      });
+    }
 
     const openVideoModal = async (exercise) => {
       if (!videoModal) return;

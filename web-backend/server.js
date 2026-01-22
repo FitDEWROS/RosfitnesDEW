@@ -495,6 +495,7 @@ function normalizeTariffs(value) {
 }
 
 const DEFAULT_MUSCLE = "\u041e\u0431\u0449\u0430\u044f";
+const CROSSFIT_TYPES = ['dumbbells', 'barbell', 'kettlebells', 'free'];
 
 function normalizeMuscles(value) {
   const list = Array.isArray(value) ? value : (value ? [value] : []);
@@ -504,6 +505,11 @@ function normalizeMuscles(value) {
     if (cleaned) unique.add(cleaned);
   });
   return Array.from(unique);
+}
+
+function normalizeCrossfitType(value) {
+  const cleaned = cleanString(value);
+  return CROSSFIT_TYPES.includes(cleaned) ? cleaned : '';
 }
 
 
@@ -2763,8 +2769,12 @@ app.post('/api/admin/exercises', async (req, res) => {
   const typeRaw = cleanString(payload.type);
   const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
   const tariffs = normalizeTariffs(payload.tariffs);
+  const crossfitType = normalizedType === 'crossfit' ? normalizeCrossfitType(payload.crossfitType) : '';
   if (!['gym', 'crossfit'].includes(normalizedType)) {
     return res.status(400).json({ ok: false, error: 'invalid_type' });
+  }
+  if (normalizedType === 'crossfit' && !crossfitType) {
+    return res.status(400).json({ ok: false, error: 'missing_crossfit_type' });
   }
     const rawMuscles = Array.isArray(payload.muscles) ? payload.muscles : payload.muscle;
     const muscles = normalizedType === 'gym' ? normalizeMuscles(rawMuscles) : [];
@@ -2783,6 +2793,7 @@ app.post('/api/admin/exercises', async (req, res) => {
         tariffs,
         muscle,
         muscles: finalMuscles,
+        crossfitType: normalizedType === 'crossfit' ? crossfitType : null,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
       }
@@ -2811,9 +2822,13 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
     const typeRaw = cleanString(payload.type);
     const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
     const tariffs = normalizeTariffs(payload.tariffs);
+    const crossfitType = normalizedType === 'crossfit' ? normalizeCrossfitType(payload.crossfitType) : '';
 
     if (!['gym', 'crossfit'].includes(normalizedType)) {
       return res.status(400).json({ ok: false, error: 'invalid_type' });
+    }
+    if (normalizedType === 'crossfit' && !crossfitType) {
+      return res.status(400).json({ ok: false, error: 'missing_crossfit_type' });
     }
 
     const existing = await prisma.exercise.findUnique({
@@ -2842,6 +2857,7 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
         tariffs,
         muscle,
         muscles: finalMuscles,
+        crossfitType: normalizedType === 'crossfit' ? crossfitType : null,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
       }

@@ -850,6 +850,16 @@
             <option value="crossfit">Кроссфит</option>
           </select>
         </label>
+        <label id="crossfitTypeWrap" hidden>
+          Тип (кроссфит)
+          <select id="crossfitType">
+            <option value="" disabled selected>Выберите тип</option>
+            <option value="dumbbells">Гантели</option>
+            <option value="barbell">Штанга</option>
+            <option value="kettlebells">Гири</option>
+            <option value="free">Свободные</option>
+          </select>
+        </label>
         <label class="full">
           Тарифы доступа
           <div class="pill-group">
@@ -1017,6 +1027,8 @@
       const muscleToggle = document.getElementById("muscleToggle");
       const muscleToggleText = document.getElementById("muscleToggleText");
       const muscleOptions = document.getElementById("muscleOptions");
+      const crossfitTypeWrap = document.getElementById("crossfitTypeWrap");
+      const crossfitType = document.getElementById("crossfitType");
       const exerciseDescription = document.getElementById("exerciseDescription");
       const exerciseVideo = document.getElementById("exerciseVideo");
       const exerciseVideoUpload = document.getElementById("exerciseVideoUpload");
@@ -1193,6 +1205,16 @@
         } else {
           updateMuscleToggle();
         }
+        if (crossfitTypeWrap) crossfitTypeWrap.hidden = isGym;
+        if (crossfitType) {
+          crossfitType.disabled = isGym;
+          if (isGym) {
+            crossfitType.value = "";
+          } else if (!crossfitType.value) {
+            const first = Array.from(crossfitType.options).find((opt) => opt.value);
+            if (first) crossfitType.value = first.value;
+          }
+        }
       };
 
       const applyTrainerScope = () => {
@@ -1220,6 +1242,12 @@
           exerciseList.innerHTML = "<p class='muted'>Архив упражнений пуст.</p>";
           return;
         }
+        const crossfitTypeLabels = {
+          dumbbells: "Гантели",
+          barbell: "Штанга",
+          kettlebells: "Гири",
+          free: "Свободные"
+        };
         exercises.forEach((exercise) => {
           const typeLabel = exercise.type === "crossfit" ? "Кроссфит" : "Зал";
           const rawMuscles = Array.isArray(exercise.muscles) && exercise.muscles.length
@@ -1228,6 +1256,9 @@
           const muscleList = rawMuscles.filter((item) => item && item !== GENERAL_MUSCLE);
           const muscleLabel = exercise.type === "gym" && muscleList.length
             ? ` - ${muscleList.join(", ")}`
+            : "";
+          const crossfitLabel = exercise.type === "crossfit" && exercise.crossfitType
+            ? ` - ${crossfitTypeLabels[exercise.crossfitType] || exercise.crossfitType}`
             : "";
           const videoLabel = exercise.videoUrl ? "Есть видео" : "Без видео";
           const tariffsLabel = Array.isArray(exercise.tariffs) && exercise.tariffs.length
@@ -1238,7 +1269,7 @@
           item.innerHTML = `
             <div class="exercise-meta">
               <strong>${exercise.title}</strong>
-              <span class="muted">${typeLabel}${muscleLabel} - ${videoLabel}${tariffsLabel}</span>
+              <span class="muted">${typeLabel}${muscleLabel}${crossfitLabel} - ${videoLabel}${tariffsLabel}</span>
             </div>
             <div class="exercise-actions">
               <button class="btn-outline" type="button" data-ex-edit="${exercise.id}">Редактировать</button>
@@ -1270,6 +1301,9 @@
         if (exerciseTitle) exerciseTitle.value = "";
         if (exerciseType) {
           exerciseType.value = trainerScope && trainerScope !== "both" ? trainerScope : "gym";
+        }
+        if (crossfitType) {
+          crossfitType.value = "";
         }
         setMuscleValues([]);
         setMuscleOpen(false);
@@ -1378,6 +1412,7 @@
         currentExerciseId = id;
         if (exerciseTitle) exerciseTitle.value = exercise.title || "";
         if (exerciseType) exerciseType.value = exercise.type || "gym";
+        if (crossfitType) crossfitType.value = exercise.crossfitType || "";
         setMuscleValues(
           Array.isArray(exercise.muscles) && exercise.muscles.length
             ? exercise.muscles
@@ -1418,6 +1453,9 @@
           videoUrl: exerciseVideo?.value.trim() || "",
           tariffs: getSelectedTariffs()
         };
+        if (crossfitType) {
+          payload.crossfitType = crossfitType.value || "";
+        }
 
         if (isTrainer && trainerScope && trainerScope !== "both") {
           payload.type = trainerScope;
@@ -1425,6 +1463,10 @@
 
         if (!payload.title) {
           setExerciseStatus("Заполни название упражнения.", false);
+          return;
+        }
+        if (payload.type === "crossfit" && !payload.crossfitType) {
+          setExerciseStatus("Выбери тип кроссфит.", false);
           return;
         }
 

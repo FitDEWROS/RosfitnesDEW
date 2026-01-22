@@ -191,6 +191,7 @@ model Exercise {
   tariffs     String[] @default([])
   muscle      String?
   muscles     String[] @default([])
+  crossfitType String?
   description String?
   videoUrl    String?
   createdAt   DateTime @default(now())
