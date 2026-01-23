@@ -535,6 +535,16 @@ html.light
       const renderProgram = (program) => {
         if (!program) return;
 
+        const getWeeksLabel = (count) => {
+          if (!Number.isFinite(count)) return "недель";
+          const mod100 = count % 100;
+          const mod10 = count % 10;
+          if (mod100 >= 11 && mod100 <= 14) return "недель";
+          if (mod10 === 1) return "неделя";
+          if (mod10 >= 2 && mod10 <= 4) return "недели";
+          return "недель";
+        };
+
         const typeLabel = program.type === "gym" ? "ЗАЛ" : "КРОССФИТ";
         const tags = [
           typeLabel,
@@ -547,7 +557,7 @@ html.light
         byId("programSubtitle").textContent = program.subtitle || "";
         byId("heroSubtitle").textContent = program.subtitle || "";
         byId("programDescription").textContent = program.description || program.summary || "";
-        byId("weeksCount").textContent = program.weeksCount ? `${program.weeksCount} недель` : "";
+        byId("weeksCount").textContent = program.weeksCount ? `${program.weeksCount} ${getWeeksLabel(program.weeksCount)}` : "";
 
         const cover = byId("programCover");
         cover.classList.toggle("cover-gym", program.type === "gym");
@@ -565,7 +575,7 @@ html.light
 
         const stats = [
           program.frequency || "3 трен/нед",
-          program.weeksCount ? `${program.weeksCount} недель` : "План",
+          program.weeksCount ? `${program.weeksCount} ${getWeeksLabel(program.weeksCount)}` : "План",
           program.level || "Новички"
         ];
         byId("heroStats").innerHTML = stats.map((stat) => `<span class="stat-chip">${stat}</span>`).join("");
