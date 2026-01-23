@@ -869,6 +869,16 @@
           </div>
         </div>
 
+        <div class="type-row">
+          <span class="field-label">Доступ в гостевом</span>
+          <div class="pill-group">
+            <label class="pill">
+              <input type="checkbox" id="programGuestAccess">
+              <span>Гостевой доступ</span>
+            </label>
+          </div>
+        </div>
+
         <div class="form-grid">
           <label>
             Название программы
@@ -1077,6 +1087,7 @@
       const programAuthorAvatar = document.getElementById("programAuthorAvatar");
       const tariffInputs = Array.from(document.querySelectorAll("input[name='programTariff']"));
       const programTypeInputs = Array.from(document.querySelectorAll("input[name='programType']"));
+      const programGuestAccess = document.getElementById("programGuestAccess");
 
       const planWeeks = document.getElementById("planWeeks");
       const planWorkouts = document.getElementById("planWorkouts");
@@ -1660,6 +1671,7 @@
           slug: programSlug.value.trim(),
           type,
           tariffs,
+          guestAccess: Boolean(programGuestAccess?.checked),
           subtitle: programSubtitle.value.trim(),
           summary: programSummary.value.trim(),
           description: programDescription.value.trim(),
@@ -1740,6 +1752,7 @@
         programAuthorName.value = "Тестов Тест Тестович";
         programAuthorRole.value = "Куратор Fit Dew";
         programAuthorAvatar.value = "";
+        if (programGuestAccess) programGuestAccess.checked = false;
         planWeeks.value = "4";
         planWorkouts.value = "2";
         const defaultType = trainerScope && trainerScope !== "both" ? trainerScope : "gym";
@@ -1780,6 +1793,7 @@
               <div class="program-tags">
                 <span class="program-tag">${program.type === "crossfit" ? "Кроссфит" : "Зал"}</span>
                 <span class="program-tag">${weeksLabel}</span>
+                ${program.guestAccess ? '<span class="program-tag">Гостевой</span>' : ""}
               </div>
             </div>
             <div class="section-actions">
@@ -1844,6 +1858,7 @@
           programAuthorRole.value = program.authorRole || "Куратор Fit Dew";
           programAuthorAvatar.value = program.authorAvatar || "";
           trainerSelect.value = program.authorUserId ? String(program.authorUserId) : "";
+          if (programGuestAccess) programGuestAccess.checked = Boolean(program.guestAccess);
           const typeInput = document.querySelector(`input[name='programType'][value='${program.type}']`);
           if (typeInput) typeInput.checked = true;
           setSelectedTariffs(program.tariffs);

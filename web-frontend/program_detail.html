@@ -366,6 +366,16 @@
       border-color: rgba(243, 213, 139, 0.4);
     }
 
+    .workout-card.is-locked {
+      opacity: 0.6;
+      cursor: not-allowed;
+      border-style: dashed;
+    }
+
+    .workout-card.is-locked .workout-arrow {
+      opacity: 0.4;
+    }
+
     .workout-title {
       font-weight: 700;
     }
@@ -441,6 +451,50 @@ html.light
       const tg = window.Telegram?.WebApp || null;
       const API_BASE = window.ENV?.API_BASE || "";
       const fallback = window.PROGRAMS_FALLBACK || [];
+      let isGuestMode = false;
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+        return p.toString();
+      };
+
+      const fetchUserProfile = async () => {
+        if (!API_BASE || !tg) return null;
+        const initData = buildInitData();
+        if (!initData) return null;
+        try {
+          const res = await fetch(`${API_BASE}/api/user?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          return json?.profile || null;
+        } catch (err) {
+          console.warn("profile fetch failed", err);
+          return null;
+        }
+      };
+
+      const isGuestTariff = (tariff) => {
+        const value = String(tariff || "").toLowerCase().trim();
+        return !value || value.includes("Р±РµР· С‚Р°СЂРёС„Р°") || value.includes("РіРѕСЃС‚");
+      };
+
+      const isStaffProfile = (profile) => {
+        if (!profile) return false;
+        const role = profile.role;
+        return role === "admin" || role === "sadmin" || role === "curator" || Boolean(profile.isCurator);
+      };
 
       const byId = (id) => document.getElementById(id);
       const params = new URLSearchParams(window.location.search);
@@ -448,6 +502,7 @@ html.light
       const backTarget = params.get("back") || "";
       const initData = params.get("initData") || "";
       const backBtn = byId("backBtn");
+      const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
 
       if (backBtn) {
         backBtn.addEventListener("click", () => {
@@ -467,6 +522,15 @@ html.light
       };
 
       const normalizeWorkoutId = (value) => (value === null || value === undefined ? "" : String(value));
+
+      const getFirstWorkoutId = (program) => {
+        const weeks = Array.isArray(program?.weeks) ? program.weeks : [];
+        const firstWeek = weeks[0];
+        if (!firstWeek || !Array.isArray(firstWeek.workouts) || !firstWeek.workouts.length) return "";
+        const firstWorkout = firstWeek.workouts[0];
+        const rawId = firstWorkout?.id ?? `${firstWeek.index}-${firstWorkout.index}`;
+        return normalizeWorkoutId(rawId);
+      };
 
       const renderProgram = (program) => {
         if (!program) return;
@@ -515,10 +579,15 @@ html.light
         weeksList.innerHTML = "";
 
         const weeks = Array.isArray(program.weeks) ? program.weeks : [];
+        const guestAllowedId = isGuestMode ? getFirstWorkoutId(program) : "";
         weeks.forEach((week, idx) => {
           const weekCard = document.createElement("article");
           const workouts = Array.isArray(week.workouts) ? week.workouts : [];
-          const workoutsLabel = workouts.length ? `${workouts.length} тренировки` : "Планируется";
+          const workoutsLabel = isGuestMode && idx > 0
+            ? "Недоступно для гостей"
+            : workouts.length
+              ? `${workouts.length} тренировки`
+              : "Планируется";
 
           weekCard.className = "week-card";
           weekCard.dataset.open = idx === 0 ? "true" : "false";
@@ -534,28 +603,34 @@ html.light
           `;
 
           const body = weekCard.querySelector(".week-body");
-          workouts.forEach((workout) => {
+          workouts.forEach((workout, workoutIdx) => {
             const workoutCard = document.createElement("button");
             const exerciseCount = Array.isArray(workout.exercises) ? workout.exercises.length : 0;
-            workoutCard.className = "workout-card";
+            const workoutId = normalizeWorkoutId(workout.id || workout.id === 0 ? workout.id : `${week.index}-${workout.index}`);
+            const isLocked = isGuestMode && (!guestAllowedId || workoutId !== guestAllowedId);
+            const subtitleText = isLocked
+              ? "Недоступно для гостей"
+              : `${exerciseCount} упражнений`;
+            workoutCard.className = `workout-card${isLocked ? " is-locked" : ""}`;
             workoutCard.type = "button";
             workoutCard.innerHTML = `
               <div>
                 <div class="workout-title">${workout.title || "Тренировка"}</div>
-                <div class="workout-subtitle">${exerciseCount} упражнений</div>
+                <div class="workout-subtitle">${subtitleText}</div>
               </div>
               <div class="workout-arrow">›</div>
             `;
-            const workoutId = normalizeWorkoutId(workout.id || workout.id === 0 ? workout.id : `${week.index}-${workout.index}`);
-            workoutCard.addEventListener("click", () => {
-              if (!workoutId) return;
-              const query = new URLSearchParams();
-              query.set("slug", program.slug);
-              query.set("workout", workoutId);
-              if (backTarget) query.set("back", backTarget);
-              if (initData) query.set("initData", initData);
-              window.location.href = `program_workout.html?${query.toString()}`;
-            });
+            if (!isLocked) {
+              workoutCard.addEventListener("click", () => {
+                if (!workoutId) return;
+                const query = new URLSearchParams();
+                query.set("slug", program.slug);
+                query.set("workout", workoutId);
+                if (backTarget) query.set("back", backTarget);
+                if (initData) query.set("initData", initData);
+                window.location.href = `program_workout.html?${query.toString()}`;
+              });
+            }
             body.appendChild(workoutCard);
           });
 
@@ -569,6 +644,20 @@ html.light
       };
 
       const loadProgram = async () => {
+        const resolveGuestMode = async () => {
+          const profile = await fetchUserProfile();
+          if (!profile) {
+            isGuestMode = false;
+            return;
+          }
+          if (isStaffProfile(profile)) {
+            isGuestMode = false;
+            return;
+          }
+          isGuestMode = isGuestTariff(profile.tariffName);
+        };
+
+        await resolveGuestMode();
         const fallbackProgram = fallback[0] || null;
         const targetSlug = slug || fallbackProgram?.slug;
         if (!targetSlug) return renderProgram(fallbackProgram);
@@ -578,6 +667,11 @@ html.light
             const res = await fetch(`${API_BASE}/api/programs/${encodeURIComponent(targetSlug)}`);
             const json = await res.json().catch(() => ({}));
             if (json?.ok && json.program) {
+              if (isGuestMode && !json.program.guestAccess) {
+                showAlert("\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0432 \u0433\u043e\u0441\u0442\u0435\u0432\u043e\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u0435.");
+                window.location.href = backTarget || "programs.html";
+                return;
+              }
               return renderProgram(json.program);
             }
           } catch (err) {
@@ -586,6 +680,11 @@ html.light
         }
 
         const program = fallback.find((item) => item.slug === targetSlug) || fallbackProgram;
+        if (isGuestMode && program && !program.guestAccess) {
+          showAlert("\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u0432 \u0433\u043e\u0441\u0442\u0435\u0432\u043e\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u0435.");
+          window.location.href = backTarget || "programs.html";
+          return;
+        }
         renderProgram(program);
       };
 
@@ -599,6 +698,9 @@ html.light
   </script>
 </body>
 </html>
+
+
+
 
 
 

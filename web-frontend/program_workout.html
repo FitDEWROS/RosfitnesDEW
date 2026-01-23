@@ -304,6 +304,14 @@
       background: #000;
     }
 
+    #videoModal.guest-locked .video-text,
+    #videoModal.guest-locked #exerciseVideo {
+      filter: blur(6px);
+    }
+    #videoModal.guest-locked #exerciseVideo {
+      pointer-events: none;
+    }
+
     .video-title {
       margin: 12px 0 6px;
       font-weight: 700;
@@ -433,6 +441,51 @@ html.light
       const backTarget = params.get("back") || "";
       const initData = params.get("initData") || "";
       const isAndroid = /Android/i.test(navigator.userAgent);
+      let isGuestMode = false;
+      const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+        return p.toString();
+      };
+
+      const fetchUserProfile = async () => {
+        if (!apiBase || !tg) return null;
+        const initDataValue = buildInitData();
+        if (!initDataValue) return null;
+        try {
+          const res = await fetch(`${apiBase}/api/user?initData=${encodeURIComponent(initDataValue)}`);
+          const json = await res.json().catch(() => ({}));
+          return json?.profile || null;
+        } catch (err) {
+          console.warn("profile fetch failed", err);
+          return null;
+        }
+      };
+
+      const isGuestTariff = (tariff) => {
+        const value = String(tariff || "").toLowerCase().trim();
+        return !value || value.includes("Р±РµР· С‚Р°СЂРёС„Р°") || value.includes("РіРѕСЃС‚");
+      };
+
+      const isStaffProfile = (profile) => {
+        if (!profile) return false;
+        const role = profile.role;
+        return role === "admin" || role === "sadmin" || role === "curator" || Boolean(profile.isCurator);
+      };
 
       const byId = (id) => document.getElementById(id);
       const backBtn = byId("backBtn");
@@ -555,6 +608,8 @@ html.light
         if (!videoModal) return;
         currentVideoRequest += 1;
         const requestId = currentVideoRequest;
+        const guestLocked = isGuestMode;
+        const guestLockMessage = "Видео доступно только после покупки тарифа.";
         const title = exercise?.title || "Упражнение";
         const description = exercise?.description || exercise?.details || "";
         videoTitle.textContent = title;
@@ -562,14 +617,22 @@ html.light
           videoDesc.innerHTML = buildDescriptionHtml(description || "Описание появится позже.");
         }
 
+        if (videoModal) {
+          videoModal.classList.toggle("guest-locked", guestLocked);
+        }
         if (videoEl) {
           videoEl.pause();
           videoEl.removeAttribute("src");
           videoEl.style.display = "none";
+          videoEl.onplay = null;
         }
         if (videoNote) {
           videoNote.style.display = "block";
-          videoNote.textContent = "Загружаем видео...";
+          if (guestLocked && exercise?.videoUrl) {
+            videoNote.textContent = guestLockMessage;
+          } else {
+            videoNote.textContent = "Загружаем видео...";
+          }
         }
 
         videoModal.classList.add("show");
@@ -589,24 +652,41 @@ html.light
         if (resolvedUrl && videoEl) {
           videoEl.src = resolvedUrl;
           videoEl.style.display = "block";
-          videoEl.onerror = () => {
-            if (requestId != currentVideoRequest) return;
-            showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
-          };
+          if (guestLocked) {
+            videoEl.onplay = () => {
+              videoEl.pause();
+              showAlert(guestLockMessage);
+              if (videoNote) {
+                videoNote.style.display = "block";
+                videoNote.textContent = guestLockMessage;
+              }
+            };
+          } else {
+            videoEl.onerror = () => {
+              if (requestId != currentVideoRequest) return;
+              showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
+            };
+          }
           videoEl.onloadeddata = () => {
             if (requestId != currentVideoRequest) return;
-            if (videoNote) videoNote.style.display = "none";
+            if (!guestLocked && videoNote) videoNote.style.display = "none";
           };
           videoEl.load();
-          const playAttempt = videoEl.play();
-          if (playAttempt && typeof playAttempt.catch === "function") {
-            playAttempt.catch(() => {
-              if (requestId != currentVideoRequest) return;
-              showVideoLink(resolvedUrl, "Не удалось запустить видео.");
-            });
+          if (!guestLocked) {
+            const playAttempt = videoEl.play();
+            if (playAttempt && typeof playAttempt.catch === "function") {
+              playAttempt.catch(() => {
+                if (requestId != currentVideoRequest) return;
+                showVideoLink(resolvedUrl, "Не удалось запустить видео.");
+              });
+            }
           }
         } else {
-          showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
+          if (guestLocked) {
+            if (videoNote) videoNote.textContent = guestLockMessage;
+          } else {
+            showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
+          }
         }
       };
 
@@ -615,10 +695,12 @@ html.light
         currentVideoRequest += 1;
         currentVideoUrl = "";
         videoModal.classList.remove("show");
+        videoModal.classList.remove("guest-locked");
         videoModal.setAttribute("aria-hidden", "true");
         if (videoEl) {
           videoEl.pause();
           videoEl.removeAttribute("src");
+          videoEl.onplay = null;
         }
         if (videoNote) {
           videoNote.textContent = "";
@@ -644,6 +726,15 @@ html.light
           }
         }
         return null;
+      };
+
+      const getFirstWorkoutId = (program) => {
+        const weeks = Array.isArray(program?.weeks) ? program.weeks : [];
+        const firstWeek = weeks[0];
+        if (!firstWeek || !Array.isArray(firstWeek.workouts) || !firstWeek.workouts.length) return "";
+        const firstWorkout = firstWeek.workouts[0];
+        const rawId = firstWorkout?.id ?? `${firstWeek.index}-${firstWorkout.index}`;
+        return String(rawId);
       };
 
       const renderWorkout = (program, workout) => {
@@ -690,16 +781,54 @@ html.light
       };
 
       const loadWorkout = async () => {
+        const resolveGuestMode = async () => {
+          const profile = await fetchUserProfile();
+          if (!profile) {
+            isGuestMode = false;
+            return;
+          }
+          if (isStaffProfile(profile)) {
+            isGuestMode = false;
+            return;
+          }
+          isGuestMode = isGuestTariff(profile.tariffName);
+        };
+
+        await resolveGuestMode();
         const fallbackProgram = fallback[0] || null;
         const targetSlug = slug || fallbackProgram?.slug;
+
+        const handleProgram = (program) => {
+          if (!program) {
+            renderWorkout(null, null);
+            return;
+          }
+          if (isGuestMode && !program.guestAccess) {
+            showAlert("Программа недоступна в гостевом доступе.");
+            window.location.href = backTarget || "programs.html";
+            return;
+          }
+          let targetId = workoutId;
+          if (isGuestMode) {
+            const allowedId = getFirstWorkoutId(program);
+            if (allowedId) {
+              if (targetId && String(targetId) !== String(allowedId)) {
+                showAlert("В гостевом доступе доступна только первая тренировка.");
+              }
+              targetId = allowedId;
+            }
+          }
+          const workout = findWorkout(program, targetId) || (program?.weeks?.[0]?.workouts?.[0] || null);
+          renderWorkout(program, workout);
+        };
 
         if (API_BASE && targetSlug) {
           try {
             const res = await fetch(`${API_BASE}/api/programs/${encodeURIComponent(targetSlug)}`);
             const json = await res.json().catch(() => ({}));
             if (json?.ok && json.program) {
-              const workout = findWorkout(json.program, workoutId);
-              return renderWorkout(json.program, workout || null);
+              handleProgram(json.program);
+              return;
             }
           } catch (err) {
             console.warn("Workout fetch failed:", err);
@@ -707,8 +836,7 @@ html.light
         }
 
         const program = fallback.find((item) => item.slug === targetSlug) || fallbackProgram;
-        const workout = findWorkout(program, workoutId) || (program?.weeks?.[0]?.workouts?.[0] || null);
-        renderWorkout(program, workout);
+        handleProgram(program);
       };
 
       loadWorkout();

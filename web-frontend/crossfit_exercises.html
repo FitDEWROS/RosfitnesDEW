@@ -832,6 +832,14 @@
       width: 86px;
       height: 1px;
     }
+
+    #videoModal.guest-locked .video-desc,
+    #videoModal.guest-locked #exerciseVideo {
+      filter: blur(6px);
+    }
+    #videoModal.guest-locked #exerciseVideo {
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -914,6 +922,7 @@
     const isAndroid = /Android/i.test(navigator.userAgent);
     let currentVideoRequest = 0;
     let currentVideoUrl = "";
+    let isGuestMode = false;
     const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
 
     const buildInitData = () => {
@@ -950,6 +959,11 @@
 
     const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
 
+    const isGuestTariff = (tariff) => {
+      const value = String(tariff || "").toLowerCase().trim();
+      return !value || value.includes("без тарифа") || value.includes("гост");
+    };
+
     const isStaffProfile = (profile) => {
       if (!profile) return false;
       const role = profile.role;
@@ -962,6 +976,7 @@
       const profile = await fetchUserProfile();
       if (!profile) return true;
       if (isStaffProfile(profile)) {
+        isGuestMode = false;
         const scope = normalizeScope(profile.trainerScope);
         if (scope === "gym") {
           localStorage.setItem("training_mode", "gym");
@@ -973,6 +988,7 @@
         }
         return true;
       }
+      isGuestMode = isGuestTariff(profile.tariffName);
       if (!isBasicTariff(profile.tariffName)) return true;
       const mode = profile.trainingMode === "crossfit" ? "crossfit" : "gym";
       localStorage.setItem("training_mode", mode);
@@ -1227,7 +1243,9 @@
     const loadExercises = async () => {
       if (!apiBase) return;
       try {
-        const res = await fetch(`${apiBase}/api/exercises?type=crossfit`);
+        const query = new URLSearchParams({ type: "crossfit" });
+        if (isGuestMode) query.set("guest", "1");
+        const res = await fetch(`${apiBase}/api/exercises?${query.toString()}`);
         const json = await res.json().catch(() => ({}));
         if (json?.ok && Array.isArray(json.exercises)) {
           allExercises = json.exercises;
@@ -1263,22 +1281,34 @@
       });
     }
 
-    const openVideoModal = async (exercise) => {
+        const openVideoModal = async (exercise) => {
       if (!videoModal) return;
+      if (isGuestMode && exercise && exercise.guestAccess === false) {
+        showAlert("\u0423\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0435 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0432 \u0433\u043e\u0441\u0442\u0435\u0432\u043e\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u0435.");
+        return;
+      }
       currentVideoRequest += 1;
       const requestId = currentVideoRequest;
+      const guestLocked = isGuestMode && (exercise?.guestAccess ?? true);
+      const guestLockMessage = "\u0412\u0438\u0434\u0435\u043e \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0442\u043e\u043b\u044c\u043a\u043e \u043f\u043e\u0441\u043b\u0435 \u043f\u043e\u043a\u0443\u043f\u043a\u0438 \u0442\u0430\u0440\u0438\u0444\u0430.";
       if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
       if (videoDesc) {
         videoDesc.innerHTML = buildDescriptionHtml(exercise?.description || "");
       }
+      videoModal.classList.toggle("guest-locked", guestLocked);
       if (videoEl) {
         videoEl.pause();
         videoEl.removeAttribute("src");
         videoEl.style.display = "none";
+        videoEl.onplay = null;
       }
       if (videoNote) {
         videoNote.style.display = "block";
-        videoNote.textContent = "Загружаем видео...";
+        if (guestLocked && exercise?.videoUrl) {
+          videoNote.textContent = guestLockMessage;
+        } else {
+          videoNote.textContent = "Загружаем видео...";
+        }
       }
       videoModal.classList.add("show");
       videoModal.setAttribute("aria-hidden", "false");
@@ -1297,31 +1327,48 @@
       if (resolvedUrl && videoEl) {
         videoEl.src = resolvedUrl;
         videoEl.style.display = "block";
-        videoEl.onerror = () => {
-          if (requestId !== currentVideoRequest) return;
-          showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
-        };
+        if (guestLocked) {
+          videoEl.onplay = () => {
+            videoEl.pause();
+            showAlert(guestLockMessage);
+            if (videoNote) {
+              videoNote.style.display = "block";
+              videoNote.textContent = guestLockMessage;
+            }
+          };
+        } else {
+          videoEl.onerror = () => {
+            if (requestId !== currentVideoRequest) return;
+            showVideoLink(resolvedUrl, "Видео не воспроизводится в приложении.");
+          };
+        }
         videoEl.onloadeddata = () => {
           if (requestId !== currentVideoRequest) return;
-          if (videoNote) {
+          if (!guestLocked && videoNote) {
             videoNote.style.display = "block";
             videoNote.textContent = "Нажмите на видео, чтобы запустить.";
           }
         };
         videoEl.onplaying = () => {
           if (requestId !== currentVideoRequest) return;
-          if (videoNote) videoNote.style.display = "none";
+          if (!guestLocked && videoNote) videoNote.style.display = "none";
         };
         videoEl.load();
-        const playAttempt = videoEl.play();
-        if (playAttempt && typeof playAttempt.catch === "function") {
-          playAttempt.catch(() => {
-            if (requestId !== currentVideoRequest) return;
-            showVideoLink(resolvedUrl, "Нажмите на видео или откройте по ссылке.");
-          });
+        if (!guestLocked) {
+          const playAttempt = videoEl.play();
+          if (playAttempt && typeof playAttempt.catch === "function") {
+            playAttempt.catch(() => {
+              if (requestId !== currentVideoRequest) return;
+              showVideoLink(resolvedUrl, "Нажмите на видео или откройте по ссылке.");
+            });
+          }
         }
       } else {
-        showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
+        if (guestLocked) {
+          if (videoNote) videoNote.textContent = guestLockMessage;
+        } else {
+          showVideoLink(exercise.videoUrl, "Не удалось загрузить видео.");
+        }
       }
     };
 
@@ -1334,12 +1381,14 @@
     function closeModal() {
       if (videoModal) {
         videoModal.classList.remove("show");
+        videoModal.classList.remove("guest-locked");
         videoModal.setAttribute("aria-hidden", "true");
       }
       currentVideoUrl = "";
       if (videoEl) {
         videoEl.pause();
         videoEl.removeAttribute("src");
+        videoEl.onplay = null;
       }
       if (videoNote) {
         videoNote.textContent = "";
@@ -1349,6 +1398,7 @@
     const initPage = async () => {
       const allowed = await enforceBaseAccess();
       if (!allowed) return;
+      document.body.classList.toggle("guest-mode", isGuestMode);
       loadExercises();
     };
 
@@ -1356,5 +1406,7 @@
   </script>
 </body>
 </html>
+
+
 
 

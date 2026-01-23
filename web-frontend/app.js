@@ -107,7 +107,12 @@
 
   const isBasicTariff = (tariff) => {
     const value = String(tariff || "").toLowerCase();
-    return value.includes("базов") || value.includes("без тарифа") || value.includes("не куплен");
+    return value.includes("базов");
+  };
+
+  const isGuestTariff = (tariff) => {
+    const value = String(tariff || "").toLowerCase().trim();
+    return !value || value.includes("без тарифа") || value.includes("гост");
   };
 
   const isChatTariff = (tariff) => {
@@ -381,7 +386,9 @@
   };
 
   const applyNutritionAccess = (tariff) => {
-    nutritionLocked = isBasicTariff(tariff);
+    const isBasic = isBasicTariff(tariff);
+    const isGuest = isGuestTariff(tariff);
+    nutritionLocked = isBasic || isGuest;
     if (nutritionLink) {
       nutritionLink.classList.toggle("is-locked", nutritionLocked);
       nutritionLink.setAttribute("aria-disabled", nutritionLocked ? "true" : "false");
@@ -396,8 +403,9 @@
       metricMealsCard.classList.toggle("fog-lock", nutritionLocked);
     }
     if (modeToggleEl) {
-      modeToggleEl.classList.toggle("is-locked", nutritionLocked);
-      modeToggleEl.setAttribute("aria-disabled", nutritionLocked ? "true" : "false");
+      const lockMode = isBasic;
+      modeToggleEl.classList.toggle("is-locked", lockMode);
+      modeToggleEl.setAttribute("aria-disabled", lockMode ? "true" : "false");
     }
   };
 
@@ -551,7 +559,7 @@
           ? "\u0410\u0434\u043c\u0438\u043d"
           : isCuratorRole
             ? "\u041a\u0443\u0440\u0430\u0442\u043e\u0440"
-            : tariff;
+            : (isGuestTariff(tariff) ? "\u0413\u043e\u0441\u0442\u0435\u0432\u043e\u0439" : tariff);
       const effectiveTariff = isStaff ? "" : tariff;
       const heightCm = json.profile?.heightCm ?? null;
       const weightKg = json.profile?.weightKg ?? null;

@@ -396,6 +396,11 @@ html.light
       const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
       const isBasicTariff = (tariff) => String(tariff || "").toLowerCase().includes("базов");
 
+      const isGuestTariff = (tariff) => {
+        const value = String(tariff || "").toLowerCase().trim();
+        return !value || value.includes("без тарифа") || value.includes("гост");
+      };
+
       const fetchUserProfile = async () => {
         if (!API_BASE || !tg) return "";
         const initData = buildInitData();
@@ -499,12 +504,13 @@ html.light
         });
       };
 
-      const loadPrograms = async (type, tariff) => {
+            const loadPrograms = async (type, tariff, guestOnly = false) => {
         if (API_BASE) {
           try {
             const query = new URLSearchParams();
             if (type) query.set("type", type);
             if (tariff) query.set("tariff", tariff);
+            if (guestOnly) query.set("guest", "1");
             const res = await fetch(`${API_BASE}/api/programs?${query.toString()}`);
             const json = await res.json().catch(() => ({}));
             if (json?.ok && Array.isArray(json.programs)) {
@@ -516,6 +522,7 @@ html.light
         }
 
         const filtered = type ? fallback.filter((item) => item.type === type) : fallback.slice();
+        if (guestOnly) return filtered.filter((item) => item.guestAccess);
         if (!tariff) return filtered;
         return filtered.filter((item) => {
           const list = Array.isArray(item.tariffs) ? item.tariffs : [];
@@ -528,6 +535,7 @@ html.light
         let tariff = profile?.tariffName || "";
         let effectiveType = type;
         const isStaff = profile && isStaffProfile(profile);
+        const isGuest = !isStaff && isGuestTariff(tariff);
         if (isStaff) {
           const scope = normalizeScope(profile.trainerScope);
           if (scope === "both") {
@@ -549,7 +557,8 @@ html.light
             localStorage.setItem("training_mode", forced);
           }
         }
-        const programs = await loadPrograms(effectiveType, tariff);
+        if (isGuest) tariff = "";
+        const programs = await loadPrograms(effectiveType, tariff, isGuest);
         renderPrograms(programs);
       };
 
@@ -563,6 +572,8 @@ html.light
   </script>
 </body>
 </html>
+
+
 
 
 

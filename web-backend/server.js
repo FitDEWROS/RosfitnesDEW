@@ -1874,6 +1874,8 @@ app.post('/api/admin/programs', async (req, res) => {
     const title = cleanString(payload.title);
     const type = cleanString(payload.type).toLowerCase();
     const tariffs = normalizeTariffs(payload.tariffs);
+    const guestAccess = Boolean(payload.guestAccess);
+    const guestAccess = Boolean(payload.guestAccess);
     const trainerId = payload.trainerId ? Number(payload.trainerId) : null;
     let trainer = null;
 
@@ -1984,6 +1986,7 @@ app.post('/api/admin/programs', async (req, res) => {
         weeksCount,
         coverImage: optionalString(payload.coverImage),
         tariffs,
+        guestAccess,
         authorUserId: trainer?.id || null,
         authorName,
         authorRole,
@@ -2156,6 +2159,7 @@ app.put('/api/admin/programs/:slug', async (req, res) => {
         weeksCount,
         coverImage: optionalString(payload.coverImage),
         tariffs,
+        guestAccess,
         authorUserId: trainer?.id || null,
         authorName,
         authorRole,
@@ -2770,6 +2774,7 @@ app.post('/api/admin/exercises', async (req, res) => {
   const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
   const tariffs = normalizeTariffs(payload.tariffs);
   const crossfitType = normalizedType === 'crossfit' ? normalizeCrossfitType(payload.crossfitType) : '';
+  const guestAccess = Boolean(payload.guestAccess);
   if (!['gym', 'crossfit'].includes(normalizedType)) {
     return res.status(400).json({ ok: false, error: 'invalid_type' });
   }
@@ -2794,6 +2799,7 @@ app.post('/api/admin/exercises', async (req, res) => {
         muscle,
         muscles: finalMuscles,
         crossfitType: normalizedType === 'crossfit' ? crossfitType : null,
+        guestAccess,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
       }
@@ -2823,6 +2829,7 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
     const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : 'gym';
     const tariffs = normalizeTariffs(payload.tariffs);
     const crossfitType = normalizedType === 'crossfit' ? normalizeCrossfitType(payload.crossfitType) : '';
+    const guestAccess = Boolean(payload.guestAccess);
 
     if (!['gym', 'crossfit'].includes(normalizedType)) {
       return res.status(400).json({ ok: false, error: 'invalid_type' });
@@ -2858,6 +2865,7 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
         muscle,
         muscles: finalMuscles,
         crossfitType: normalizedType === 'crossfit' ? crossfitType : null,
+        guestAccess,
         description: optionalString(payload.description),
         videoUrl: optionalString(payload.videoUrl)
       }
@@ -2902,8 +2910,11 @@ app.get('/api/exercises', async (req, res) => {
     const typeRaw = cleanString(req.query?.type);
     const normalizedType = typeRaw === 'crossfit' ? 'crossfit' : typeRaw === 'gym' ? 'gym' : '';
     const tariff = normalizeTariffName(cleanString(req.query?.tariff));
+    const guestOnly = String(req.query?.guest || '').toLowerCase() === '1'
+      || String(req.query?.guest || '').toLowerCase() === 'true';
     const where = {};
     if (normalizedType) where.type = normalizedType;
+    if (guestOnly) where.guestAccess = true;
     if (tariff && ALLOWED_TARIFFS.includes(tariff)) {
       const filterTariffs = expandTariffFilter(tariff);
       where.OR = [
@@ -2932,9 +2943,14 @@ app.get('/api/programs', async (req, res) => {
     await ensureProgramSeed();
     const type = req.query.type;
     const tariff = normalizeTariffName(cleanString(req.query.tariff));
+    const guestOnly = String(req.query?.guest || '').toLowerCase() === '1'
+      || String(req.query?.guest || '').toLowerCase() === 'true';
     const where = {};
     if (type && ['gym', 'crossfit'].includes(type)) {
       where.type = type;
+    }
+    if (guestOnly) {
+      where.guestAccess = true;
     }
     if (tariff && ALLOWED_TARIFFS.includes(tariff)) {
       const filterTariffs = expandTariffFilter(tariff);
@@ -2959,6 +2975,7 @@ app.get('/api/programs', async (req, res) => {
         weeksCount: true,
         coverImage: true,
         tariffs: true,
+        guestAccess: true,
         authorUserId: true,
         authorName: true,
         authorRole: true,

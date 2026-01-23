@@ -878,6 +878,15 @@
           </div>
         </label>
         <label class="full">
+          Доступ в гостевом
+          <div class="pill-group">
+            <label class="pill">
+              <input type="checkbox" id="exerciseGuestAccess">
+              <span>Гостевой доступ</span>
+            </label>
+          </div>
+        </label>
+        <label class="full">
           Мышца (для зала)
           <div class="muscle-picker" id="musclePicker">
             <button class="muscle-toggle" id="muscleToggle" type="button" aria-expanded="false">
@@ -1034,6 +1043,7 @@
       const exerciseVideoUpload = document.getElementById("exerciseVideoUpload");
       const exerciseVideoFile = document.getElementById("exerciseVideoFile");
       const exerciseTariffInputs = Array.from(document.querySelectorAll("input[name='exerciseTariff']"));
+      const exerciseGuestAccess = document.getElementById("exerciseGuestAccess");
       const exerciseStatus = document.getElementById("exerciseStatus");
       const reloadExercises = document.getElementById("reloadExercises");
       const resetExercise = document.getElementById("resetExercise");
@@ -1264,12 +1274,13 @@
           const tariffsLabel = Array.isArray(exercise.tariffs) && exercise.tariffs.length
             ? ` / ${exercise.tariffs.join(", ")}`
             : " / Все тарифы";
+          const guestLabel = exercise.guestAccess ? " / Гостевой" : "";
           const item = document.createElement("div");
           item.className = "exercise-item";
           item.innerHTML = `
             <div class="exercise-meta">
               <strong>${exercise.title}</strong>
-              <span class="muted">${typeLabel}${muscleLabel}${crossfitLabel} - ${videoLabel}${tariffsLabel}</span>
+              <span class="muted">${typeLabel}${muscleLabel}${crossfitLabel} - ${videoLabel}${tariffsLabel}${guestLabel}</span>
             </div>
             <div class="exercise-actions">
               <button class="btn-outline" type="button" data-ex-edit="${exercise.id}">Редактировать</button>
@@ -1309,6 +1320,7 @@
         setMuscleOpen(false);
         if (exerciseDescription) exerciseDescription.value = descriptionTemplate;
         if (exerciseVideo) exerciseVideo.value = "";
+        if (exerciseGuestAccess) exerciseGuestAccess.checked = false;
         if (saveExercise) saveExercise.textContent = "Сохранить упражнение";
         setSelectedTariffs(defaultTariffs);
         setExerciseStatus("", null);
@@ -1413,6 +1425,7 @@
         if (exerciseTitle) exerciseTitle.value = exercise.title || "";
         if (exerciseType) exerciseType.value = exercise.type || "gym";
         if (crossfitType) crossfitType.value = exercise.crossfitType || "";
+        if (exerciseGuestAccess) exerciseGuestAccess.checked = Boolean(exercise.guestAccess);
         setMuscleValues(
           Array.isArray(exercise.muscles) && exercise.muscles.length
             ? exercise.muscles
@@ -1455,6 +1468,9 @@
         };
         if (crossfitType) {
           payload.crossfitType = crossfitType.value || "";
+        }
+        if (exerciseGuestAccess) {
+          payload.guestAccess = exerciseGuestAccess.checked;
         }
 
         if (isTrainer && trainerScope && trainerScope !== "both") {
