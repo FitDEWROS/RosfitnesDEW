@@ -2012,6 +2012,15 @@
             }
             const data = extractWeekData(sourceWeek);
             applyWeekData(targetWeek, data);
+            const targetIndex = weekCards.indexOf(targetWeek) + 1;
+            const targetTitle = targetWeek.querySelector("[data-week-title]");
+            if (targetTitle) {
+              const copiedTitle = targetTitle.value.trim();
+              if (/^Неделя\s+\d+$/i.test(copiedTitle)) {
+                targetTitle.value = `Неделя ${targetIndex}`;
+                renumber();
+              }
+            }
             setStatus(`Неделя ${weekCards.indexOf(targetWeek) + 1} повторяет неделю ${sourceIndex}.`, true);
             return;
           }
