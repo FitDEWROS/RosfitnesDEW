@@ -1,4 +1,5 @@
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
@@ -21,9 +22,11 @@ import { PrismaClient } from '@prisma/client';
 const ROOT      = path.resolve(__dirname, '..');
 const HOST      = '0.0.0.0';
 const PORT      = process.env.PORT || 8080;
-const PY        = process.env.PYTHON || 'python3';
+const IS_WIN    = process.platform === 'win32';
+const PY        = process.env.PYTHON || (IS_WIN ? 'python' : 'python3');
 const PY_TARGET = path.join(ROOT, '.pylibs');
-const BIN_DIR   = path.join(PY_TARGET, 'bin');
+const BIN_DIR   = path.join(PY_TARGET, IS_WIN ? 'Scripts' : 'bin');
+const PATH_SEP  = path.delimiter;
 
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*')
   .split(',').map(s => s.trim()).filter(Boolean);
@@ -151,7 +154,7 @@ async function ensurePip() {
   const ok = await run(PY, ['-m', 'pip', '--version'], { cwd: ROOT });
   if (ok) return;
   console.log('[pip] downloading get-pip.py ...');
-  const tmp = '/tmp/get-pip.py';
+  const tmp = path.join(os.tmpdir(), 'get-pip.py');
   await new Promise((resolve, reject) => {
     const file = fs.createWriteStream(tmp);
     https.get('https://bootstrap.pypa.io/get-pip.py', res => {
@@ -176,8 +179,8 @@ async function installPyDeps() {
 async function preparePrisma() {
   const env = {
     ...process.env,
-    PYTHONPATH: [PY_TARGET, process.env.PYTHONPATH || ''].filter(Boolean).join(':'),
-    PATH: [BIN_DIR, process.env.PATH || ''].filter(Boolean).join(':'),
+    PYTHONPATH: [PY_TARGET, process.env.PYTHONPATH || ''].filter(Boolean).join(PATH_SEP),
+    PATH: [BIN_DIR, process.env.PATH || ''].filter(Boolean).join(PATH_SEP),
   };
   console.log('[prisma] generate...');
   const okGen = await run(PY, ['-m', 'prisma', 'generate'], { cwd: ROOT, env });
@@ -190,7 +193,8 @@ async function preparePrisma() {
 function startPythonBot() {
   const env = {
     ...process.env,
-    PYTHONPATH: [PY_TARGET, process.env.PYTHONPATH || ''].filter(Boolean).join(':'),
+    PYTHONPATH: [PY_TARGET, process.env.PYTHONPATH || ''].filter(Boolean).join(PATH_SEP),
+    PATH: [BIN_DIR, process.env.PATH || ''].filter(Boolean).join(PATH_SEP),
   };
   const botPath = path.join(ROOT, 'bot.py');
   const child = spawn(PY, [botPath], { cwd: ROOT, env, stdio: 'inherit' });
