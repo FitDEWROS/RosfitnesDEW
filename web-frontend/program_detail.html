@@ -532,6 +532,13 @@ html.light
         return normalizeWorkoutId(rawId);
       };
 
+      const getWorkoutId = (week, workout) => {
+        const rawId = workout && (workout.id || workout.id === 0)
+          ? workout.id
+          : `${week.index}-${workout.index}`;
+        return normalizeWorkoutId(rawId);
+      };
+
       const renderProgram = (program) => {
         if (!program) return;
 
@@ -593,8 +600,13 @@ html.light
         weeks.forEach((week, idx) => {
           const weekCard = document.createElement("article");
           const workouts = Array.isArray(week.workouts) ? week.workouts : [];
-          const workoutsLabel = isGuestMode && idx > 0
-            ? "Недоступно для гостей"
+          const hasAllowedWorkout = isGuestMode
+            ? workouts.some((workout) => (
+                guestAllowedId && getWorkoutId(week, workout) === guestAllowedId
+              ))
+            : false;
+          const workoutsLabel = isGuestMode
+            ? (hasAllowedWorkout ? "1 тренировка доступна" : "Недоступно для гостей")
             : workouts.length
               ? `${workouts.length} тренировки`
               : "Планируется";
@@ -616,7 +628,7 @@ html.light
           workouts.forEach((workout, workoutIdx) => {
             const workoutCard = document.createElement("button");
             const exerciseCount = Array.isArray(workout.exercises) ? workout.exercises.length : 0;
-            const workoutId = normalizeWorkoutId(workout.id || workout.id === 0 ? workout.id : `${week.index}-${workout.index}`);
+            const workoutId = getWorkoutId(week, workout);
             const isLocked = isGuestMode && (!guestAllowedId || workoutId !== guestAllowedId);
             const subtitleText = isLocked
               ? "Недоступно для гостей"
@@ -639,6 +651,10 @@ html.light
                 if (backTarget) query.set("back", backTarget);
                 if (initData) query.set("initData", initData);
                 window.location.href = `program_workout.html?${query.toString()}`;
+              });
+            } else {
+              workoutCard.addEventListener("click", () => {
+                showAlert("Доступно только после покупки тарифа.");
               });
             }
             body.appendChild(workoutCard);

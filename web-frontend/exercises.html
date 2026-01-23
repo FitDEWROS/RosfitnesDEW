@@ -125,7 +125,7 @@
     const videoNote = document.getElementById("videoNote");
     const closeVideo = document.getElementById("closeVideo");
     const densityButton = document.querySelector(".density-btn");
-    const densityOrder = ["1", "2", "4"];
+    const densityOrder = ["1", "2"];
     const isAndroid = /Android/i.test(navigator.userAgent);
     const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
     let isGuestMode = false;
@@ -212,21 +212,28 @@
       return true;
     };
 
+    const normalizeCols = (value) => {
+      const str = String(value || "");
+      return densityOrder.includes(str) ? str : "2";
+    };
+
     const applyDensity = (cols) => {
       if (!exerciseList) return;
-      exerciseList.dataset.cols = cols;
+      const safeCols = normalizeCols(cols);
+      exerciseList.dataset.cols = safeCols;
       if (densityButton) {
-        densityButton.dataset.cols = cols;
-        densityButton.textContent = cols;
-        densityButton.setAttribute("aria-label", `Колонки: ${cols}`);
+        densityButton.dataset.cols = safeCols;
+        densityButton.textContent = safeCols;
+        densityButton.setAttribute("aria-label", `Колонки: ${safeCols}`);
       }
     };
 
     if (exerciseList && densityButton) {
-      const savedCols = localStorage.getItem("exercise_cols") || "2";
+      const savedCols = normalizeCols(localStorage.getItem("exercise_cols"));
+      localStorage.setItem("exercise_cols", savedCols);
       applyDensity(savedCols);
       densityButton.addEventListener("click", () => {
-        const current = densityButton.dataset.cols || "2";
+        const current = normalizeCols(densityButton.dataset.cols || "2");
         const idx = densityOrder.indexOf(current);
         const next = densityOrder[(idx + 1) % densityOrder.length];
         localStorage.setItem("exercise_cols", next);
