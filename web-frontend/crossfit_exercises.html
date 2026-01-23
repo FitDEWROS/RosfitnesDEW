@@ -132,11 +132,17 @@
 
     .list-actions {
       display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      padding: 0 16px 8px;
+    }
+
+    .list-actions-row {
+      display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 0 16px 8px;
-      flex-wrap: nowrap;
     }
 
     .filter-controls {
@@ -179,6 +185,8 @@
       align-items: center;
       gap: 8px;
       flex-wrap: wrap;
+      width: 100%;
+      padding-left: 46px;
     }
     .filter-panel[hidden] {
       display: none;
@@ -655,11 +663,6 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
-    @media (max-width: 900px) {
-      .cf-main[data-cols="4"] {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
 
     .exercise-card {
       padding: 0;
@@ -875,25 +878,27 @@
 
   <div class="wrap">
     <div class="list-actions">
-      <div class="filter-controls">
-        <button id="filterToggle" class="filter-btn" type="button" aria-label="Фильтры">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 6h10M18 6h2M8 12h12M4 12h2M4 18h6M14 18h6"></path>
-            <circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"></circle>
-            <circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"></circle>
-            <circle cx="12" cy="18" r="2" fill="currentColor" stroke="none"></circle>
-          </svg>
-        </button>
-        <div id="filterPanel" class="filter-panel" hidden>
-          <button class="filter-chip is-active" type="button" data-filter="dumbbells">Гантели</button>
-          <button class="filter-chip is-active" type="button" data-filter="barbell">Штанга</button>
-          <button class="filter-chip is-active" type="button" data-filter="kettlebells">Гири</button>
-          <button class="filter-chip is-active" type="button" data-filter="free">Свободные</button>
+      <div class="list-actions-row">
+        <div class="filter-controls">
+          <button id="filterToggle" class="filter-btn" type="button" aria-label="Фильтры">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h10M18 6h2M8 12h12M4 12h2M4 18h6M14 18h6"></path>
+              <circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"></circle>
+              <circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+              <circle cx="12" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+            </svg>
+          </button>
+          <input id="filterSearch" class="filter-search" type="search" placeholder="Поиск упражнения">
         </div>
-        <input id="filterSearch" class="filter-search" type="search" placeholder="Поиск упражнения">
+        <div class="density-toggle" role="group" aria-label="Колонки">
+          <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
+        </div>
       </div>
-      <div class="density-toggle" role="group" aria-label="Колонки">
-        <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
+      <div id="filterPanel" class="filter-panel" hidden>
+        <button class="filter-chip is-active" type="button" data-filter="dumbbells">Гантели</button>
+        <button class="filter-chip is-active" type="button" data-filter="barbell">Штанга</button>
+        <button class="filter-chip is-active" type="button" data-filter="kettlebells">Гири</button>
+        <button class="filter-chip is-active" type="button" data-filter="free">Свободные</button>
       </div>
     </div>
     <main class="cf-main" id="exerciseList" aria-live="polite" data-cols="2"></main>

@@ -2079,6 +2079,7 @@ app.put('/api/admin/programs/:slug', async (req, res) => {
     const title = cleanString(payload.title);
     const type = cleanString(payload.type).toLowerCase();
     const tariffs = normalizeTariffs(payload.tariffs);
+    const guestAccess = Boolean(payload.guestAccess);
     const trainerId = payload.trainerId ? Number(payload.trainerId) : null;
     let trainer = null;
 
