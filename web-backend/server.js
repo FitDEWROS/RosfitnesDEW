@@ -42,6 +42,18 @@ app.use(express.json());
 
 // Prisma
 const prisma = new PrismaClient();
+const DB_KEEPALIVE_MS = Number(process.env.DB_KEEPALIVE_MS || 0);
+if (DB_KEEPALIVE_MS > 0) {
+  const keepAlive = async () => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (err) {
+      console.error('[db] keepalive failed', err);
+    }
+  };
+  const timer = setInterval(keepAlive, DB_KEEPALIVE_MS);
+  if (typeof timer.unref === 'function') timer.unref();
+}
 
 // health
 app.get('/', (_req, res) => res.send('OK'));
@@ -1878,7 +1890,6 @@ app.post('/api/admin/programs', async (req, res) => {
     const title = cleanString(payload.title);
     const type = cleanString(payload.type).toLowerCase();
     const tariffs = normalizeTariffs(payload.tariffs);
-    const guestAccess = Boolean(payload.guestAccess);
     const guestAccess = Boolean(payload.guestAccess);
     const trainerId = payload.trainerId ? Number(payload.trainerId) : null;
     let trainer = null;

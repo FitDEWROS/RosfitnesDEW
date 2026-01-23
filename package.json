@@ -2,7 +2,9 @@
   "name": "telegram-webapp",
   "version": "1.0.0",
   "scripts": {
-    "build": "mkdir -p build && cp -r web-frontend/* build/"
+    "build": "mkdir -p build && cp -r web-frontend/* build/",
+    "postinstall": "npm --prefix web-backend install",
+    "start": "npm --prefix web-backend start"
   },
   "devDependencies": {
     "prisma": "^6.16.3"
