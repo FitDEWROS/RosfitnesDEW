@@ -1910,7 +1910,6 @@ app.post('/api/admin/programs', async (req, res) => {
     const type = cleanString(payload.type).toLowerCase();
     const tariffs = normalizeTariffs(payload.tariffs);
     const guestAccess = Boolean(payload.guestAccess);
-    const guestAccess = Boolean(payload.guestAccess);
     const trainerId = payload.trainerId ? Number(payload.trainerId) : null;
     let trainer = null;
 
