@@ -12,7 +12,7 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
 import https from 'https';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
@@ -107,9 +107,28 @@ app.get('/api/validate', (req, res) => {
 // helpers
 function run(cmd, args, opts = {}) {
   return new Promise(resolve => {
+    let done = false;
+    const finish = ok => {
+      if (done) return;
+      done = true;
+      resolve(ok);
+    };
     const p = spawn(cmd, args, { stdio: 'inherit', ...opts });
-    p.on('exit', code => resolve(code === 0));
+    p.on('error', err => {
+      console.error(`[spawn] ${cmd} failed:`, err?.message || err);
+      finish(false);
+    });
+    p.on('exit', code => finish(code === 0));
   });
+}
+
+function hasPython() {
+  try {
+    const res = spawnSync(PY, ['--version'], { stdio: 'ignore' });
+    return res.status === 0;
+  } catch {
+    return false;
+  }
 }
 
 function fetchJson(url) {

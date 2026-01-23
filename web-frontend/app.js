@@ -387,11 +387,11 @@
   };
 
   const applyNutritionAccess = (tariff) => {
+    const isBasic = isBasicTariff(tariff);
+    const isGuest = isGuestTariff(tariff);
     if (isStaffUser) {
       nutritionLocked = false;
     } else {
-      const isBasic = isBasicTariff(tariff);
-      const isGuest = isGuestTariff(tariff);
       nutritionLocked = isBasic || isGuest;
     }
     if (nutritionLink) {
@@ -408,7 +408,7 @@
       metricMealsCard.classList.toggle("fog-lock", nutritionLocked);
     }
     if (modeToggleEl) {
-      const lockMode = isBasic;
+      const lockMode = !isStaffUser && isBasic;
       modeToggleEl.classList.toggle("is-locked", lockMode);
       modeToggleEl.setAttribute("aria-disabled", lockMode ? "true" : "false");
     }
