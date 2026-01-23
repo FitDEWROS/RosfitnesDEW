@@ -1336,22 +1336,35 @@
         }
       };
 
+      const normalizeSearch = (value) => String(value || "").toLowerCase().trim();
+
+      const buildExerciseOptions = (items) => [
+        `<option value="">Выбрать из архива</option>`,
+        ...items.map((exercise) => (
+          `<option value="${exercise.id}">${exercise.title}</option>`
+        ))
+      ].join("");
+
       const refreshExerciseSelects = () => {
         const currentType = document.querySelector("input[name='programType']:checked")?.value || "gym";
-        const filtered = exerciseLibrary.filter((exercise) => (
-          !exercise?.type || exercise.type === currentType
-        ));
-        const options = [
-          `<option value="">Выбрать из архива</option>`,
-          ...filtered.map((exercise) => (
-            `<option value="${exercise.id}">${exercise.title}</option>`
-          ))
-        ].join("");
 
         document.querySelectorAll("[data-ex-select]").forEach((select) => {
+          const card = select.closest("[data-exercise]");
+          const searchInput = card?.querySelector("[data-ex-search]");
+          const query = normalizeSearch(searchInput?.value);
+          const filtered = exerciseLibrary.filter((exercise) => {
+            const matchesType = !exercise?.type || exercise.type === currentType;
+            if (!matchesType) return false;
+            if (!query) return true;
+            const title = normalizeSearch(exercise.title);
+            return title.includes(query);
+          });
+
           const current = select.value;
-          select.innerHTML = options;
-          if (current) select.value = current;
+          select.innerHTML = buildExerciseOptions(filtered);
+          if (current && filtered.some((exercise) => String(exercise.id) === String(current))) {
+            select.value = current;
+          }
         });
       };
 
@@ -1405,6 +1418,10 @@
           </div>
           <div class="form-grid">
             <label class="full">
+              Поиск в архиве
+              <input type="text" data-ex-search placeholder="Начни вводить название">
+            </label>
+            <label class="full">
               Архив упражнений
               <select data-ex-select>
                 <option value="">Выбрать из архива</option>
@@ -1437,6 +1454,10 @@
           </div>
         `;
         bindExerciseUpload(card);
+        const searchInput = card.querySelector("[data-ex-search]");
+        if (searchInput) {
+          searchInput.addEventListener("input", () => refreshExerciseSelects());
+        }
         return card;
       };
 

@@ -60,6 +60,7 @@
   let chatUnreadTimer = null;
   let chatCounterpartName = "";
   let isStaffUser = false;
+  let isGuestUser = false;
 
   const buildInitData = () => {
     const raw = tg?.initData || "";
@@ -437,6 +438,20 @@
     }
   };
 
+  const setProfileEditable = (editable) => {
+    const isEditable = Boolean(editable);
+    if (editHeightEl) editHeightEl.disabled = !isEditable;
+    if (editWeightEl) editWeightEl.disabled = !isEditable;
+    if (editAgeEl) editAgeEl.disabled = !isEditable;
+    if (saveProfileBtn) {
+      saveProfileBtn.hidden = !isEditable;
+      saveProfileBtn.disabled = !isEditable;
+    }
+    if (!isEditable && profileSaveStatusEl) {
+      profileSaveStatusEl.textContent = "Редактирование профиля недоступно в гостевом доступе.";
+    }
+  };
+
   const applyTrainingMode = (mode) => {
     if (!mode) return;
     localStorage.setItem("training_mode", mode);
@@ -551,6 +566,7 @@
       const isCuratorRole = role === "curator" || Boolean(json.profile?.isCurator);
       const isStaff = role === "admin" || role === "sadmin" || isCuratorRole;
       isStaffUser = isStaff;
+      isGuestUser = !isStaff && isGuestTariff(tariff);
       const tariffPaidUntil = formatDateOnly(tariffExpiresAt);
       const showPaidUntil = Boolean(tariffPaidUntil) && !isStaff;
       const displayTariff = role === "sadmin"
@@ -574,6 +590,7 @@
       renderTilesByTariff(effectiveTariff);
       applyNutritionAccess(effectiveTariff);
       updateChatAccess(json.profile);
+      setProfileEditable(!isGuestUser);
       if (chatAllowed) {
         startChatUnreadPolling(initData);
       } else {
@@ -628,6 +645,10 @@
     if (!API_BASE) return false;
     const initData = buildInitData();
     if (!initData) return false;
+    if (isGuestUser) {
+      showAlert("Редактирование профиля недоступно в гостевом доступе.");
+      return false;
+    }
 
     const payload = {
       initData,

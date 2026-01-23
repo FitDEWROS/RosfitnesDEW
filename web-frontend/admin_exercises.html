@@ -246,6 +246,11 @@
       flex-wrap: wrap;
     }
 
+    .search-input {
+      min-width: 220px;
+      max-width: 320px;
+    }
+
     .muted {
       color: var(--muted);
       line-height: 1.5;
@@ -990,6 +995,9 @@
           <span class="section-eyebrow">Список</span>
           <h3 class="section-title">Упражнения в архиве</h3>
         </div>
+        <div class="section-actions">
+          <input id="exerciseSearch" class="search-input" type="text" placeholder="Поиск по архиву">
+        </div>
       </div>
       <div class="stack" id="exerciseList"></div>
     </section>
@@ -1025,6 +1033,7 @@
       const accessMessage = document.getElementById("accessMessage");
       const exerciseCard = document.getElementById("exerciseCard");
       const exerciseList = document.getElementById("exerciseList");
+      const exerciseSearch = document.getElementById("exerciseSearch");
 
       const goHome = document.getElementById("goHome");
       const goPrograms = document.getElementById("goPrograms");
@@ -1051,6 +1060,7 @@
 
       let currentExerciseId = null;
       let exerciseLibrary = [];
+      let exerciseSearchQuery = "";
       let trainerScope = "both";
       let isTrainer = false;
       const defaultTariffs = ["Базовый", "Оптимальный", "Максимум"];
@@ -1249,7 +1259,10 @@
         if (!exerciseList) return;
         exerciseList.innerHTML = "";
         if (!exercises.length) {
-          exerciseList.innerHTML = "<p class='muted'>Архив упражнений пуст.</p>";
+          const emptyLabel = exerciseSearchQuery
+            ? "Ничего не найдено."
+            : "Архив упражнений пуст.";
+          exerciseList.innerHTML = `<p class='muted'>${emptyLabel}</p>`;
           return;
         }
         const crossfitTypeLabels = {
@@ -1291,6 +1304,25 @@
         });
       };
 
+      const normalizeSearch = (value) => String(value || "").toLowerCase().trim();
+
+      const applyExerciseSearch = () => {
+        exerciseSearchQuery = normalizeSearch(exerciseSearch?.value);
+        if (!exerciseSearchQuery) {
+          renderExerciseList(exerciseLibrary);
+          return;
+        }
+        const filtered = exerciseLibrary.filter((exercise) => {
+          const title = normalizeSearch(exercise.title);
+          const desc = normalizeSearch(exercise.description);
+          const muscle = normalizeSearch(exercise.muscle);
+          return title.includes(exerciseSearchQuery)
+            || desc.includes(exerciseSearchQuery)
+            || muscle.includes(exerciseSearchQuery);
+        });
+        renderExerciseList(filtered);
+      };
+
       const loadExercises = async () => {
         if (!apiBase || !initData) return;
         try {
@@ -1301,7 +1333,7 @@
           exerciseLibrary = isTrainer && trainerScope && trainerScope !== "both"
             ? list.filter((exercise) => exercise.type === trainerScope)
             : list;
-          renderExerciseList(exerciseLibrary);
+          applyExerciseSearch();
         } catch (err) {
           console.warn("exercises load failed", err);
         }
@@ -1360,6 +1392,7 @@
       });
       resetExercise?.addEventListener("click", () => clearExerciseForm());
       reloadExercises?.addEventListener("click", () => loadExercises());
+      exerciseSearch?.addEventListener("input", () => applyExerciseSearch());
       exerciseVideoUpload?.addEventListener("click", () => exerciseVideoFile?.click());
       exerciseVideoFile?.addEventListener("change", async () => {
         const file = exerciseVideoFile.files?.[0];
@@ -1392,7 +1425,7 @@
             return;
           }
           exerciseLibrary = exerciseLibrary.filter((item) => item.id !== exercise.id);
-          renderExerciseList(exerciseLibrary);
+          applyExerciseSearch();
           if (currentExerciseId === exercise.id) {
             currentExerciseId = null;
             clearExerciseForm();

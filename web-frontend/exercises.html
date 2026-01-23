@@ -43,7 +43,7 @@
         <div class="view-switch" role="tablist" aria-label="Выбор вида тела">
           <button id="btnFront" class="active" role="tab" aria-selected="true">Вид спереди</button>
           <button id="btnBack" role="tab" aria-selected="false">Вид сзади</button>
-          <button id="btnDebug" class="debug-toggle">Режим отладки</button>
+          <button id="btnDebug" class="debug-toggle" hidden>Режим отладки</button>
         </div>
 
         <div id="frontView" class="canvas" style="display:block">
@@ -82,8 +82,8 @@
     <div class="video-modal" role="dialog" aria-modal="true">
 <video id="exerciseVideo" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
       <h3 class="video-title" id="videoTitle"></h3>
-      <div class="video-desc" id="videoDesc"></div>
       <p class="video-note" id="videoNote">Видео пока не добавлено.</p>
+      <div class="video-desc" id="videoDesc"></div>
       <div class="video-actions">
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
@@ -128,6 +128,8 @@
     const isAndroid = /Android/i.test(navigator.userAgent);
     const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
     let isGuestMode = false;
+    let isOwner = false;
+    let debugAllowed = false;
 
     const buildInitData = () => {
       const raw = tg?.initData || "";
@@ -177,7 +179,13 @@
 
     const enforceBaseAccess = async () => {
       const profile = await fetchUserProfile();
-      if (!profile) return true;
+      if (!profile) {
+        isOwner = false;
+        debugAllowed = false;
+        return true;
+      }
+      isOwner = profile.role === "sadmin";
+      debugAllowed = isOwner && localStorage.getItem("debug_mode_enabled") === "1";
       if (isStaffProfile(profile)) {
         isGuestMode = false;
         const scope = normalizeScope(profile.trainerScope);
@@ -251,7 +259,19 @@
 
     hideInfo();
 
+    const applyDebugVisibility = () => {
+      if (!btnDebug) return;
+      btnDebug.hidden = !debugAllowed;
+      btnDebug.setAttribute("aria-hidden", debugAllowed ? "false" : "true");
+      if (!debugAllowed) {
+        debugMode = false;
+        btnDebug.classList.remove("active");
+        btnDebug.textContent = "Режим отладки";
+      }
+    };
+
     btnDebug.onclick = () => {
+      if (!debugAllowed) return;
       debugMode = !debugMode;
       btnDebug.classList.toggle("active", debugMode);
       btnDebug.textContent = debugMode ? "Отладка: ВКЛ" : "Режим отладки";
@@ -883,6 +903,7 @@
       if (!allowed) return;
       document.body.classList.toggle("guest-mode", isGuestMode);
       if (viewToggle) viewToggle.hidden = isGuestMode;
+      applyDebugVisibility();
       const savedView = localStorage.getItem("exercise_view") || "map";
       if (isGuestMode) {
         setViewMode("list");

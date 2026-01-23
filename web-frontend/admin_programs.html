@@ -1464,6 +1464,63 @@
 
     }
 
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .switch {
+      position: relative;
+      width: 56px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      position: relative;
+      width: 56px;
+      height: 32px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      transition: var(--transition);
+    }
+
+    .switch-track::after {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      top: 3px;
+      left: 4px;
+      background: #9c9c9c;
+      transition: var(--transition);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+    }
+
+    .switch input:checked + .switch-track {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      border-color: transparent;
+    }
+
+    .switch input:checked + .switch-track::after {
+      background: #1b1b1b;
+      transform: translateX(22px);
+    }
+
   </style>
 
 
@@ -1488,7 +1545,24 @@
       <p class="page-subtitle">Выбери раздел для работы с программами и упражнениями.</p>
     </header>
 
-
+    <section class="section-card" id="ownerTools" hidden>
+      <div class="section-head">
+        <div>
+          <span class="section-eyebrow">Владелец</span>
+          <h2 class="section-title">Режим отладки</h2>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="field-label">Отладка силуэта</div>
+          <p class="muted">Включает режим отладки на странице упражнений.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="debugToggle" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    </section>
 
     <section class="section-card" id="actionCard" hidden>
       <div class="section-head compact">
@@ -1586,6 +1660,8 @@
       const openPrograms = document.getElementById("openPrograms");
       const openExercises = document.getElementById("openExercises");
       const openClients = document.getElementById("openClients");
+      const ownerTools = document.getElementById("ownerTools");
+      const debugToggle = document.getElementById("debugToggle");
 
 
       const unreadOverlay = document.getElementById("unreadOverlay");
@@ -1696,6 +1772,8 @@
 
           const canTrain = Boolean(json?.profile?.canTrain);
           const canCurate = Boolean(json?.profile?.canCurate);
+          const role = json?.profile?.role || "user";
+          const isOwner = role === "sadmin";
           if (!canTrain && !canCurate) {
             setAccess(false, "Доступ закрыт. Нужна роль admin, sadmin или куратор.");
             return;
@@ -1704,6 +1782,21 @@
             ? "Доступ подтвержден. Можно работать в админке."
             : "Доступ подтвержден. Доступен раздел клиентов.";
           setAccess(true, message, { canTrain, canCurate });
+          if (ownerTools) ownerTools.hidden = !isOwner;
+          if (debugToggle) {
+            if (!isOwner) {
+              debugToggle.checked = false;
+            } else {
+              debugToggle.checked = localStorage.getItem("debug_mode_enabled") === "1";
+            }
+            debugToggle.onchange = () => {
+              if (!isOwner) {
+                debugToggle.checked = false;
+                return;
+              }
+              localStorage.setItem("debug_mode_enabled", debugToggle.checked ? "1" : "0");
+            };
+          }
           if (canCurate) {
             loadUnread();
           }

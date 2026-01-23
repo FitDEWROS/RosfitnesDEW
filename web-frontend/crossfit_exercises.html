@@ -181,6 +181,22 @@
     .filter-panel[hidden] {
       display: none;
     }
+    .filter-search {
+      min-width: 180px;
+      flex: 1 1 220px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: var(--card);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .filter-search:focus {
+      border-color: rgba(242, 209, 124, 0.6);
+      box-shadow: 0 0 0 3px rgba(242, 209, 124, 0.15);
+    }
     .filter-chip {
       border: 1px solid var(--card-border);
       background: var(--card);
@@ -872,6 +888,7 @@
           <button class="filter-chip is-active" type="button" data-filter="kettlebells">Гири</button>
           <button class="filter-chip is-active" type="button" data-filter="free">Свободные</button>
         </div>
+        <input id="filterSearch" class="filter-search" type="search" placeholder="Поиск упражнения">
       </div>
       <div class="density-toggle" role="group" aria-label="Колонки">
         <span class="density-label">Колонки</span>
@@ -885,8 +902,8 @@
     <div class="video-modal" role="dialog" aria-modal="true">
 <video id="exerciseVideo" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>
       <h3 id="videoTitle"></h3>
-      <div id="videoDesc" class="video-desc"></div>
       <p id="videoNote" class="video-note"></p>
+      <div id="videoDesc" class="video-desc"></div>
       <div class="video-actions">
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
@@ -911,6 +928,7 @@
     const filterToggle = document.getElementById("filterToggle");
     const filterPanel = document.getElementById("filterPanel");
     const filterButtons = Array.from(document.querySelectorAll(".filter-chip"));
+    const filterSearch = document.getElementById("filterSearch");
     const FILTER_KEYS = ["dumbbells", "barbell", "kettlebells", "free"];
     let activeFilters = new Set(FILTER_KEYS);
     let allExercises = [];
@@ -1232,11 +1250,21 @@
       });
     };
 
+    const normalizeSearch = (value) => String(value || "").toLowerCase().trim();
+
     const applyFilters = () => {
       const showAll = activeFilters.size === 0 || activeFilters.size === FILTER_KEYS.length;
-      const filtered = showAll
+      const filteredByType = showAll
         ? allExercises
         : allExercises.filter((exercise) => exercise.crossfitType && activeFilters.has(exercise.crossfitType));
+      const query = normalizeSearch(filterSearch?.value);
+      const filtered = query
+        ? filteredByType.filter((exercise) => {
+            const title = normalizeSearch(exercise.title);
+            const desc = normalizeSearch(exercise.description);
+            return title.includes(query) || desc.includes(query);
+          })
+        : filteredByType;
       renderExercises(filtered);
     };
 
@@ -1279,6 +1307,9 @@
         updateFilterUI();
         applyFilters();
       });
+    }
+    if (filterSearch) {
+      filterSearch.addEventListener("input", () => applyFilters());
     }
 
         const openVideoModal = async (exercise) => {
