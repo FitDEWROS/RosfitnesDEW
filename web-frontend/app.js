@@ -387,9 +387,13 @@
   };
 
   const applyNutritionAccess = (tariff) => {
-    const isBasic = isBasicTariff(tariff);
-    const isGuest = isGuestTariff(tariff);
-    nutritionLocked = isBasic || isGuest;
+    if (isStaffUser) {
+      nutritionLocked = false;
+    } else {
+      const isBasic = isBasicTariff(tariff);
+      const isGuest = isGuestTariff(tariff);
+      nutritionLocked = isBasic || isGuest;
+    }
     if (nutritionLink) {
       nutritionLink.classList.toggle("is-locked", nutritionLocked);
       nutritionLink.setAttribute("aria-disabled", nutritionLocked ? "true" : "false");

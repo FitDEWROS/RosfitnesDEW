@@ -136,14 +136,16 @@
       justify-content: space-between;
       gap: 12px;
       padding: 0 16px 8px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
 
     .filter-controls {
       display: flex;
       align-items: center;
       gap: 10px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      flex: 1 1 auto;
+      min-width: 0;
     }
 
     .filter-btn {
@@ -183,7 +185,7 @@
     }
     .filter-search {
       min-width: 180px;
-      flex: 1 1 220px;
+      flex: 1 1 auto;
       border-radius: 12px;
       border: 1px solid var(--card-border);
       background: var(--card);
@@ -891,7 +893,6 @@
         <input id="filterSearch" class="filter-search" type="search" placeholder="Поиск упражнения">
       </div>
       <div class="density-toggle" role="group" aria-label="Колонки">
-        <span class="density-label">Колонки</span>
         <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
       </div>
     </div>

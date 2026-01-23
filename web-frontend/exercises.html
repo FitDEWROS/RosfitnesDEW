@@ -115,6 +115,7 @@
     const listView = document.getElementById("listView");
     const viewButtons = document.querySelectorAll("[data-view]");
     const viewToggle = document.querySelector(".view-toggle");
+    const viewSwitch = document.querySelector(".view-switch");
     const exerciseList = document.getElementById("exerciseList");
     const exerciseEmpty = document.getElementById("exerciseEmpty");
     const videoModal = document.getElementById("videoModal");
@@ -263,6 +264,9 @@
       if (!btnDebug) return;
       btnDebug.hidden = !debugAllowed;
       btnDebug.setAttribute("aria-hidden", debugAllowed ? "false" : "true");
+      if (viewSwitch) {
+        viewSwitch.classList.toggle("no-debug", !debugAllowed);
+      }
       if (!debugAllowed) {
         debugMode = false;
         btnDebug.classList.remove("active");
