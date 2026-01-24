@@ -683,10 +683,11 @@ html.light .list-head::after {
 .list-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;
   width: 100%;
   margin-top: 2px;
+  min-width: 0;
 }
 
 .list-controls .density-toggle {
@@ -694,46 +695,27 @@ html.light .list-head::after {
 }
 
 .list-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1 1 220px;
-  min-width: 180px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-html.light .list-search {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.list-search-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.25);
-  display: grid;
-  place-items: center;
-  font-size: 0.85rem;
-  color: var(--muted);
-  flex: 0 0 auto;
-}
-
-html.light .list-search-icon {
-  background: rgba(0, 0, 0, 0.08);
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
 }
 
 .list-search input {
-  border: none;
-  padding: 0;
-  background: transparent;
+  width: 100%;
+  min-width: 0;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
   color: var(--text);
+  padding: 8px 12px;
   font-size: 0.95rem;
   outline: none;
-  flex: 1 1 auto;
-  min-width: 0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.list-search input:focus {
+  border-color: rgba(242, 209, 124, 0.6);
+  box-shadow: 0 0 0 3px rgba(242, 209, 124, 0.15);
 }
 
 .list-search input::placeholder {
@@ -743,38 +725,63 @@ html.light .list-search-icon {
 .density-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
-}
-
-.density-label {
-  font-size: 0.6rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--muted);
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .density-btn {
-  border: none;
-  border-radius: 50%;
-  min-width: 34px;
-  height: 34px;
-  padding: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #1b1b1b;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--text);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.density-btn.is-active {
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-  color: #1b1b1b;
+.density-btn:active {
+  transform: scale(0.96);
+}
+
+.density-icon {
+  width: 18px;
+  height: 18px;
+  position: relative;
+  display: block;
+}
+
+.density-icon::before,
+.density-icon::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 6px;
+  border-radius: 3px;
+  background: currentColor;
+}
+
+.density-icon::before {
+  left: 2px;
+}
+
+.density-icon::after {
+  right: 2px;
+}
+
+.density-btn[data-cols="1"] .density-icon::after {
+  opacity: 0;
+}
+
+.density-btn[data-cols="1"] .density-icon::before {
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .list-title-group {
@@ -984,13 +991,12 @@ html.light .exercise-card {
 
 @media (max-width: 640px) {
   .list-controls {
-    flex-direction: column;
-    align-items: stretch;
+    gap: 8px;
   }
 
-  .list-controls .density-toggle {
-    margin-left: 0;
-    justify-content: space-between;
+  .density-btn {
+    width: 34px;
+    height: 34px;
   }
 }
 .empty-state {
