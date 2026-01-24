@@ -302,6 +302,7 @@
       max-height: 55vh;
       border-radius: 12px;
       background: #000;
+      object-fit: contain;
     }
 
     #videoModal.guest-locked .video-text,
@@ -347,6 +348,7 @@
       gap: 8px;
     }
 
+    .modal-open,
     .modal-close {
       position: static;
       border: none;
@@ -393,6 +395,24 @@ html.light
       .video-modal { max-height: 80dvh; }
       .video-modal video { max-height: 50dvh; }
     }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+      .video-modal {
+        width: min(96vw, 960px);
+        max-height: 92dvh;
+        padding: 10px;
+      }
+
+      .video-modal video {
+        max-height: 78dvh;
+      }
+
+      .video-title,
+      .video-text,
+      .video-note {
+        display: none;
+      }
+    }
   </style>
 </head>
 
@@ -422,6 +442,7 @@ html.light
       <div class="video-text" id="videoDesc"></div>
       <p class="video-note" id="videoNote">Видео пока не добавлено.</p>
       <div class="video-actions">
+        <button class="modal-open" id="openVideo" type="button" aria-label="Открыть видео">Открыть</button>
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
     </div>
@@ -496,9 +517,11 @@ html.light
       const videoTitle = byId("videoTitle");
       const videoDesc = byId("videoDesc");
       const videoNote = byId("videoNote");
+      const openVideoBtn = byId("openVideo");
       const closeVideo = byId("closeVideo");
       let currentVideoRequest = 0;
       let currentVideoUrl = "";
+      let currentVideoLocked = false;
 
       const isYandexPublicLink = (url) => {
         try {
@@ -609,6 +632,7 @@ html.light
         currentVideoRequest += 1;
         const requestId = currentVideoRequest;
         const guestLocked = isGuestMode;
+        currentVideoLocked = guestLocked;
         const guestLockMessage = "Видео доступно только после покупки тарифа.";
         const title = exercise?.title || "Упражнение";
         const description = exercise?.description || exercise?.details || "";
@@ -694,6 +718,7 @@ html.light
         if (!videoModal) return;
         currentVideoRequest += 1;
         currentVideoUrl = "";
+        currentVideoLocked = false;
         videoModal.classList.remove("show");
         videoModal.classList.remove("guest-locked");
         videoModal.setAttribute("aria-hidden", "true");
@@ -707,6 +732,23 @@ html.light
         }
       };
 
+      const openExternalVideo = () => {
+        if (!currentVideoUrl) {
+          showAlert("Р’РёРґРµРѕ РїРѕРєР° РЅРµ РґРѕР±Р°РІР»РµРЅРѕ.");
+          return;
+        }
+        if (currentVideoLocked) {
+          showAlert("Р’РёРґРµРѕ РґРѕСЃС‚СѓРїРЅРѕ С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ РїРѕРєСѓРїРєРё С‚Р°СЂРёС„Р°.");
+          return;
+        }
+        if (tg?.openLink) {
+          tg.openLink(currentVideoUrl);
+        } else {
+          window.open(currentVideoUrl, "_blank");
+        }
+      };
+
+      if (openVideoBtn) openVideoBtn.addEventListener("click", openExternalVideo);
       if (closeVideo) closeVideo.addEventListener("click", closeVideoModal);
       if (videoModal) {
         videoModal.addEventListener("click", (e) => {

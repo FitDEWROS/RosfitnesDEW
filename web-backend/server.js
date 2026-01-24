@@ -482,6 +482,7 @@ function optionalString(value) {
 
 const LEGACY_OPTIMAL_TARIFF = 'Выгодный';
 const ALLOWED_TARIFFS = ['Базовый', 'Оптимальный', 'Максимум'];
+const PAID_TARIFFS = Array.from(new Set([...ALLOWED_TARIFFS, LEGACY_OPTIMAL_TARIFF]));
 
 function normalizeTariffName(value) {
   const cleaned = cleanString(value);
@@ -529,6 +530,28 @@ function normalizeTariffs(value) {
   return Array.from(unique);
 }
 
+const buildGuestTariffConditions = () => ([
+  { tariffName: null },
+  { tariffName: '' },
+  { tariffName: { notIn: PAID_TARIFFS } }
+]);
+
+const buildRecipientsWhere = ({ trainingMode, tariffFilters, guestAccess }) => {
+  const where = { role: 'user' };
+  if (trainingMode) where.trainingMode = trainingMode;
+  const filters = Array.isArray(tariffFilters) ? tariffFilters.filter(Boolean) : [];
+  if (filters.length) {
+    if (guestAccess) {
+      where.OR = [{ tariffName: { in: filters } }, ...buildGuestTariffConditions()];
+    } else {
+      where.tariffName = { in: filters };
+    }
+  } else if (!guestAccess) {
+    where.tariffName = { in: PAID_TARIFFS };
+  }
+  return where;
+};
+
 const DEFAULT_MUSCLE = "\u041e\u0431\u0449\u0430\u044f";
 const CROSSFIT_TYPES = ['dumbbells', 'barbell', 'kettlebells', 'free'];
 
@@ -558,7 +581,7 @@ const AUTO_ASSIGN_HOURS = Number(process.env.AUTO_ASSIGN_HOURS || 12);
 const AUTO_ASSIGN_INTERVAL_MS = Number(process.env.AUTO_ASSIGN_INTERVAL_MS || 10 * 60 * 1000);
 const AUTO_ASSIGN_MIN_AGE_MS = Math.max(0, AUTO_ASSIGN_HOURS) * 60 * 60 * 1000;
 
-const NOTIFICATION_TYPES = ['nutrition_comment', 'program_available', 'chat_message', 'curator_assigned'];
+const NOTIFICATION_TYPES = ['nutrition_comment', 'program_available', 'exercise_available', 'chat_message', 'curator_assigned'];
 
 const buildNotificationPreview = (text, limit = 160) => {
   const cleaned = cleanString(text);
@@ -774,10 +797,11 @@ const buildTelegramNotificationText = (payload) => {
     return '\u041d\u043e\u0432\u044b\u0439 \u043a\u043e\u043c\u043c\u0435\u043d\u0442\u0430\u0440\u0438\u0439 \u043f\u043e \u043f\u0438\u0442\u0430\u043d\u0438\u044e.';
   }
 
-  if (type === 'program_available') {
-    if (title) return `\u041d\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430: ${title}`;
-    if (message) return `\u041d\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430: ${message}`;
-    return '\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u043d\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043e\u043a.';
+  if (type === 'program_available' || type === 'exercise_available') {
+    const detail = message || title;
+    return detail
+      ? `\u0423 \u0432\u0430\u0441 \u043d\u043e\u0432\u043e\u0435 \u043e\u043f\u043e\u0432\u0435\u0449\u0435\u043d\u0438\u0435.\n${detail}`
+      : '\u0423 \u0432\u0430\u0441 \u043d\u043e\u0432\u043e\u0435 \u043e\u043f\u043e\u0432\u0435\u0449\u0435\u043d\u0438\u0435.';
   }
 
   if (type === 'chat_message') {
@@ -2030,25 +2054,19 @@ app.post('/api/admin/programs', async (req, res) => {
     });
 
     const tariffFilters = Array.from(new Set(tariffs.flatMap((item) => expandTariffFilter(item))));
-    if (tariffFilters.length) {
-      const recipients = await prisma.user.findMany({
-        where: {
-          role: 'user',
-          trainingMode: type,
-          tariffName: { in: tariffFilters }
-        },
-        select: { id: true }
-      });
-      await createNotificationsForUsers(
-        recipients.map((user) => user.id),
-        {
-          type: 'program_available',
-          title: '\u041d\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430',
-          message: buildNotificationPreview(`\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u043d\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430: ${title}`),
-          data: { slug: created.slug, type }
-        }
-      );
-    }
+    const recipients = await prisma.user.findMany({
+      where: buildRecipientsWhere({ trainingMode: type, tariffFilters, guestAccess }),
+      select: { id: true }
+    });
+    await createNotificationsForUsers(
+      recipients.map((user) => user.id),
+      {
+        type: 'program_available',
+        title: '\u041d\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430',
+        message: buildNotificationPreview(`\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u0430 \u043d\u043e\u0432\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430: ${title}`),
+        data: { slug: created.slug, type }
+      }
+    );
 
     res.json({ ok: true, program: { id: created.id, slug: created.slug } });
   } catch (e) {
@@ -2839,6 +2857,21 @@ app.post('/api/admin/exercises', async (req, res) => {
         videoUrl: optionalString(payload.videoUrl)
       }
     });
+
+    const tariffFilters = Array.from(new Set(tariffs.flatMap((item) => expandTariffFilter(item))));
+    const recipients = await prisma.user.findMany({
+      where: buildRecipientsWhere({ trainingMode: normalizedType, tariffFilters, guestAccess }),
+      select: { id: true }
+    });
+    await createNotificationsForUsers(
+      recipients.map((user) => user.id),
+      {
+        type: 'exercise_available',
+        title: '\u041d\u043e\u0432\u043e\u0435 \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0435',
+        message: buildNotificationPreview(`\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u043d\u043e\u0432\u043e\u0435 \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0435: ${title}`),
+        data: { id: created.id, type: normalizedType }
+      }
+    );
 
     res.json({ ok: true, exercise: created });
   } catch (e) {

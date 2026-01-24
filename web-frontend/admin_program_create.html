@@ -508,6 +508,41 @@
       flex-wrap: wrap;
     }
 
+    .card-head-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .card-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-toggle {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .card-toggle:active {
+      transform: scale(0.96);
+    }
+
+    .icon-chevron {
+      display: inline-block;
+      transition: transform 0.2s ease;
+    }
+
     .chip {
       display: inline-flex;
       align-items: center;
@@ -519,6 +554,35 @@
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--muted);
+    }
+
+    .card-meta {
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .week-body,
+    .workout-body {
+      display: grid;
+      gap: 12px;
+      padding-left: 10px;
+      border-left: 1px dashed var(--card-border);
+    }
+
+    .workout-body {
+      border-left-style: solid;
+    }
+
+    .week-card[data-collapsed="true"] .week-body,
+    .workout-card[data-collapsed="true"] .workout-body {
+      display: none;
+    }
+
+    .week-card[data-collapsed="true"] .card-toggle .icon-chevron,
+    .workout-card[data-collapsed="true"] .card-toggle .icon-chevron {
+      transform: rotate(-90deg);
     }
 
     .exercise-list {
@@ -995,6 +1059,8 @@
             <h3 class="section-title">Недели, тренировки, упражнения</h3>
           </div>
           <div class="section-actions">
+            <button class="btn-ghost" data-action="collapse-all" type="button">Свернуть все</button>
+            <button class="btn-ghost" data-action="expand-all" type="button">Развернуть все</button>
             <button class="btn-outline" data-action="add-week" type="button">+ Неделя</button>
           </div>
         </div>
@@ -1313,6 +1379,28 @@
         return "недель";
       };
 
+      const pluralizeWorkouts = (value) => {
+        const count = Number(value);
+        if (!Number.isFinite(count)) return "тренировок";
+        const mod100 = Math.abs(count) % 100;
+        const mod10 = mod100 % 10;
+        if (mod100 >= 11 && mod100 <= 14) return "тренировок";
+        if (mod10 === 1) return "тренировка";
+        if (mod10 >= 2 && mod10 <= 4) return "тренировки";
+        return "тренировок";
+      };
+
+      const pluralizeExercises = (value) => {
+        const count = Number(value);
+        if (!Number.isFinite(count)) return "упражнений";
+        const mod100 = Math.abs(count) % 100;
+        const mod10 = mod100 % 10;
+        if (mod100 >= 11 && mod100 <= 14) return "упражнений";
+        if (mod10 === 1) return "упражнение";
+        if (mod10 >= 2 && mod10 <= 4) return "упражнения";
+        return "упражнений";
+      };
+
       const renderTrainerSelect = (trainers) => {
         if (!trainerSelect) return;
         const current = trainerSelect.value;
@@ -1465,24 +1553,35 @@
         const card = document.createElement("div");
         card.className = "workout-card";
         card.dataset.workout = "true";
+        card.dataset.collapsed = "false";
         card.innerHTML = `
           <div class="card-head">
-            <span class="chip" data-workout-label>Тренировка</span>
-            <button class="btn-ghost" data-action="remove-workout" type="button">Удалить</button>
+            <div class="card-head-left">
+              <button class="card-toggle" data-action="toggle-workout" type="button" aria-label="Свернуть тренировку">
+                <span class="icon-chevron">⌄</span>
+              </button>
+              <span class="chip" data-workout-label>Тренировка</span>
+              <span class="card-meta" data-workout-meta>0 упражнений</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn-ghost" data-action="remove-workout" type="button">Удалить</button>
+            </div>
           </div>
-          <div class="form-grid">
-            <label>
-              Название тренировки
-              <input type="text" data-workout-title placeholder="Силовая + кардио">
-            </label>
-            <label class="full">
-              Описание тренировки
-              <textarea data-workout-desc placeholder="Короткое описание тренировки..."></textarea>
-            </label>
-          </div>
-          <div class="exercise-list" data-exercises></div>
-          <div class="section-actions">
-            <button class="btn-outline" data-action="add-exercise" type="button">+ Упражнение</button>
+          <div class="workout-body">
+            <div class="form-grid">
+              <label>
+                Название тренировки
+                <input type="text" data-workout-title placeholder="Силовая + кардио">
+              </label>
+              <label class="full">
+                Описание тренировки
+                <textarea data-workout-desc placeholder="Короткое описание тренировки..."></textarea>
+              </label>
+            </div>
+            <div class="exercise-list" data-exercises></div>
+            <div class="section-actions">
+              <button class="btn-outline" data-action="add-exercise" type="button">+ Упражнение</button>
+            </div>
           </div>
         `;
         return card;
@@ -1492,27 +1591,38 @@
         const card = document.createElement("div");
         card.className = "week-card";
         card.dataset.week = "true";
+        card.dataset.collapsed = "false";
         card.innerHTML = `
           <div class="card-head">
-            <span class="chip" data-week-label>Неделя</span>
-            <button class="btn-ghost" data-action="remove-week" type="button">Удалить</button>
+            <div class="card-head-left">
+              <button class="card-toggle" data-action="toggle-week" type="button" aria-label="Свернуть неделю">
+                <span class="icon-chevron">⌄</span>
+              </button>
+              <span class="chip" data-week-label>Неделя</span>
+              <span class="card-meta" data-week-meta>0 тренировок</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn-ghost" data-action="remove-week" type="button">Удалить</button>
+            </div>
           </div>
-          <label>
-            Название недели
-            <input type="text" data-week-title placeholder="Неделя 1">
-          </label>
-          <div class="repeat-row">
+          <div class="week-body">
             <label>
-              Повторить неделю
-              <select data-repeat-source>
-                <option value="">Повторить неделю...</option>
-              </select>
+              Название недели
+              <input type="text" data-week-title placeholder="Неделя 1">
             </label>
-            <button class="btn-outline" data-action="repeat-week" type="button">Повторить</button>
-          </div>
-          <div class="stack" data-workouts></div>
-          <div class="section-actions">
-            <button class="btn-outline" data-action="add-workout" type="button">+ Тренировка</button>
+            <div class="repeat-row">
+              <label>
+                Повторить неделю
+                <select data-repeat-source>
+                  <option value="">Повторить неделю...</option>
+                </select>
+              </label>
+              <button class="btn-outline" data-action="repeat-week" type="button">Повторить</button>
+            </div>
+            <div class="stack" data-workouts></div>
+            <div class="section-actions">
+              <button class="btn-outline" data-action="add-workout" type="button">+ Тренировка</button>
+            </div>
           </div>
         `;
         return card;
@@ -1537,10 +1647,18 @@
           const weekLabel = weekCard.querySelector("[data-week-label]");
           if (weekLabel) weekLabel.textContent = `Неделя ${weekIndex + 1}`;
           const workoutCards = Array.from(weekCard.querySelectorAll("[data-workout]"));
+          const weekMeta = weekCard.querySelector("[data-week-meta]");
+          if (weekMeta) {
+            weekMeta.textContent = `${workoutCards.length} ${pluralizeWorkouts(workoutCards.length)}`;
+          }
           workoutCards.forEach((workoutCard, workoutIndex) => {
             const workoutLabel = workoutCard.querySelector("[data-workout-label]");
             if (workoutLabel) workoutLabel.textContent = `Тренировка ${workoutIndex + 1}`;
             const exerciseCards = Array.from(workoutCard.querySelectorAll("[data-exercise]"));
+            const workoutMeta = workoutCard.querySelector("[data-workout-meta]");
+            if (workoutMeta) {
+              workoutMeta.textContent = `${exerciseCards.length} ${pluralizeExercises(exerciseCards.length)}`;
+            }
             exerciseCards.forEach((exerciseCard, exerciseIndex) => {
               const exLabel = exerciseCard.querySelector("[data-exercise-label]");
               if (exLabel) exLabel.textContent = `Упражнение ${exerciseIndex + 1}`;
@@ -1548,6 +1666,24 @@
           });
         });
         refreshRepeatOptions();
+      };
+
+      const setCollapsed = (card, collapsed) => {
+        if (!card) return;
+        card.dataset.collapsed = collapsed ? "true" : "false";
+      };
+
+      const toggleCollapsed = (card) => {
+        if (!card) return;
+        const isCollapsed = card.dataset.collapsed === "true";
+        setCollapsed(card, !isCollapsed);
+      };
+
+      const setAllCollapsed = (collapsed) => {
+        const weekCards = Array.from(weeksContainer.querySelectorAll("[data-week]"));
+        const workoutCards = Array.from(weeksContainer.querySelectorAll("[data-workout]"));
+        weekCards.forEach((weekCard) => setCollapsed(weekCard, collapsed));
+        workoutCards.forEach((workoutCard) => setCollapsed(workoutCard, collapsed));
       };
 
       const refreshRepeatOptions = () => {
@@ -1986,6 +2122,22 @@
         const actionBtn = event.target.closest("[data-action]");
         if (actionBtn) {
           const action = actionBtn.dataset.action;
+          if (action === "toggle-week") {
+            toggleCollapsed(actionBtn.closest("[data-week]"));
+            return;
+          }
+          if (action === "toggle-workout") {
+            toggleCollapsed(actionBtn.closest("[data-workout]"));
+            return;
+          }
+          if (action === "collapse-all") {
+            setAllCollapsed(true);
+            return;
+          }
+          if (action === "expand-all") {
+            setAllCollapsed(false);
+            return;
+          }
           if (action === "add-week") {
             addDefaultWeek();
             return;

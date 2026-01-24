@@ -877,6 +877,7 @@ html.light .exercise-card {
   gap: 8px;
 }
 
+.modal-open,
 .modal-close {
   position: static;
   border: none;
@@ -942,6 +943,24 @@ html.light .exercise-card {
   .video-modal video {
     max-height: 50dvh;
     object-fit: contain;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .video-modal {
+    width: min(96vw, 960px);
+    max-height: 92dvh;
+    padding: 10px;
+  }
+
+  .video-modal video {
+    max-height: 78dvh;
+  }
+
+  .video-title,
+  .video-desc,
+  .video-note {
+    display: none;
   }
 }
 

@@ -813,6 +813,7 @@
       gap: 8px;
     }
 
+    .modal-open,
     .modal-close {
       position: static;
       border: none;
@@ -828,6 +829,24 @@
 
     html.light .modal-close {
       background: rgba(0, 0, 0, 0.12);
+    }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+      .video-modal {
+        width: min(96vw, 960px);
+        max-height: 92dvh;
+        padding: 10px;
+      }
+
+      .video-modal video {
+        max-height: 78dvh;
+      }
+
+      .video-title,
+      .video-desc,
+      .video-note {
+        display: none;
+      }
     }
   </style>
 
@@ -911,6 +930,7 @@
       <p id="videoNote" class="video-note"></p>
       <div id="videoDesc" class="video-desc"></div>
       <div class="video-actions">
+        <button class="modal-open" id="openVideo" type="button" aria-label="Открыть видео">Открыть</button>
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
 
@@ -943,9 +963,11 @@
     const videoTitle = document.getElementById("videoTitle");
     const videoDesc = document.getElementById("videoDesc");
     const videoNote = document.getElementById("videoNote");
+    const openVideoBtn = document.getElementById("openVideo");
     const isAndroid = /Android/i.test(navigator.userAgent);
     let currentVideoRequest = 0;
     let currentVideoUrl = "";
+    let currentVideoLocked = false;
     let isGuestMode = false;
     const showAlert = (msg) => (tg?.showAlert ? tg.showAlert(msg) : alert(msg));
 
@@ -1334,6 +1356,7 @@
       currentVideoRequest += 1;
       const requestId = currentVideoRequest;
       const guestLocked = isGuestMode && (exercise?.guestAccess ?? true);
+      currentVideoLocked = guestLocked;
       const guestLockMessage = "\u0412\u0438\u0434\u0435\u043e \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0442\u043e\u043b\u044c\u043a\u043e \u043f\u043e\u0441\u043b\u0435 \u043f\u043e\u043a\u0443\u043f\u043a\u0438 \u0442\u0430\u0440\u0438\u0444\u0430.";
       if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
       if (videoDesc) {
@@ -1416,6 +1439,23 @@
       }
     };
 
+    const openExternalVideo = () => {
+      if (!currentVideoUrl) {
+        showAlert("Видео пока не добавлено.");
+        return;
+      }
+      if (currentVideoLocked) {
+        showAlert("Видео доступно только после покупки тарифа.");
+        return;
+      }
+      if (tg?.openLink) {
+        tg.openLink(currentVideoUrl);
+      } else {
+        window.open(currentVideoUrl, "_blank");
+      }
+    };
+
+    if (openVideoBtn) openVideoBtn.addEventListener("click", openExternalVideo);
     document.getElementById("closeVideo").addEventListener("click", closeModal);
     window.addEventListener("click", (e) => {
       const modal = document.getElementById("videoModal");
@@ -1429,6 +1469,7 @@
         videoModal.setAttribute("aria-hidden", "true");
       }
       currentVideoUrl = "";
+      currentVideoLocked = false;
       if (videoEl) {
         videoEl.pause();
         videoEl.removeAttribute("src");

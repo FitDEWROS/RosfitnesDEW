@@ -85,6 +85,7 @@
       <p class="video-note" id="videoNote">Видео пока не добавлено.</p>
       <div class="video-desc" id="videoDesc"></div>
       <div class="video-actions">
+        <button class="modal-open" id="openVideo" type="button" aria-label="Открыть видео">Открыть</button>
         <button class="modal-close" id="closeVideo" type="button" aria-label="Закрыть">Закрыть</button>
       </div>
 
@@ -123,6 +124,7 @@
     const videoTitle = document.getElementById("videoTitle");
     const videoDesc = document.getElementById("videoDesc");
     const videoNote = document.getElementById("videoNote");
+    const openVideoBtn = document.getElementById("openVideo");
     const closeVideo = document.getElementById("closeVideo");
     const densityButton = document.querySelector(".density-btn");
     const densityOrder = ["1", "2"];
@@ -254,6 +256,7 @@
     let lastGroup = null;
     let currentVideoRequest = 0;
     let currentVideoUrl = "";
+    let currentVideoLocked = false;
 
     const setInfoVisible = (visible) => {
       if (!info) return;
@@ -755,6 +758,7 @@
       currentVideoRequest += 1;
       const requestId = currentVideoRequest;
       const guestLocked = isGuestMode && (exercise?.guestAccess ?? true);
+      currentVideoLocked = guestLocked;
       const guestLockMessage = "\u0412\u0438\u0434\u0435\u043e \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0442\u043e\u043b\u044c\u043a\u043e \u043f\u043e\u0441\u043b\u0435 \u043f\u043e\u043a\u0443\u043f\u043a\u0438 \u0442\u0430\u0440\u0438\u0444\u0430.";
       if (videoTitle) videoTitle.textContent = exercise?.title || "Упражнение";
       if (videoDesc) {
@@ -862,6 +866,7 @@
       if (!videoModal) return;
       currentVideoRequest += 1;
       currentVideoUrl = "";
+      currentVideoLocked = false;
       videoModal.classList.remove("show");
       videoModal.classList.remove("guest-locked");
       videoModal.setAttribute("aria-hidden", "true");
@@ -872,6 +877,23 @@
       }
     };
 
+    const openExternalVideo = () => {
+      if (!currentVideoUrl) {
+        showAlert("Видео пока не добавлено.");
+        return;
+      }
+      if (currentVideoLocked) {
+        showAlert("Видео доступно только после покупки тарифа.");
+        return;
+      }
+      if (tg?.openLink) {
+        tg.openLink(currentVideoUrl);
+      } else {
+        window.open(currentVideoUrl, "_blank");
+      }
+    };
+
+    if (openVideoBtn) openVideoBtn.addEventListener("click", openExternalVideo);
     if (closeVideo) closeVideo.addEventListener("click", closeVideoModal);
     if (videoModal) {
       videoModal.addEventListener("click", (e) => {
