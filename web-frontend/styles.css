@@ -639,21 +639,45 @@ html.light .header {
 
 .exercise-list-view {
   display: grid;
-  gap: 16px;
-  padding: 0;
+  gap: 18px;
+  padding: 8px 0 0;
   background: transparent;
   border: none;
   box-shadow: none;
 }
 
 .list-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  display: grid;
   gap: 12px;
-  padding: 0 4px;
-  flex-wrap: wrap;
-  row-gap: 8px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, #1f1f22, #121214);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.list-head::after {
+  content: "";
+  position: absolute;
+  inset: -80px;
+  background: radial-gradient(circle at 20% 120%, rgba(243, 213, 139, 0.35), transparent 70%);
+  opacity: 0.7;
+  z-index: 0;
+}
+
+.list-head > * {
+  position: relative;
+  z-index: 1;
+}
+
+html.light .list-head {
+  background: #ffffff;
+}
+
+html.light .list-head::after {
+  background: radial-gradient(circle at 30% 120%, rgba(232, 200, 106, 0.28), transparent 70%);
 }
 
 .list-actions {
@@ -661,17 +685,69 @@ html.light .header {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  width: 100%;
+}
+
+.list-actions .density-toggle {
+  margin-left: auto;
+}
+
+.list-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 220px;
+  min-width: 180px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.light .list-search {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.list-search-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+html.light .list-search-icon {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.list-search input {
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.list-search input::placeholder {
+  color: var(--muted);
 }
 
 .density-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
 }
 
 .density-label {
@@ -683,11 +759,11 @@ html.light .header {
 
 .density-btn {
   border: none;
-  border-radius: 999px;
-  min-width: 28px;
-  height: 26px;
-  padding: 0 8px;
-  font-size: 0.75rem;
+  border-radius: 50%;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: #1b1b1b;
@@ -702,7 +778,7 @@ html.light .header {
 
 .list-title-group {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .header-eyebrow {
@@ -713,14 +789,15 @@ html.light .header {
 }
 
 .list-title {
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   margin: 0;
 }
 
 .list-subtitle {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  color: var(--muted);
 }
 
 .exercise-list {
@@ -901,6 +978,18 @@ html.light .exercise-card {
   }
   .thumb {
     height: 160px;
+  }
+}
+
+@media (max-width: 640px) {
+  .list-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .list-actions .density-toggle {
+    margin-left: 0;
+    justify-content: space-between;
   }
 }
 .empty-state {

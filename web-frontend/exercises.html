@@ -61,15 +61,21 @@
       </div>
 
       <section id="listView" class="exercise-list-view" hidden>
-                        <div class="list-head">
+        <div class="list-head">
           <div class="list-title-group">
             <span class="header-eyebrow">Упражнения</span>
             <h3 class="list-title">Зал</h3>
           </div>
           <span class="muted list-subtitle">Каталог упражнений</span>
-          <div class="density-toggle" role="group" aria-label="Колонки">
-            <span class="density-label">Колонки</span>
-            <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
+          <div class="list-actions">
+            <label class="list-search" aria-label="Поиск упражнения">
+              <span class="list-search-icon">⌕</span>
+              <input id="listSearch" type="search" placeholder="Поиск упражнения" autocomplete="off">
+            </label>
+            <div class="density-toggle" role="group" aria-label="Колонки">
+              <span class="density-label">Колонки</span>
+              <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
+            </div>
           </div>
         </div>
         <div class="exercise-list" id="exerciseList" data-cols="2"></div>
@@ -119,6 +125,7 @@
     const viewSwitch = document.querySelector(".view-switch");
     const exerciseList = document.getElementById("exerciseList");
     const exerciseEmpty = document.getElementById("exerciseEmpty");
+    const listSearch = document.getElementById("listSearch");
     const videoModal = document.getElementById("videoModal");
     const videoEl = document.getElementById("exerciseVideo");
     const videoTitle = document.getElementById("videoTitle");
@@ -607,7 +614,11 @@
       if (!exerciseList) return;
       exerciseList.innerHTML = "";
       if (!items.length) {
-        if (exerciseEmpty) exerciseEmpty.hidden = false;
+        if (exerciseEmpty) {
+          const query = listSearch?.value.trim();
+          exerciseEmpty.textContent = query ? "Ничего не найдено." : "Пока нет упражнений.";
+          exerciseEmpty.hidden = false;
+        }
         return;
       }
       if (exerciseEmpty) exerciseEmpty.hidden = true;
@@ -645,6 +656,27 @@
       });
     };
 
+    const normalizeSearch = (value) => String(value || "").toLowerCase().trim();
+
+    const getFilteredExercises = () => {
+      const query = normalizeSearch(listSearch?.value);
+      if (!query) return exerciseLibrary;
+      return exerciseLibrary.filter((exercise) => {
+        const haystack = `${exercise.title || ""} ${exercise.description || ""} ${exercise.details || ""}`.toLowerCase();
+        return haystack.includes(query);
+      });
+    };
+
+    const refreshExerciseList = () => {
+      renderExerciseList(getFilteredExercises());
+    };
+
+    if (listSearch) {
+      listSearch.addEventListener("input", () => {
+        refreshExerciseList();
+      });
+    }
+
     const loadExercises = async () => {
       if (!apiBase) return;
       try {
@@ -654,7 +686,7 @@
         const json = await res.json().catch(() => ({}));
         if (!json?.ok || !Array.isArray(json.exercises)) return;
         exerciseLibrary = json.exercises;
-        renderExerciseList(exerciseLibrary);
+        refreshExerciseList();
         if (lastGroup) {
           renderInfoList(lastGroup);
         }
