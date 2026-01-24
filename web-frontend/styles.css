@@ -680,15 +680,16 @@ html.light .list-head::after {
   background: radial-gradient(circle at 30% 120%, rgba(232, 200, 106, 0.28), transparent 70%);
 }
 
-.list-actions {
+.list-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
   width: 100%;
+  margin-top: 2px;
 }
 
-.list-actions .density-toggle {
+.list-controls .density-toggle {
   margin-left: auto;
 }
 
@@ -982,12 +983,12 @@ html.light .exercise-card {
 }
 
 @media (max-width: 640px) {
-  .list-actions {
+  .list-controls {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .list-actions .density-toggle {
+  .list-controls .density-toggle {
     margin-left: 0;
     justify-content: space-between;
   }
