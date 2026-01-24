@@ -439,6 +439,44 @@
       gap: 14px;
     }
 
+    [data-workouts].stack {
+      gap: 0;
+    }
+
+    .week-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: thin;
+    }
+
+    .week-tabs:empty {
+      display: none;
+    }
+
+    .week-tab {
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-family: var(--font-title);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: var(--transition);
+    }
+
+    .week-tab.is-active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #1b1b1b;
+      border-color: transparent;
+    }
+
     .repeat-row {
       display: flex;
       gap: 10px;
@@ -475,29 +513,29 @@
     }
 
     .workout-card {
-      padding: 14px;
-      border-radius: 18px;
-      border: 1px solid var(--card-border);
-      background: rgba(0, 0, 0, 0.22);
+      padding: 14px 0;
+      border-radius: 0;
+      border: none;
+      background: transparent;
       display: grid;
       gap: 12px;
     }
 
-    html.light .workout-card {
-      background: rgba(0, 0, 0, 0.04);
+    .workout-card + .workout-card {
+      border-top: 1px dashed var(--card-border);
     }
 
     .exercise-card {
-      padding: 12px;
-      border-radius: 16px;
-      border: 1px solid var(--card-border);
-      background: rgba(0, 0, 0, 0.15);
+      padding: 12px 0;
+      border-radius: 0;
+      border: none;
+      background: transparent;
       display: grid;
       gap: 10px;
     }
 
-    html.light .exercise-card {
-      background: rgba(0, 0, 0, 0.03);
+    .exercise-card + .exercise-card {
+      border-top: 1px dashed var(--card-border);
     }
 
     .card-head {
@@ -567,12 +605,8 @@
     .workout-body {
       display: grid;
       gap: 12px;
-      padding-left: 10px;
-      border-left: 1px dashed var(--card-border);
-    }
-
-    .workout-body {
-      border-left-style: solid;
+      padding-left: 0;
+      border-left: none;
     }
 
     .week-card[data-collapsed="true"] .week-body,
@@ -587,7 +621,7 @@
 
     .exercise-list {
       display: grid;
-      gap: 12px;
+      gap: 0;
     }
 
     .btn-primary,
@@ -1065,6 +1099,8 @@
           </div>
         </div>
 
+        <div class="week-tabs" id="weekTabs" role="tablist" aria-label="Недели"></div>
+
         <div id="weeksContainer" class="stack"></div>
 
         <div class="actions">
@@ -1129,6 +1165,7 @@
       const formCard = document.getElementById("formCard");
       const listCard = document.getElementById("listCard");
       const weeksContainer = document.getElementById("weeksContainer");
+      const weekTabs = document.getElementById("weekTabs");
       const formStatus = document.getElementById("formStatus");
       const formModeLabel = document.getElementById("formModeLabel");
       const formTitle = document.getElementById("formTitle");
@@ -1179,6 +1216,7 @@
       let isTrainer = false;
       const maxWizardStep = 3;
       let wizardStep = 1;
+      let activeWeekIndex = 0;
 
       const setStatus = (message, ok) => {
         formStatus.textContent = message;
@@ -1302,6 +1340,9 @@
         if (wizardNext) {
           wizardNext.disabled = step === maxWizardStep;
           wizardNext.textContent = step === 1 ? "К структуре" : step === 2 ? "К наполнению" : "Готово";
+        }
+        if (step === 3) {
+          setActiveWeek(activeWeekIndex);
         }
       };
 
@@ -1636,12 +1677,49 @@
         const exercisesContainer = workoutCard.querySelector("[data-exercises]");
         exercisesContainer.appendChild(createExerciseCard());
         weeksContainer.appendChild(weekCard);
+        activeWeekIndex = Array.from(weeksContainer.querySelectorAll("[data-week]")).length - 1;
         renumber();
         refreshExerciseSelects();
       };
 
+      const getWeekCards = () => Array.from(weeksContainer.querySelectorAll("[data-week]"));
+
+      const syncWeekTabs = () => {
+        if (!weekTabs) return;
+        const weekCards = getWeekCards();
+        weekTabs.innerHTML = "";
+        if (!weekCards.length) return;
+        activeWeekIndex = Math.min(Math.max(activeWeekIndex, 0), weekCards.length - 1);
+        weekCards.forEach((weekCard, idx) => {
+          const label = weekCard.querySelector("[data-week-label]")?.textContent?.trim() || `Неделя ${idx + 1}`;
+          const meta = weekCard.querySelector("[data-week-meta]")?.textContent?.trim() || "";
+          const tab = document.createElement("button");
+          tab.type = "button";
+          tab.className = `week-tab${idx === activeWeekIndex ? " is-active" : ""}`;
+          tab.dataset.weekTab = String(idx);
+          tab.setAttribute("role", "tab");
+          tab.setAttribute("aria-selected", idx === activeWeekIndex ? "true" : "false");
+          tab.textContent = meta ? `${label} | ${meta}` : label;
+          weekTabs.appendChild(tab);
+        });
+      };
+
+      const setActiveWeek = (index) => {
+        const weekCards = getWeekCards();
+        if (!weekCards.length) {
+          if (weekTabs) weekTabs.innerHTML = "";
+          return;
+        }
+        const nextIndex = Math.min(Math.max(index, 0), weekCards.length - 1);
+        activeWeekIndex = nextIndex;
+        weekCards.forEach((weekCard, idx) => {
+          weekCard.hidden = idx !== nextIndex;
+        });
+        syncWeekTabs();
+      };
+
       const renumber = () => {
-        const weekCards = Array.from(weeksContainer.querySelectorAll("[data-week]"));
+        const weekCards = getWeekCards();
         programWeeksCount.value = weekCards.length || "";
         weekCards.forEach((weekCard, weekIndex) => {
           const weekLabel = weekCard.querySelector("[data-week-label]");
@@ -1666,6 +1744,7 @@
           });
         });
         refreshRepeatOptions();
+        setActiveWeek(activeWeekIndex);
       };
 
       const setCollapsed = (card, collapsed) => {
@@ -1712,6 +1791,16 @@
           }
         });
       };
+
+      if (weekTabs) {
+        weekTabs.addEventListener("click", (event) => {
+          const tab = event.target.closest("[data-week-tab]");
+          if (!tab) return;
+          const index = Number(tab.dataset.weekTab);
+          if (!Number.isFinite(index)) return;
+          setActiveWeek(index);
+        });
+      }
 
       const extractWeekData = (weekCard) => {
         const weekTitle = weekCard.querySelector("[data-week-title]")?.value.trim() || "";
@@ -1812,6 +1901,7 @@
           weeksContainer.appendChild(weekCard);
         }
 
+        activeWeekIndex = 0;
         renumber();
         refreshExerciseSelects();
         setStatus("План создан.", true);
@@ -2050,6 +2140,7 @@
             weeksContainer.appendChild(weekCard);
           });
 
+          activeWeekIndex = 0;
           if (!weeksContainer.querySelector("[data-week]")) {
             addDefaultWeek();
           } else {
@@ -2143,7 +2234,19 @@
             return;
           }
           if (action === "remove-week") {
-            actionBtn.closest("[data-week]")?.remove();
+            const weekCard = actionBtn.closest("[data-week]");
+            if (!weekCard) return;
+            const weekCards = Array.from(weeksContainer.querySelectorAll("[data-week]"));
+            const removedIndex = weekCards.indexOf(weekCard);
+            weekCard.remove();
+            const nextCount = weekCards.length - 1;
+            if (nextCount <= 0) {
+              activeWeekIndex = 0;
+            } else if (removedIndex < activeWeekIndex) {
+              activeWeekIndex = Math.max(0, activeWeekIndex - 1);
+            } else if (removedIndex === activeWeekIndex) {
+              activeWeekIndex = Math.max(0, activeWeekIndex - 1);
+            }
             renumber();
             return;
           }
