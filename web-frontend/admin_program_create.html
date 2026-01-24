@@ -444,12 +444,9 @@
     }
 
     .week-tabs {
-      display: flex;
-      gap: 8px;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      scrollbar-width: thin;
+      display: grid;
+      gap: 10px;
+      width: 100%;
     }
 
     .week-tabs:empty {
@@ -469,6 +466,8 @@
       cursor: pointer;
       white-space: nowrap;
       transition: var(--transition);
+      width: 100%;
+      text-align: left;
     }
 
     .week-tab.is-active {
@@ -1343,6 +1342,12 @@
         }
         if (step === 3) {
           setActiveWeek(activeWeekIndex);
+          const panel = wizardPanels.find((item) => Number(item.dataset.stepPanel) === 3);
+          if (panel && typeof panel.scrollIntoView === "function") {
+            requestAnimationFrame(() => {
+              panel.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          }
         }
       };
 
