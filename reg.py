@@ -54,6 +54,7 @@ reg_kb = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True,
     one_time_keyboard=False,   # оставляем меню на экране, но без "прилипания"
+    is_persistent=True,
 )
 
 def main_kb() -> ReplyKeyboardMarkup:
@@ -64,6 +65,7 @@ def main_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -74,6 +76,7 @@ CLIENT_PROFILE_KB = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True,
     one_time_keyboard=False,
+    is_persistent=True,
 )
 
 
@@ -181,6 +184,7 @@ async def client_entry(message: Message, state: FSMContext):
             keyboard=[[KeyboardButton(text="✅ Принять"), KeyboardButton(text="❌ Отклонить")]],
             resize_keyboard=True,
             one_time_keyboard=False,
+            is_persistent=True,
         ),
         parse_mode="Markdown"
     )
@@ -400,6 +404,7 @@ def cancel_kb() -> ReplyKeyboardMarkup:
         keyboard=[[KeyboardButton(text="⬅️ Назад")]],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 

@@ -146,6 +146,7 @@ def base_tariff_menu_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -157,6 +158,7 @@ def base_tariff_mode_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -169,6 +171,7 @@ def value_tariff_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -180,6 +183,7 @@ def tariff_status_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -191,6 +195,7 @@ def buy_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -202,6 +207,7 @@ def section_action_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -213,6 +219,7 @@ def value_tariff_final_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 

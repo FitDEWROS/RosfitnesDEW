@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Bot
-from aiogram.types import Message, ReplyKeyboardMarkup
+from aiogram.types import Message
 
 # Храним ID последнего «главного» сообщения для каждого пользователя
 _last_keep_message_id = {}  # user_id → message_id
@@ -16,11 +16,9 @@ async def send_temp(
     Используй для уведомлений («✅ Куплено», «❌ Ошибка» и т.п.).
     """
     if reply_markup is None:
-        reply_markup = ReplyKeyboardMarkup(
-            keyboard=[], resize_keyboard=True, is_persistent=False
-        )
-
-    msg = await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
+        msg = await message.answer(text, parse_mode=parse_mode)
+    else:
+        msg = await message.answer(text, reply_markup=reply_markup, parse_mode=parse_mode)
 
     # Запускаем задачу на удаление
     if delete_after:

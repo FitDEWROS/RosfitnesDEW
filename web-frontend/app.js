@@ -1115,10 +1115,14 @@
       const weightJson = await weightRes.json().catch(() => ({}));
       const photoJson = await photoRes.json().catch(() => ({}));
       const logs = Array.isArray(weightJson.logs) ? weightJson.logs : [];
+      const normalizedLogs = logs.map((log) => ({
+        ...log,
+        weightKg: readNumber(log?.weightKg)
+      }));
       const items = Array.isArray(photoJson.items) ? photoJson.items : [];
-      const weekMap = new Map(logs.map((log) => [log.weekStart, log]));
+      const weekMap = new Map(normalizedLogs.map((log) => [log.weekStart, log]));
       const weightMap = new Map();
-      logs.forEach((log) => {
+      normalizedLogs.forEach((log) => {
         const key = getMonthStartKey(parseYMD(log.weekStart));
         if (!weightMap.has(key)) weightMap.set(key, log);
       });
@@ -1157,7 +1161,7 @@
       }
       if (measureSaveBtn) measureSaveBtn.disabled = isLocked;
 
-      renderWeightTrend(logs);
+      renderWeightTrend(normalizedLogs);
 
       const monthKeys = Array.from({ length: 12 }).map((_, idx) => {
         const start = startOfMonth(new Date());

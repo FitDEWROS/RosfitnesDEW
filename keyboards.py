@@ -61,6 +61,7 @@ def client_kb(has_tariff: bool = False, is_admin: bool = False) -> ReplyKeyboard
         keyboard=rows,
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -71,6 +72,7 @@ def client_main_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -84,6 +86,7 @@ def tariffs_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -95,6 +98,7 @@ def tariff_detail_kb() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
@@ -103,6 +107,8 @@ def empty_kb() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[],
         resize_keyboard=True,
+        one_time_keyboard=False,
+        is_persistent=True,
     )
 
 
