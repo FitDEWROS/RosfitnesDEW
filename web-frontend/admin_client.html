@@ -1135,9 +1135,9 @@
     <section class="section-card" id="progressCard" hidden>
       <div class="section-head">
         <h2 class="section-title">Динамика веса и замеры</h2>
-        <button class="btn-outline" id="refreshProgress" type="button">Обновить</button>
+        <button class="btn-outline" id="openProgressPage" type="button">Открыть</button>
       </div>
-      <div class="progress-list" id="progressList"></div>
+      <p class="page-subtitle">Открой отдельную страницу для просмотра фото и замеров клиента.</p>
     </section>
 
 
@@ -1290,7 +1290,7 @@
 
       const progressCard = document.getElementById("progressCard");
       const progressList = document.getElementById("progressList");
-      const refreshProgress = document.getElementById("refreshProgress");
+      const openProgressPage = document.getElementById("openProgressPage");
 
       const clientTitle = document.getElementById("clientTitle");
 
@@ -1406,6 +1406,21 @@
 
       const openAvailablePage = () => {
         const url = buildAvailableUrl();
+        if (!url) return;
+        window.location.href = url;
+      };
+
+      const buildProgressUrl = () => {
+        if (!clientId) return "";
+        const query = new URLSearchParams();
+        query.set("clientId", String(clientId));
+        if (initData) query.set("initData", initData);
+        if (APP_VERSION) query.set("v", APP_VERSION);
+        return `admin_progress.html?${query.toString()}`;
+      };
+
+      const openProgressWindow = () => {
+        const url = buildProgressUrl();
         if (!url) return;
         window.location.href = url;
       };
@@ -1882,7 +1897,7 @@
 
 
           await loadCurators(client.trainer?.id || null);
-          await loadProgress();
+          if (progressCard) progressCard.hidden = false;
 
         } catch (e) {
 
@@ -2647,7 +2662,7 @@ prevMonth?.addEventListener("click", () => {
 
       saveComment?.addEventListener("click", saveCommentHandler);
 
-      refreshProgress?.addEventListener("click", loadProgress);
+      openProgressPage?.addEventListener("click", openProgressWindow);
 
       chatSend?.addEventListener("click", sendChatMessage);
 

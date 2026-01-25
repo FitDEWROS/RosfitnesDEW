@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fit Dew - Динамика клиента</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --card: rgba(24, 27, 34, 0.9);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f7;
+      --muted: rgba(255, 255, 255, 0.55);
+      --accent: #f2d17c;
+      --shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
+      --radius: 18px;
+    }
+
+    html {
+      color-scheme: dark;
+    }
+
+    html.light {
+      color-scheme: light;
+      --bg: #f4f1e9;
+      --card: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(0, 0, 0, 0.06);
+      --text: #121212;
+      --muted: rgba(0, 0, 0, 0.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .admin-screen {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .page-header {
+      display: grid;
+      gap: 8px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: "Exo 2", sans-serif;
+      font-size: 1.6rem;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .section-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      margin: 0;
+      font-family: "Exo 2", sans-serif;
+      font-size: 1.1rem;
+    }
+
+    .btn-outline {
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    html.light .btn-outline {
+      background: rgba(0, 0, 0, 0.04);
+      color: #1b1b1b;
+    }
+
+    .progress-list {
+      margin-top: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .progress-week {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      display: grid;
+      gap: 10px;
+    }
+
+    html.light .progress-week {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .progress-week-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .progress-week-weight {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .progress-week-measures {
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .progress-photos {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 640px) {
+      .progress-photos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .progress-photo-link {
+      display: block;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .progress-photo {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      border-radius: 12px;
+      object-fit: cover;
+      background: rgba(0, 0, 0, 0.35);
+      display: block;
+      cursor: pointer;
+    }
+
+    .progress-photo.is-empty {
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: default;
+    }
+
+    .progress-empty {
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px dashed var(--card-border);
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-screen">
+    <header class="page-header">
+      <div class="header-top">
+        <div>
+          <div class="eyebrow">Клиент</div>
+          <h1 class="page-title" id="clientTitle">Динамика клиента</h1>
+          <p class="page-subtitle" id="clientSubtitle">Просмотр веса, замеров и фото.</p>
+        </div>
+        <button class="btn-outline" id="backBtn" type="button">Назад</button>
+      </div>
+    </header>
+
+    <section class="section-card">
+      <div class="section-head">
+        <h2 class="section-title">Динамика веса и замеры</h2>
+        <button class="btn-outline" id="refreshProgress" type="button">Обновить</button>
+      </div>
+      <div class="progress-list" id="progressList"></div>
+    </section>
+  </div>
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const APP_VERSION = window.ENV?.APP_VERSION || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+      const params = new URLSearchParams(window.location.search);
+
+      const clientTitle = document.getElementById("clientTitle");
+      const clientSubtitle = document.getElementById("clientSubtitle");
+      const progressList = document.getElementById("progressList");
+      const refreshProgress = document.getElementById("refreshProgress");
+      const backBtn = document.getElementById("backBtn");
+
+      const clientId = Number(params.get("clientId") || params.get("id"));
+      let initData = params.get("initData") || "";
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+        return p.toString();
+      };
+
+      if (!initData) initData = buildInitData();
+
+      const setEmpty = (text) => {
+        if (!progressList) return;
+        progressList.innerHTML = `<div class="progress-empty">${text}</div>`;
+      };
+
+      const toYMD = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      };
+
+      const parseYMD = (value) => new Date(`${value}T00:00:00`);
+
+      const startOfMonth = (date) => {
+        const d = new Date(date);
+        d.setDate(1);
+        return d;
+      };
+
+      const getMonthStartKey = (date) => toYMD(startOfMonth(date));
+
+      const formatMonthRangeNumeric = (monthStartKey) => {
+        if (!monthStartKey) return "—";
+        const start = parseYMD(monthStartKey);
+        const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+        const pad = (value) => String(value).padStart(2, "0");
+        const startLabel = `${pad(start.getDate())}.${pad(start.getMonth() + 1)}`;
+        const endLabel = `${pad(end.getDate())}.${pad(end.getMonth() + 1)}`;
+        return `${startLabel} - ${endLabel}`;
+      };
+
+      const formatWeight = (value) => {
+        if (!Number.isFinite(value)) return "—";
+        const rounded = Math.round(value * 10) / 10;
+        return String(rounded).replace(/\.0$/, "");
+      };
+
+      const formatMeasure = (value) => {
+        if (!Number.isFinite(value)) return null;
+        const rounded = Math.round(value * 10) / 10;
+        return String(rounded).replace(/\.0$/, "");
+      };
+
+      const renderProgress = (weightLogs = [], photoItems = []) => {
+        if (!progressList) return;
+        progressList.innerHTML = "";
+        const weightMap = new Map();
+        weightLogs.forEach((log) => {
+          const key = getMonthStartKey(parseYMD(log.weekStart));
+          if (!weightMap.has(key)) weightMap.set(key, log);
+        });
+        const photoMap = new Map();
+        photoItems.forEach((item) => {
+          const key = getMonthStartKey(parseYMD(item.weekStart));
+          if (!photoMap.has(key)) photoMap.set(key, item);
+        });
+        const weekKeys = Array.from(new Set([...weightMap.keys(), ...photoMap.keys()]))
+          .sort((a, b) => (a < b ? 1 : -1));
+
+        if (!weekKeys.length) {
+          setEmpty("Пока нет данных по весу и замерам.");
+          return;
+        }
+
+        weekKeys.forEach((weekStart) => {
+          const weight = weightMap.get(weekStart);
+          const photos = photoMap.get(weekStart) || {};
+          const measureParts = [];
+          const waistText = formatMeasure(photos.waistCm);
+          const chestText = formatMeasure(photos.chestCm);
+          const hipsText = formatMeasure(photos.hipsCm);
+          if (waistText !== null) measureParts.push(`Талия ${waistText} см`);
+          if (chestText !== null) measureParts.push(`Грудь ${chestText} см`);
+          if (hipsText !== null) measureParts.push(`Бедра ${hipsText} см`);
+          const card = document.createElement("div");
+          card.className = "progress-week";
+          card.innerHTML = `
+            <div class="progress-week-meta">
+              <span>${formatMonthRangeNumeric(weekStart)}</span>
+              <span class="progress-week-weight">Вес: ${formatWeight(weight?.weightKg)} кг</span>
+            </div>
+            ${measureParts.length ? `<div class="progress-week-measures">${measureParts.join(" • ")}</div>` : ""}
+            <div class="progress-photos">
+              ${photos.frontUrl
+                ? `<a class="progress-photo-link" href="${photos.frontUrl}" target="_blank" rel="noopener"><img class="progress-photo" src="${photos.frontUrl}" alt="Фото спереди"></a>`
+                : `<div class="progress-photo is-empty">Спереди</div>`}
+              ${photos.sideUrl
+                ? `<a class="progress-photo-link" href="${photos.sideUrl}" target="_blank" rel="noopener"><img class="progress-photo" src="${photos.sideUrl}" alt="Фото сбоку"></a>`
+                : `<div class="progress-photo is-empty">Сбоку</div>`}
+              ${photos.backUrl
+                ? `<a class="progress-photo-link" href="${photos.backUrl}" target="_blank" rel="noopener"><img class="progress-photo" src="${photos.backUrl}" alt="Фото сзади"></a>`
+                : `<div class="progress-photo is-empty">Сзади</div>`}
+            </div>
+          `;
+          progressList.appendChild(card);
+        });
+      };
+
+      const loadClient = async () => {
+        if (!apiBase || !initData || !clientId) return;
+        try {
+          const res = await fetch(`${apiBase}/api/admin/clients/${clientId}?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) return;
+
+          const client = json.client || {};
+          const name = [client.first_name, client.last_name].filter(Boolean).join(" ") || "Клиент";
+          if (clientTitle) clientTitle.textContent = name;
+          if (clientSubtitle) {
+            clientSubtitle.textContent = client.username ? `@${client.username}` : "без username";
+          }
+        } catch (e) {
+          console.error("Ошибка загрузки клиента", e);
+        }
+      };
+
+      const loadProgress = async () => {
+        if (!apiBase || !initData || !clientId) {
+          setEmpty("Нет доступа к данным.");
+          return;
+        }
+        setEmpty("Загружаем данные...");
+        try {
+          const [weightRes, photoRes] = await Promise.all([
+            fetch(`${apiBase}/api/admin/clients/${clientId}/weight-history?initData=${encodeURIComponent(initData)}&weeks=52`),
+            fetch(`${apiBase}/api/admin/clients/${clientId}/measurements?initData=${encodeURIComponent(initData)}&months=12`)
+          ]);
+          const weightJson = await weightRes.json().catch(() => ({}));
+          const photoJson = await photoRes.json().catch(() => ({}));
+          const weightLogs = Array.isArray(weightJson.logs) ? weightJson.logs : [];
+          const photoItems = Array.isArray(photoJson.items) ? photoJson.items : [];
+          renderProgress(weightLogs, photoItems);
+        } catch (e) {
+          console.error("Ошибка загрузки прогресса", e);
+          setEmpty("Не удалось загрузить данные.");
+        }
+      };
+
+      const goBack = () => {
+        if (!clientId) return;
+        const query = new URLSearchParams();
+        query.set("clientId", String(clientId));
+        if (initData) query.set("initData", initData);
+        if (APP_VERSION) query.set("v", APP_VERSION);
+        window.location.href = `admin_client.html?${query.toString()}`;
+      };
+
+      refreshProgress?.addEventListener("click", loadProgress);
+      backBtn?.addEventListener("click", goBack);
+
+      loadClient();
+      loadProgress();
+    })();
+  </script>
+</body>
+</html>

@@ -985,17 +985,72 @@
       const wk = addDays(start, -(weeksCount - 1 - idx) * 7);
       return toYMD(wk);
     });
-    const logMap = new Map(logs.map((log) => [log.weekStart, log]));
+    const logMap = new Map();
+    logs.forEach((log) => {
+      if (!log?.weekStart) return;
+      logMap.set(log.weekStart, log);
+      try {
+        const normalized = getWeekStartKey(parseYMD(log.weekStart));
+        logMap.set(normalized, log);
+      } catch {
+        return;
+      }
+    });
     const values = weekKeys.map((key) => {
       const value = logMap.get(key)?.weightKg;
       return Number.isFinite(value) ? value : null;
     });
     const present = values.filter((value) => Number.isFinite(value));
     if (!present.length) {
-      weightChartEl.classList.add("is-empty");
-      if (weightChartEmptyEl) weightChartEmptyEl.hidden = false;
-      if (weightChartRangeEl) weightChartRangeEl.textContent = "";
-      weightChartSvg.innerHTML = "";
+      const numericLogs = logs
+        .filter((log) => Number.isFinite(log?.weightKg) && log?.weekStart)
+        .map((log) => ({ date: parseYMD(log.weekStart), weight: log.weightKg }));
+      numericLogs.sort((a, b) => a.date - b.date);
+      if (!numericLogs.length) {
+        weightChartEl.classList.add("is-empty");
+        if (weightChartEmptyEl) weightChartEmptyEl.hidden = false;
+        if (weightChartRangeEl) weightChartRangeEl.textContent = "";
+        weightChartSvg.innerHTML = "";
+        return;
+      }
+
+      weightChartEl.classList.remove("is-empty");
+      if (weightChartEmptyEl) weightChartEmptyEl.hidden = true;
+
+      const min = Math.min(...numericLogs.map((item) => item.weight));
+      const max = Math.max(...numericLogs.map((item) => item.weight));
+      const range = max - min || 1;
+      const denom = Math.max(1, numericLogs.length - 1);
+      let d = "";
+      let circles = "";
+
+      numericLogs.forEach((item, idx) => {
+        const x = ((idx / denom) * 100).toFixed(2);
+        const y = (100 - ((item.weight - min) / range) * 100).toFixed(2);
+        if (!d) {
+          d += `M ${x} ${y}`;
+        } else {
+          d += ` L ${x} ${y}`;
+        }
+        circles += `<circle class="weight-chart-point" cx="${x}" cy="${y}" r="2.4" />`;
+      });
+
+      const grid = [25, 50, 75]
+        .map((y) => `<line class="weight-chart-grid" x1="0" y1="${y}" x2="100" y2="${y}" />`)
+        .join("");
+
+      weightChartSvg.setAttribute("viewBox", "0 0 100 100");
+      weightChartSvg.innerHTML = `
+        ${grid}
+        <path class="weight-chart-line" d="${d}" />
+        ${circles}
+      `;
+
+      if (weightChartRangeEl) {
+        const startLabel = formatDateShort(numericLogs[0].date);
+        const endLabel = formatDateShort(addDays(numericLogs[numericLogs.length - 1].date, 6));
+        weightChartRangeEl.textContent = `${startLabel} - ${endLabel}`;
+      }
       return;
     }
 
