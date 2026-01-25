@@ -1729,7 +1729,7 @@
         if (!apiBase || !initData || !clientId) return;
         try {
           const [weightRes, photoRes] = await Promise.all([
-            fetch(`${apiBase}/api/admin/clients/${clientId}/weight-history?initData=${encodeURIComponent(initData)}&months=12`),
+            fetch(`${apiBase}/api/admin/clients/${clientId}/weight-history?initData=${encodeURIComponent(initData)}&weeks=52`),
             fetch(`${apiBase}/api/admin/clients/${clientId}/measurements?initData=${encodeURIComponent(initData)}&months=12`)
           ]);
 

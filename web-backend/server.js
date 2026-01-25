@@ -755,14 +755,14 @@ const runWeightReminders = async () => {
 
     for (const user of users) {
       if (!isWithinReminderWindow(now, user.timezoneOffsetMin)) continue;
-      const currentMonth = getMonthStartKeyWithOffset(now, user.timezoneOffsetMin);
-      const reminderMonth = user.weightReminderAt
-        ? getMonthStartKeyWithOffset(new Date(user.weightReminderAt), user.timezoneOffsetMin)
+      const currentWeek = getWeekStartKeyWithOffset(now, user.timezoneOffsetMin);
+      const reminderWeek = user.weightReminderAt
+        ? getWeekStartKeyWithOffset(new Date(user.weightReminderAt), user.timezoneOffsetMin)
         : null;
-      if (reminderMonth === currentMonth) continue;
+      if (reminderWeek === currentWeek) continue;
 
       const existing = await prisma.weightLog.findUnique({
-        where: { userId_weekStart: { userId: user.id, weekStart: currentMonth } },
+        where: { userId_weekStart: { userId: user.id, weekStart: currentWeek } },
         select: { id: true }
       });
       if (existing) continue;
@@ -770,7 +770,7 @@ const runWeightReminders = async () => {
       await createNotificationsForUsers([user.id], {
         type: 'weight_reminder',
         title: '\u0414\u0438\u043d\u0430\u043c\u0438\u043a\u0430 \u0432\u0435\u0441\u0430',
-        message: '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043c\u0435\u0441\u044f\u0446.'
+        message: '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043d\u0435\u0434\u0435\u043b\u044e.'
       });
 
       await prisma.user.update({
@@ -958,7 +958,7 @@ const buildTelegramNotificationText = (payload) => {
   }
 
   if (type === 'weight_reminder') {
-    return message || '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043c\u0435\u0441\u044f\u0446.';
+    return message || '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043d\u0435\u0434\u0435\u043b\u044e.';
   }
 
   if (title && message) return `${title}\n${message}`;
@@ -1513,17 +1513,18 @@ app.get('/api/weight/history', async (req, res) => {
     const parsed = parseInitData(req.query.initData);
     if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
 
-    const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
-    const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
+    const monthsRaw = Number(req.query.months);
+    const weeksRaw = Number(req.query.weeks ?? (Number.isFinite(monthsRaw) ? monthsRaw * 4 : 12));
+    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
 
     const dbUser = await ensureUserRecord(parsed);
     const logs = await prisma.weightLog.findMany({
       where: { userId: dbUser.id },
       orderBy: { weekStart: 'desc' },
-      take: months
+      take: weeks
     });
 
-    res.json({ ok: true, months, logs });
+    res.json({ ok: true, weeks, logs });
   } catch (e) {
     console.error('[api/weight:history] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -1542,11 +1543,11 @@ app.post('/api/weight', async (req, res) => {
 
     const offsetRaw = Number(req.body?.timezoneOffsetMin);
     const timezoneOffsetMin = Number.isFinite(offsetRaw) ? Math.round(offsetRaw) : null;
-    const rawPeriodStart = req.body?.monthStart || req.body?.weekStart;
+    const rawPeriodStart = req.body?.weekStart || req.body?.monthStart;
     const dateKey = rawPeriodStart
       ? getDateKey(rawPeriodStart)
       : (req.body?.date ? getDateKey(req.body.date) : toDateKeyWithOffset(new Date(), timezoneOffsetMin));
-    const weekStart = getMonthStartKey(dateKey);
+    const weekStart = getWeekStartKey(dateKey);
 
     const dbUser = await ensureUserRecord(parsed);
     const log = await prisma.weightLog.upsert({
@@ -1577,8 +1578,9 @@ app.get('/api/measurements/history', async (req, res) => {
     const parsed = parseInitData(req.query.initData);
     if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
 
-    const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
-    const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
+    const monthsRaw = Number(req.query.months);
+    const weeksRaw = Number(req.query.weeks ?? (Number.isFinite(monthsRaw) ? monthsRaw * 4 : 12));
+    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
 
     const dbUser = await ensureUserRecord(parsed);
     const rows = await prisma.bodyMeasurement.findMany({
@@ -3415,10 +3417,10 @@ app.get('/api/admin/clients/:id/weight-history', async (req, res) => {
     const logs = await prisma.weightLog.findMany({
       where: { userId: client.id },
       orderBy: { weekStart: 'desc' },
-      take: months
+      take: weeks
     });
 
-    res.json({ ok: true, months, logs });
+    res.json({ ok: true, weeks, logs });
   } catch (e) {
     console.error('[api/admin/clients:weight-history] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });

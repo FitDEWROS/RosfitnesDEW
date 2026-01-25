@@ -62,6 +62,10 @@
   const weightWeekLabelEl = document.getElementById("weightWeekLabel");
   const weightHistoryEl = document.getElementById("weightHistory");
   const weightPhotosEl = document.getElementById("weightPhotos");
+  const weightChartEl = document.getElementById("weightChart");
+  const weightChartSvg = document.getElementById("weightChartSvg");
+  const weightChartRangeEl = document.getElementById("weightChartRange");
+  const weightChartEmptyEl = document.getElementById("weightChartEmpty");
   let nutritionLocked = false;
   let chatAllowed = false;
   let chatLastId = 0;
@@ -244,6 +248,18 @@
     const startLabel = `${pad(start.getDate())}.${pad(start.getMonth() + 1)}`;
     const endLabel = `${pad(end.getDate())}.${pad(end.getMonth() + 1)}`;
     return `${startLabel} - ${endLabel}`;
+  };
+
+  const formatDateShort = (date) => {
+    const pad = (value) => String(value).padStart(2, "0");
+    return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}`;
+  };
+
+  const formatWeekRangeNumeric = (weekStartKey) => {
+    if (!weekStartKey) return "";
+    const start = parseYMD(weekStartKey);
+    const end = addDays(start, 6);
+    return `${formatDateShort(start)} - ${formatDateShort(end)}`;
   };
 
   const isBasicTariff = (tariff) => {
@@ -928,22 +944,91 @@
     });
   };
 
+  const renderWeightTrend = (logs = []) => {
+    if (!weightChartEl || !weightChartSvg) return;
+    const weeksCount = 12;
+    const start = startOfWeek(new Date());
+    const weekKeys = Array.from({ length: weeksCount }).map((_, idx) => {
+      const wk = addDays(start, -(weeksCount - 1 - idx) * 7);
+      return toYMD(wk);
+    });
+    const logMap = new Map(logs.map((log) => [log.weekStart, log]));
+    const values = weekKeys.map((key) => {
+      const value = logMap.get(key)?.weightKg;
+      return Number.isFinite(value) ? value : null;
+    });
+    const present = values.filter((value) => Number.isFinite(value));
+    if (!present.length) {
+      weightChartEl.classList.add("is-empty");
+      if (weightChartEmptyEl) weightChartEmptyEl.hidden = false;
+      if (weightChartRangeEl) weightChartRangeEl.textContent = "";
+      weightChartSvg.innerHTML = "";
+      return;
+    }
+
+    weightChartEl.classList.remove("is-empty");
+    if (weightChartEmptyEl) weightChartEmptyEl.hidden = true;
+
+    const min = Math.min(...present);
+    const max = Math.max(...present);
+    const range = max - min || 1;
+    const denom = Math.max(1, weekKeys.length - 1);
+    let d = "";
+    let circles = "";
+    let started = false;
+
+    values.forEach((value, idx) => {
+      if (!Number.isFinite(value)) {
+        started = false;
+        return;
+      }
+      const x = ((idx / denom) * 100).toFixed(2);
+      const y = (100 - ((value - min) / range) * 100).toFixed(2);
+      if (!started) {
+        d += `M ${x} ${y}`;
+        started = true;
+      } else {
+        d += ` L ${x} ${y}`;
+      }
+      circles += `<circle class="weight-chart-point" cx="${x}" cy="${y}" r="2.4" />`;
+    });
+
+    const grid = [25, 50, 75]
+      .map((y) => `<line class="weight-chart-grid" x1="0" y1="${y}" x2="100" y2="${y}" />`)
+      .join("");
+
+    weightChartSvg.setAttribute("viewBox", "0 0 100 100");
+    weightChartSvg.innerHTML = `
+      ${grid}
+      <path class="weight-chart-line" d="${d}" />
+      ${circles}
+    `;
+
+    if (weightChartRangeEl) {
+      const startLabel = formatDateShort(parseYMD(weekKeys[0]));
+      const endLabel = formatDateShort(addDays(parseYMD(weekKeys[weekKeys.length - 1]), 6));
+      weightChartRangeEl.textContent = `${startLabel} - ${endLabel}`;
+    }
+  };
+
   const loadWeightProgress = async () => {
     if (!API_BASE || !weightModal) return;
     const initData = buildInitData();
     if (!initData) return;
+    const currentWeek = getWeekStartKey(new Date());
     const currentMonth = getMonthStartKey(new Date());
-    if (weightWeekLabelEl) weightWeekLabelEl.textContent = formatMonthRangeNumeric(currentMonth);
+    if (weightWeekLabelEl) weightWeekLabelEl.textContent = formatWeekRangeNumeric(currentWeek);
 
     try {
       const [weightRes, photoRes] = await Promise.all([
-        fetch(`${API_BASE}/api/weight/history?initData=${encodeURIComponent(initData)}&months=12`),
+        fetch(`${API_BASE}/api/weight/history?initData=${encodeURIComponent(initData)}&weeks=52`),
         fetch(`${API_BASE}/api/measurements/history?initData=${encodeURIComponent(initData)}&months=12`)
       ]);
       const weightJson = await weightRes.json().catch(() => ({}));
       const photoJson = await photoRes.json().catch(() => ({}));
       const logs = Array.isArray(weightJson.logs) ? weightJson.logs : [];
       const items = Array.isArray(photoJson.items) ? photoJson.items : [];
+      const weekMap = new Map(logs.map((log) => [log.weekStart, log]));
       const weightMap = new Map();
       logs.forEach((log) => {
         const key = getMonthStartKey(parseYMD(log.weekStart));
@@ -955,7 +1040,7 @@
         if (!photoMap.has(key)) photoMap.set(key, item);
       });
 
-      const currentLog = weightMap.get(currentMonth);
+      const currentLog = weekMap.get(currentWeek);
       if (weightInputEl) {
         weightInputEl.value = currentLog && Number.isFinite(currentLog.weightKg) ? formatSimple(currentLog.weightKg) : "";
       }
@@ -969,6 +1054,8 @@
         });
       }
 
+      renderWeightTrend(logs);
+
       const monthKeys = Array.from({ length: 12 }).map((_, idx) => {
         const start = startOfMonth(new Date());
         const month = addMonths(start, -idx);
@@ -980,7 +1067,7 @@
     }
   };
 
-  const saveMonthlyWeight = async () => {
+  const saveWeeklyWeight = async () => {
     if (!API_BASE || !weightInputEl) return;
     const weightKg = readNumber(weightInputEl.value);
     if (weightKg === null) {
@@ -999,7 +1086,7 @@
       const payload = {
         initData,
         weightKg,
-        monthStart: getMonthStartKey(new Date()),
+        weekStart: getWeekStartKey(new Date()),
         timezoneOffsetMin: getTimezoneOffsetMin()
       };
       const res = await fetch(`${API_BASE}/api/weight`, {
@@ -1331,7 +1418,7 @@
   if (closeProfile) closeProfile.addEventListener("click", () => profileModal?.classList.remove("show"));
   if (openWeightModalBtn) openWeightModalBtn.addEventListener("click", openWeightModal);
   if (closeWeightBtn) closeWeightBtn.addEventListener("click", closeWeightModal);
-  if (weightSaveBtn) weightSaveBtn.addEventListener("click", saveMonthlyWeight);
+  if (weightSaveBtn) weightSaveBtn.addEventListener("click", saveWeeklyWeight);
   if (weightModal) {
     weightModal.addEventListener("click", (e) => {
       if (e.target === weightModal) closeWeightModal();

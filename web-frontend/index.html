@@ -1097,10 +1097,6 @@
       background: rgba(0, 0, 0, 0.04);
     }
 
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-
     .weight-modal {
       width: min(560px, 92vw);
       padding: 18px;
@@ -1119,15 +1115,18 @@
 
     .weight-title {
       margin: 0;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       font-family: var(--font-title);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     .weight-week {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-family: var(--font-title);
       color: var(--muted);
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
+      text-align: center;
     }
 
     .weight-form {
@@ -1139,6 +1138,91 @@
 
     .weight-form .profile-status {
       grid-column: 1 / -1;
+    }
+
+    .weight-chart {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      display: grid;
+      gap: 8px;
+    }
+
+    html.light .weight-chart {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .weight-chart-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .weight-chart-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      font-family: var(--font-title);
+    }
+
+    .weight-chart-range {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      font-family: var(--font-title);
+    }
+
+    .weight-chart-body {
+      position: relative;
+      min-height: 120px;
+    }
+
+    .weight-chart-svg {
+      width: 100%;
+      height: 120px;
+      display: block;
+    }
+
+    .weight-chart-grid {
+      stroke: rgba(255, 255, 255, 0.08);
+      stroke-width: 0.6;
+    }
+
+    html.light .weight-chart-grid {
+      stroke: rgba(0, 0, 0, 0.08);
+    }
+
+    .weight-chart-line {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 2;
+    }
+
+    .weight-chart-point {
+      fill: var(--accent);
+      stroke: rgba(0, 0, 0, 0.35);
+      stroke-width: 0.6;
+    }
+
+    .weight-chart-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      border: 1px dashed var(--card-border);
+      border-radius: 12px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.16);
+    }
+
+    .weight-chart.is-empty .weight-chart-svg {
+      opacity: 0;
     }
 
     .btn-outline {
@@ -1162,13 +1246,15 @@
     .weight-photos {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      --photo-gap: 14px;
+      gap: var(--photo-gap);
     }
 
     .weight-photos .photo-slot:nth-child(3) {
       grid-column: 1 / -1;
       justify-self: center;
-      width: min(220px, 100%);
+      width: 100%;
+      max-width: calc((100% - var(--photo-gap)) / 2);
     }
 
     .photo-slot {
@@ -1181,6 +1267,9 @@
     }
 
     .photo-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.16em;
@@ -1229,14 +1318,10 @@
       gap: 6px;
     }
 
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-
     .weight-history {
       display: grid;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 22px;
     }
 
     .weight-week-card {
@@ -1417,6 +1502,16 @@
 
       .profile-fields {
         grid-template-columns: 1fr;
+      }
+
+      .weight-photos {
+        grid-template-columns: 1fr;
+      }
+
+      .weight-photos .photo-slot:nth-child(3) {
+        grid-column: auto;
+        width: 100%;
+        max-width: none;
       }
     }
 
@@ -1980,6 +2075,16 @@
         <input id="weightInput" class="profile-input" type="number" inputmode="decimal" step="0.1" placeholder="Вес, кг" />
         <button id="weightSave" class="profile-save" type="button">Сохранить</button>
         <span id="weightSaveStatus" class="profile-status"></span>
+      </div>
+      <div class="weight-chart is-empty" id="weightChart">
+        <div class="weight-chart-head">
+          <div class="weight-chart-title">Тренд по неделям</div>
+          <div class="weight-chart-range" id="weightChartRange"></div>
+        </div>
+        <div class="weight-chart-body">
+          <svg id="weightChartSvg" class="weight-chart-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          <div id="weightChartEmpty" class="weight-chart-empty">Пока нет данных по весу.</div>
+        </div>
       </div>
       <div class="weight-photos" id="weightPhotos">
         <div class="photo-slot" data-side="front">
