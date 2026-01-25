@@ -204,6 +204,62 @@
       margin-top: 16px;
     }
 
+    #progressCard {
+      margin-top: 16px;
+    }
+
+    .progress-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .progress-week {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      display: grid;
+      gap: 8px;
+    }
+
+    .progress-week-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .progress-week-weight {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .progress-photos {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .progress-photo {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      border-radius: 12px;
+      object-fit: cover;
+      background: rgba(0, 0, 0, 0.35);
+      display: block;
+    }
+
+    .progress-photo.is-empty {
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
 
 
     .section-head {
@@ -1070,6 +1126,13 @@
 
 </section>
 
+    <section class="section-card" id="progressCard" hidden>
+      <div class="section-head">
+        <h2 class="section-title">Динамика веса и замеры</h2>
+        <button class="btn-outline" id="refreshProgress" type="button">Обновить</button>
+      </div>
+      <div class="progress-list" id="progressList"></div>
+    </section>
 
 
     <section class="section-card" id="chatCard" hidden>
@@ -1219,6 +1282,10 @@
 
       const profileStatus = document.getElementById("profileStatus");
 
+      const progressCard = document.getElementById("progressCard");
+      const progressList = document.getElementById("progressList");
+      const refreshProgress = document.getElementById("refreshProgress");
+
       const clientTitle = document.getElementById("clientTitle");
 
       const clientSubtitle = document.getElementById("clientSubtitle");
@@ -1284,6 +1351,7 @@
 
       const clientId = Number(params.get("clientId") || params.get("id"));
       const monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+      const monthsShort = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
 
 
       let currentMonth = new Date();
@@ -1407,6 +1475,13 @@
 
         return d;
 
+      };
+
+      const formatWeekRange = (weekStartKey) => {
+        if (!weekStartKey) return "—";
+        const start = parseYMD(weekStartKey);
+        const end = addDays(start, 6);
+        return `${start.getDate()} ${monthsShort[start.getMonth()]} — ${end.getDate()} ${monthsShort[end.getMonth()]}`;
       };
 
 
@@ -1572,6 +1647,70 @@
 
 
 
+      const formatWeight = (value) => {
+        if (!Number.isFinite(value)) return "—";
+        const rounded = Math.round(value * 10) / 10;
+        return String(rounded).replace(/\.0$/, "");
+      };
+
+      const renderProgress = (weightLogs = [], photoItems = []) => {
+        if (!progressList) return;
+        progressList.innerHTML = "";
+        const weightMap = new Map(weightLogs.map((log) => [log.weekStart, log]));
+        const photoMap = new Map(photoItems.map((item) => [item.weekStart, item]));
+        const weekKeys = Array.from(new Set([...weightMap.keys(), ...photoMap.keys()]))
+          .sort((a, b) => (a < b ? 1 : -1));
+
+        if (!weekKeys.length) {
+          progressList.innerHTML = '<div class="page-subtitle">Пока нет данных по весу и замерам.</div>';
+          return;
+        }
+
+        weekKeys.forEach((weekStart) => {
+          const weight = weightMap.get(weekStart);
+          const photos = photoMap.get(weekStart) || {};
+          const card = document.createElement("div");
+          card.className = "progress-week";
+          card.innerHTML = `
+            <div class="progress-week-meta">
+              <span>${formatWeekRange(weekStart)}</span>
+              <span class="progress-week-weight">Вес: ${formatWeight(weight?.weightKg)} кг</span>
+            </div>
+            <div class="progress-photos">
+              ${photos.frontUrl
+                ? `<img class="progress-photo" src="${photos.frontUrl}" alt="Фото спереди">`
+                : `<div class="progress-photo is-empty">Спереди</div>`}
+              ${photos.sideUrl
+                ? `<img class="progress-photo" src="${photos.sideUrl}" alt="Фото сбоку">`
+                : `<div class="progress-photo is-empty">Сбоку</div>`}
+              ${photos.backUrl
+                ? `<img class="progress-photo" src="${photos.backUrl}" alt="Фото сзади">`
+                : `<div class="progress-photo is-empty">Сзади</div>`}
+            </div>
+          `;
+          progressList.appendChild(card);
+        });
+      };
+
+      const loadProgress = async () => {
+        if (!apiBase || !initData || !clientId) return;
+        try {
+          const [weightRes, photoRes] = await Promise.all([
+            fetch(`${apiBase}/api/admin/clients/${clientId}/weight-history?initData=${encodeURIComponent(initData)}&weeks=24`),
+            fetch(`${apiBase}/api/admin/clients/${clientId}/measurements?initData=${encodeURIComponent(initData)}&weeks=24`)
+          ]);
+
+          const weightJson = await weightRes.json().catch(() => ({}));
+          const photoJson = await photoRes.json().catch(() => ({}));
+          const weightLogs = Array.isArray(weightJson.logs) ? weightJson.logs : [];
+          const photoItems = Array.isArray(photoJson.items) ? photoJson.items : [];
+          renderProgress(weightLogs, photoItems);
+          if (progressCard) progressCard.hidden = false;
+        } catch (e) {
+          console.error("Ошибка загрузки прогресса", e);
+        }
+      };
+
       const loadClient = async () => {
 
         if (!apiBase || !initData || !clientId) return;
@@ -1690,6 +1829,7 @@
 
 
           await loadCurators(client.trainer?.id || null);
+          await loadProgress();
 
         } catch (e) {
 
@@ -2453,6 +2593,8 @@ prevMonth?.addEventListener("click", () => {
       saveStaff?.addEventListener("click", saveStaffHandler);
 
       saveComment?.addEventListener("click", saveCommentHandler);
+
+      refreshProgress?.addEventListener("click", loadProgress);
 
       chatSend?.addEventListener("click", sendChatMessage);
 

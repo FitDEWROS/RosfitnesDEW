@@ -53,6 +53,15 @@
   const editAgeEl = document.getElementById("editAge");
   const saveProfileBtn = document.getElementById("saveProfile");
   const profileSaveStatusEl = document.getElementById("profileSaveStatus");
+  const openWeightModalBtn = document.getElementById("openWeightModal");
+  const weightModal = document.getElementById("weightModal");
+  const closeWeightBtn = document.getElementById("closeWeight");
+  const weightInputEl = document.getElementById("weightInput");
+  const weightSaveBtn = document.getElementById("weightSave");
+  const weightSaveStatusEl = document.getElementById("weightSaveStatus");
+  const weightWeekLabelEl = document.getElementById("weightWeekLabel");
+  const weightHistoryEl = document.getElementById("weightHistory");
+  const weightPhotosEl = document.getElementById("weightPhotos");
   let nutritionLocked = false;
   let chatAllowed = false;
   let chatLastId = 0;
@@ -61,6 +70,7 @@
   let chatCounterpartName = "";
   let isStaffUser = false;
   let isGuestUser = false;
+  let weightPhotoReady = false;
 
   const buildInitData = () => {
     const raw = tg?.initData || "";
@@ -104,6 +114,39 @@
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
     return date.toLocaleDateString("ru-RU");
+  };
+
+  const monthsShort = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+
+  const toYMD = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const parseYMD = (value) => new Date(`${value}T00:00:00`);
+
+  const addDays = (date, offset) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + offset);
+    return d;
+  };
+
+  const startOfWeek = (date) => {
+    const d = new Date(date);
+    const day = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - day);
+    return d;
+  };
+
+  const getWeekStartKey = (date) => toYMD(startOfWeek(date));
+
+  const formatWeekRange = (weekStartKey) => {
+    if (!weekStartKey) return "";
+    const start = parseYMD(weekStartKey);
+    const end = addDays(start, 6);
+    return `${start.getDate()} ${monthsShort[start.getMonth()]} — ${end.getDate()} ${monthsShort[end.getMonth()]}`;
   };
 
   const isBasicTariff = (tariff) => {
@@ -695,6 +738,300 @@
     }
   };
 
+  const getTimezoneOffsetMin = () => new Date().getTimezoneOffset();
+
+  const setWeightStatus = (text, isError = false) => {
+    if (!weightSaveStatusEl) return;
+    weightSaveStatusEl.textContent = text;
+    weightSaveStatusEl.style.color = isError ? "var(--danger, #ff6b6b)" : "";
+    if (text) {
+      setTimeout(() => {
+        if (weightSaveStatusEl.textContent === text) weightSaveStatusEl.textContent = "";
+      }, 2500);
+    }
+  };
+
+  const updatePhotoSlot = (slot, url) => {
+    if (!slot) return;
+    const img = slot.querySelector(".photo-img");
+    const placeholder = slot.querySelector(".photo-placeholder");
+    const deleteBtn = slot.querySelector(".photo-delete");
+    if (img && url) {
+      img.src = url;
+      img.hidden = false;
+      if (placeholder) placeholder.hidden = true;
+      if (deleteBtn) deleteBtn.disabled = false;
+      return;
+    }
+    if (img) {
+      img.removeAttribute("src");
+      img.hidden = true;
+    }
+    if (placeholder) placeholder.hidden = false;
+    if (deleteBtn) deleteBtn.disabled = true;
+  };
+
+  const renderWeightHistory = (weekKeys, weightMap, photoMap) => {
+    if (!weightHistoryEl) return;
+    weightHistoryEl.innerHTML = "";
+
+    const hasAny = weekKeys.some((key) => {
+      const log = weightMap.get(key);
+      const photos = photoMap.get(key);
+      return Boolean(log) || Boolean(photos?.frontUrl || photos?.sideUrl || photos?.backUrl);
+    });
+
+    if (!hasAny) {
+      weightHistoryEl.innerHTML = '<div class="muted">Пока нет записей по весу и замерам.</div>';
+      return;
+    }
+
+    weekKeys.forEach((key) => {
+      const log = weightMap.get(key);
+      const photos = photoMap.get(key) || {};
+      if (!log && !photos.frontUrl && !photos.sideUrl && !photos.backUrl) return;
+
+      const weightText = Number.isFinite(log?.weightKg) ? `${formatSimple(log.weightKg)} кг` : "—";
+      const card = document.createElement("div");
+      card.className = "weight-week-card";
+      card.innerHTML = `
+        <div class="weight-week-meta">
+          <span>${formatWeekRange(key)}</span>
+          <span>${weightText}</span>
+        </div>
+        <div class="weight-week-photos">
+          ${photos.frontUrl ? `<img class="weight-week-photo" src="${photos.frontUrl}" alt="Фото спереди">` : `<div class="weight-week-photo"></div>`}
+          ${photos.sideUrl ? `<img class="weight-week-photo" src="${photos.sideUrl}" alt="Фото сбоку">` : `<div class="weight-week-photo"></div>`}
+          ${photos.backUrl ? `<img class="weight-week-photo" src="${photos.backUrl}" alt="Фото сзади">` : `<div class="weight-week-photo"></div>`}
+        </div>
+      `;
+      weightHistoryEl.appendChild(card);
+    });
+  };
+
+  const loadWeightProgress = async () => {
+    if (!API_BASE || !weightModal) return;
+    const initData = buildInitData();
+    if (!initData) return;
+    const currentWeek = getWeekStartKey(new Date());
+    if (weightWeekLabelEl) weightWeekLabelEl.textContent = formatWeekRange(currentWeek);
+
+    try {
+      const [weightRes, photoRes] = await Promise.all([
+        fetch(`${API_BASE}/api/weight/history?initData=${encodeURIComponent(initData)}&weeks=24`),
+        fetch(`${API_BASE}/api/measurements/history?initData=${encodeURIComponent(initData)}&weeks=24`)
+      ]);
+      const weightJson = await weightRes.json().catch(() => ({}));
+      const photoJson = await photoRes.json().catch(() => ({}));
+      const logs = Array.isArray(weightJson.logs) ? weightJson.logs : [];
+      const items = Array.isArray(photoJson.items) ? photoJson.items : [];
+      const weightMap = new Map(logs.map((log) => [log.weekStart, log]));
+      const photoMap = new Map(items.map((item) => [item.weekStart, item]));
+
+      const currentLog = weightMap.get(currentWeek);
+      if (weightInputEl) {
+        weightInputEl.value = currentLog && Number.isFinite(currentLog.weightKg) ? formatSimple(currentLog.weightKg) : "";
+      }
+
+      if (weightPhotosEl) {
+        const currentPhotos = photoMap.get(currentWeek) || {};
+        weightPhotosEl.querySelectorAll(".photo-slot").forEach((slot) => {
+          const side = slot.dataset.side;
+          const url = side === "front" ? currentPhotos.frontUrl : side === "side" ? currentPhotos.sideUrl : currentPhotos.backUrl;
+          updatePhotoSlot(slot, url || "");
+        });
+      }
+
+      const weekKeys = Array.from({ length: 12 }).map((_, idx) => {
+        const start = startOfWeek(new Date());
+        const wk = addDays(start, -idx * 7);
+        return toYMD(wk);
+      });
+      renderWeightHistory(weekKeys, weightMap, photoMap);
+    } catch (e) {
+      console.warn("[weight] Ошибка загрузки прогресса", e);
+    }
+  };
+
+  const saveWeeklyWeight = async () => {
+    if (!API_BASE || !weightInputEl) return;
+    const weightKg = readNumber(weightInputEl.value);
+    if (weightKg === null) {
+      showAlert("Введите вес.");
+      return;
+    }
+    if (isGuestUser) {
+      showAlert("Редактирование недоступно в гостевом доступе.");
+      return;
+    }
+    const initData = buildInitData();
+    if (!initData) return;
+
+    setWeightStatus("Сохраняем...");
+    try {
+      const payload = {
+        initData,
+        weightKg,
+        weekStart: getWeekStartKey(new Date()),
+        timezoneOffsetMin: getTimezoneOffsetMin()
+      };
+      const res = await fetch(`${API_BASE}/api/weight`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!json?.ok) {
+        setWeightStatus("Ошибка сохранения", true);
+        return;
+      }
+
+      const newWeight = json.weightKg ?? weightKg;
+      if (profileWeightEl) profileWeightEl.textContent = newWeight ?? "-";
+      if (editWeightEl) editWeightEl.value = newWeight ?? "";
+      if (metricWeightEl) {
+        if (Number.isFinite(newWeight)) {
+          metricWeightEl.textContent = formatSimple(newWeight, "-");
+          if (metricWeightStatusEl) metricWeightStatusEl.textContent = "Профиль";
+        }
+      }
+      setWeightStatus("Сохранено");
+      await loadWeightProgress();
+    } catch (e) {
+      console.warn("[weight] Ошибка сохранения", e);
+      setWeightStatus("Ошибка сохранения", true);
+    }
+  };
+
+  const uploadMeasurement = async (side, file) => {
+    if (!API_BASE || !file) return;
+    const initData = buildInitData();
+    if (!initData) return;
+    if (isGuestUser) {
+      showAlert("Редактирование недоступно в гостевом доступе.");
+      return;
+    }
+    if (!file.type || !file.type.startsWith("image/")) {
+      showAlert("Можно загружать только фото.");
+      return;
+    }
+    const weekStart = getWeekStartKey(new Date());
+    const timezoneOffsetMin = getTimezoneOffsetMin();
+
+    try {
+      const res = await fetch(`${API_BASE}/api/measurements/upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          initData,
+          side,
+          fileName: file.name,
+          contentType: file.type,
+          size: file.size,
+          weekStart,
+          timezoneOffsetMin
+        })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!json?.ok || !json?.uploadUrl || !json?.objectKey) {
+        showAlert("Не удалось подготовить загрузку фото.");
+        return;
+      }
+      const uploadRes = await fetch(json.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file
+      });
+      if (!uploadRes.ok) {
+        showAlert("Не удалось загрузить фото.");
+        return;
+      }
+
+      const saveRes = await fetch(`${API_BASE}/api/measurements`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          initData,
+          side,
+          objectKey: json.objectKey,
+          weekStart
+        })
+      });
+      const saveJson = await saveRes.json().catch(() => ({}));
+      if (!saveJson?.ok) {
+        showAlert("Не удалось сохранить фото.");
+        return;
+      }
+
+      await loadWeightProgress();
+    } catch (e) {
+      console.warn("[measurements] upload error", e);
+      showAlert("Ошибка загрузки фото.");
+    }
+  };
+
+  const deleteMeasurement = async (side) => {
+    if (!API_BASE) return;
+    const initData = buildInitData();
+    if (!initData) return;
+    if (isGuestUser) {
+      showAlert("Редактирование недоступно в гостевом доступе.");
+      return;
+    }
+    const weekStart = getWeekStartKey(new Date());
+    try {
+      const res = await fetch(`${API_BASE}/api/measurements/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData, side, weekStart })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!json?.ok) {
+        showAlert("Не удалось удалить фото.");
+        return;
+      }
+      await loadWeightProgress();
+    } catch (e) {
+      console.warn("[measurements] delete error", e);
+      showAlert("Ошибка удаления фото.");
+    }
+  };
+
+  const initPhotoActions = () => {
+    if (!weightPhotosEl) return;
+    if (weightPhotoReady) return;
+    weightPhotoReady = true;
+    weightPhotosEl.querySelectorAll(".photo-slot").forEach((slot) => {
+      const side = slot.dataset.side;
+      const input = slot.querySelector(".photo-input");
+      const uploadBtn = slot.querySelector(".photo-upload");
+      const deleteBtn = slot.querySelector(".photo-delete");
+
+      uploadBtn?.addEventListener("click", () => input?.click());
+      input?.addEventListener("change", async () => {
+        const file = input.files?.[0];
+        input.value = "";
+        if (!file) return;
+        await uploadMeasurement(side, file);
+      });
+      deleteBtn?.addEventListener("click", () => deleteMeasurement(side));
+    });
+  };
+
+  const openWeightModal = async () => {
+    if (!weightModal) return;
+    weightModal.classList.add("show");
+    weightModal.setAttribute("aria-hidden", "false");
+    initPhotoActions();
+    await loadWeightProgress();
+  };
+
+  const closeWeightModal = () => {
+    if (!weightModal) return;
+    weightModal.classList.remove("show");
+    weightModal.setAttribute("aria-hidden", "true");
+  };
+
   const renderTilesByTariff = (tariff) => {
     const tiles = document.getElementById("tiles");
     if (!tiles) return;
@@ -828,6 +1165,14 @@
 
   if (profileBtn) profileBtn.addEventListener("click", () => profileModal?.classList.add("show"));
   if (closeProfile) closeProfile.addEventListener("click", () => profileModal?.classList.remove("show"));
+  if (openWeightModalBtn) openWeightModalBtn.addEventListener("click", openWeightModal);
+  if (closeWeightBtn) closeWeightBtn.addEventListener("click", closeWeightModal);
+  if (weightSaveBtn) weightSaveBtn.addEventListener("click", saveWeeklyWeight);
+  if (weightModal) {
+    weightModal.addEventListener("click", (e) => {
+      if (e.target === weightModal) closeWeightModal();
+    });
+  }
   if (notifyBtn) {
     notifyBtn.addEventListener("click", () => {
       const initData = buildInitData();

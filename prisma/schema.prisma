@@ -28,6 +28,8 @@ model User {
   tariffName      String?
   tariffExpiresAt DateTime?
   tariffReminderFor DateTime?
+  timezoneOffsetMin Int?
+  weightReminderAt DateTime?
   trainingMode    String    @default("gym")
   role            UserRole  @default(user)
   trainerScope    TrainerScope?
@@ -47,6 +49,8 @@ model User {
   chatThreadsAsClient ChatThread[] @relation("ChatClient")
   chatThreadsAsCurator ChatThread[] @relation("ChatCurator")
   chatMessages   ChatMessage[] @relation("ChatMessageSender")
+  weightLogs     WeightLog[]
+  bodyMeasurements BodyMeasurement[]
 }
 
 model FatSecretToken {
@@ -235,4 +239,32 @@ model ProgramExercise {
   videoUrl String?
 
   @@unique([workoutId, order])
+}
+
+model WeightLog {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  weekStart String   @db.VarChar(10)
+  weightKg  Float    @db.DoublePrecision
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, weekStart])
+  @@index([userId, weekStart])
+}
+
+model BodyMeasurement {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  weekStart String   @db.VarChar(10)
+  frontKey  String?
+  sideKey   String?
+  backKey   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, weekStart])
+  @@index([userId, weekStart])
 }

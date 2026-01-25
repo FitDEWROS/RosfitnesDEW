@@ -15,7 +15,7 @@ import crypto from 'crypto';
 import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
 import https from 'https';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaClient } from '@prisma/client';
 
@@ -246,6 +246,7 @@ function startPythonBot() {
   } finally {
     startPythonBot();
     startAutoAssign();
+    startWeightReminders();
     app.listen(PORT, () => {
       console.log(`✅ Server is running on port ${PORT}`);
     });
@@ -413,6 +414,33 @@ const addDaysLocal = (date, days) => {
   return d;
 };
 
+const toDateKeyUTC = (date) => {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const toDateKeyWithOffset = (date, offsetMin) => {
+  const offset = Number.isFinite(offsetMin) ? offsetMin : 0;
+  const localMillis = date.getTime() - offset * 60000;
+  return toDateKeyUTC(new Date(localMillis));
+};
+
+const getWeekStartKey = (dateKey) => {
+  const raw = typeof dateKey === 'string' ? dateKey.slice(0, 10) : toDateKeyUTC(new Date());
+  const base = new Date(`${raw}T00:00:00Z`);
+  if (Number.isNaN(base.getTime())) return raw;
+  const day = (base.getUTCDay() + 6) % 7;
+  base.setUTCDate(base.getUTCDate() - day);
+  return toDateKeyUTC(base);
+};
+
+const getWeekStartKeyWithOffset = (date, offsetMin) => {
+  const localKey = toDateKeyWithOffset(date, offsetMin);
+  return getWeekStartKey(localKey);
+};
+
 function parseInitData(initData) {
   if (!initData || typeof initData !== 'string') {
     return { ok: false, status: 400, error: 'no_initData' };
@@ -442,6 +470,19 @@ function parseInitData(initData) {
 
   return { ok: true, user, tg_id };
 }
+
+const ensureUserRecord = async (parsed) => {
+  return prisma.user.upsert({
+    where: { tg_id: Number(parsed.tg_id) },
+    update: {},
+    create: {
+      tg_id: Number(parsed.tg_id),
+      username: parsed.user?.username || null,
+      first_name: parsed.user?.first_name || null,
+      last_name: parsed.user?.last_name || null
+    }
+  });
+};
 
 const TRANSLIT_MAP = {
   'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh',
@@ -581,7 +622,7 @@ const AUTO_ASSIGN_HOURS = Number(process.env.AUTO_ASSIGN_HOURS || 12);
 const AUTO_ASSIGN_INTERVAL_MS = Number(process.env.AUTO_ASSIGN_INTERVAL_MS || 10 * 60 * 1000);
 const AUTO_ASSIGN_MIN_AGE_MS = Math.max(0, AUTO_ASSIGN_HOURS) * 60 * 60 * 1000;
 
-const NOTIFICATION_TYPES = ['nutrition_comment', 'program_available', 'exercise_available', 'chat_message', 'curator_assigned'];
+const NOTIFICATION_TYPES = ['nutrition_comment', 'program_available', 'exercise_available', 'chat_message', 'curator_assigned', 'weight_reminder'];
 
 const buildNotificationPreview = (text, limit = 160) => {
   const cleaned = cleanString(text);
@@ -667,9 +708,72 @@ function startAutoAssign() {
   setInterval(autoAssignCurators, AUTO_ASSIGN_INTERVAL_MS);
 }
 
+let weightReminderRunning = false;
+const isWithinReminderWindow = (now, offsetMin) => {
+  const offset = Number.isFinite(offsetMin) ? offsetMin : 0;
+  const local = new Date(now.getTime() - offset * 60000);
+  const hour = local.getUTCHours();
+  const minute = local.getUTCMinutes();
+  if (hour !== WEIGHT_REMINDER_HOUR) return false;
+  return minute >= WEIGHT_REMINDER_MINUTE && minute < WEIGHT_REMINDER_MINUTE + WEIGHT_REMINDER_WINDOW_MIN;
+};
+
+const runWeightReminders = async () => {
+  if (weightReminderRunning) return;
+  weightReminderRunning = true;
+  try {
+    const now = new Date();
+    const users = await prisma.user.findMany({
+      where: { role: 'user', isCurator: false },
+      select: { id: true, timezoneOffsetMin: true, weightReminderAt: true, tariffName: true }
+    });
+
+    for (const user of users) {
+      if (!isWithinReminderWindow(now, user.timezoneOffsetMin)) continue;
+      const currentWeek = getWeekStartKeyWithOffset(now, user.timezoneOffsetMin);
+      const reminderWeek = user.weightReminderAt
+        ? getWeekStartKeyWithOffset(new Date(user.weightReminderAt), user.timezoneOffsetMin)
+        : null;
+      if (reminderWeek === currentWeek) continue;
+
+      const existing = await prisma.weightLog.findUnique({
+        where: { userId_weekStart: { userId: user.id, weekStart: currentWeek } },
+        select: { id: true }
+      });
+      if (existing) continue;
+
+      await createNotificationsForUsers([user.id], {
+        type: 'weight_reminder',
+        title: '\u0414\u0438\u043d\u0430\u043c\u0438\u043a\u0430 \u0432\u0435\u0441\u0430',
+        message: '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043d\u0435\u0434\u0435\u043b\u044e.'
+      });
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { weightReminderAt: now }
+      });
+    }
+  } catch (e) {
+    console.error('[weight-reminder] error', e);
+  } finally {
+    weightReminderRunning = false;
+  }
+};
+
+function startWeightReminders() {
+  if (WEIGHT_REMINDER_INTERVAL_MS <= 0) return;
+  runWeightReminders();
+  const timer = setInterval(runWeightReminders, WEIGHT_REMINDER_INTERVAL_MS);
+  if (typeof timer.unref === 'function') timer.unref();
+}
+
 const CHAT_MAX_UPLOAD_MB = Number(process.env.CHAT_MAX_UPLOAD_MB || 50);
 const CHAT_MAX_UPLOAD_BYTES = Math.round(CHAT_MAX_UPLOAD_MB * 1024 * 1024);
 const CHAT_SIGNED_URL_TTL = Number(process.env.CHAT_SIGNED_URL_TTL || 900);
+const WEIGHT_REMINDER_INTERVAL_MS = Number(process.env.WEIGHT_REMINDER_INTERVAL_MS || 300000);
+const WEIGHT_REMINDER_HOUR = Number(process.env.WEIGHT_REMINDER_HOUR || 15);
+const WEIGHT_REMINDER_MINUTE = Number(process.env.WEIGHT_REMINDER_MINUTE || 0);
+const WEIGHT_REMINDER_WINDOW_MIN = Number(process.env.WEIGHT_REMINDER_WINDOW_MIN || 15);
 
 const S3_BUCKET = process.env.S3_BUCKET || '';
 const S3_ENDPOINT = process.env.S3_ENDPOINT || 'https://s3.twcstorage.ru';
@@ -745,6 +849,19 @@ const getSignedGetUrl = async (key) => {
   return getSignedUrl(client, command, { expiresIn: CHAT_SIGNED_URL_TTL });
 };
 
+const deleteObjectKey = async (key) => {
+  const client = getS3Client();
+  if (!client || !key) return false;
+  try {
+    const command = new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key });
+    await client.send(command);
+    return true;
+  } catch (e) {
+    console.warn('[storage] delete failed', e?.message || e);
+    return false;
+  }
+};
+
 const APP_URL_RAW = process.env.APP_URL || '';
 const ADMIN_URL_RAW = process.env.ADMIN_URL || '';
 const APP_VERSION = process.env.APP_VERSION || '';
@@ -810,6 +927,10 @@ const buildTelegramNotificationText = (payload) => {
 
   if (type === 'curator_assigned') {
     return message || '??? ???????? ???????. ?????? ???????? ??? ? ?????????.';
+  }
+
+  if (type === 'weight_reminder') {
+    return message || '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043d\u0435\u0434\u0435\u043b\u044e.';
   }
 
   if (title && message) return `${title}\n${message}`;
@@ -1326,6 +1447,10 @@ app.post('/api/profile', async (req, res) => {
     if (Object.prototype.hasOwnProperty.call(body, 'age')) {
       data.age = toInt(body.age);
     }
+    if (Object.prototype.hasOwnProperty.call(body, 'timezoneOffsetMin')) {
+      const offset = Number(body.timezoneOffsetMin);
+      data.timezoneOffsetMin = Number.isFinite(offset) ? Math.round(offset) : null;
+    }
 
     const tg_id = parsed.tg_id;
 
@@ -1350,6 +1475,255 @@ app.post('/api/profile', async (req, res) => {
     });
   } catch (e) {
     console.error('[api/profile] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Вес (GET / POST) ===
+app.get('/api/weight/history', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.query.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const weeksRaw = Number(req.query.weeks || 12);
+    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+
+    const dbUser = await ensureUserRecord(parsed);
+    const logs = await prisma.weightLog.findMany({
+      where: { userId: dbUser.id },
+      orderBy: { weekStart: 'desc' },
+      take: weeks
+    });
+
+    res.json({ ok: true, weeks, logs });
+  } catch (e) {
+    console.error('[api/weight:history] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/weight', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.body?.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const weightKg = toFloat(req.body?.weightKg);
+    if (weightKg === null) {
+      return res.status(400).json({ ok: false, error: 'missing_weight' });
+    }
+
+    const offsetRaw = Number(req.body?.timezoneOffsetMin);
+    const timezoneOffsetMin = Number.isFinite(offsetRaw) ? Math.round(offsetRaw) : null;
+    const rawWeekStart = req.body?.weekStart;
+    const dateKey = rawWeekStart
+      ? getDateKey(rawWeekStart)
+      : (req.body?.date ? getDateKey(req.body.date) : toDateKeyWithOffset(new Date(), timezoneOffsetMin));
+    const weekStart = getWeekStartKey(dateKey);
+
+    const dbUser = await ensureUserRecord(parsed);
+    const log = await prisma.weightLog.upsert({
+      where: { userId_weekStart: { userId: dbUser.id, weekStart } },
+      update: { weightKg },
+      create: { userId: dbUser.id, weekStart, weightKg }
+    });
+
+    const userUpdate = {
+      weightKg,
+      ...(timezoneOffsetMin !== null ? { timezoneOffsetMin } : {})
+    };
+    await prisma.user.update({
+      where: { id: dbUser.id },
+      data: userUpdate
+    });
+
+    res.json({ ok: true, weekStart, log, weightKg });
+  } catch (e) {
+    console.error('[api/weight:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Замеры (GET / POST) ===
+app.get('/api/measurements/history', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.query.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const weeksRaw = Number(req.query.weeks || 12);
+    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+
+    const dbUser = await ensureUserRecord(parsed);
+    const rows = await prisma.bodyMeasurement.findMany({
+      where: { userId: dbUser.id },
+      orderBy: { weekStart: 'desc' },
+      take: weeks
+    });
+
+    const items = await Promise.all(
+      rows.map(async (row) => ({
+        weekStart: row.weekStart,
+        frontUrl: row.frontKey ? (getPublicObjectUrl(row.frontKey) || await getSignedGetUrl(row.frontKey)) : null,
+        sideUrl: row.sideKey ? (getPublicObjectUrl(row.sideKey) || await getSignedGetUrl(row.sideKey)) : null,
+        backUrl: row.backKey ? (getPublicObjectUrl(row.backKey) || await getSignedGetUrl(row.backKey)) : null
+      }))
+    );
+
+    res.json({ ok: true, weeks, items });
+  } catch (e) {
+    console.error('[api/measurements:history] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/measurements/upload-url', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.body?.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const side = cleanString(req.body?.side);
+    if (!['front', 'back', 'side'].includes(side)) {
+      return res.status(400).json({ ok: false, error: 'invalid_side' });
+    }
+
+    const fileName = optionalString(req.body?.fileName);
+    const contentType = optionalString(req.body?.contentType);
+    const size = req.body?.size ? Number(req.body.size) : null;
+    if (!contentType || !contentType.startsWith('image/')) {
+      return res.status(400).json({ ok: false, error: 'invalid_content_type' });
+    }
+    if (!Number.isFinite(size) || size <= 0 || size > CHAT_MAX_UPLOAD_BYTES) {
+      return res.status(400).json({ ok: false, error: 'invalid_size' });
+    }
+
+    const offsetRaw = Number(req.body?.timezoneOffsetMin);
+    const timezoneOffsetMin = Number.isFinite(offsetRaw) ? Math.round(offsetRaw) : null;
+    const rawWeekStart = req.body?.weekStart;
+    const dateKey = rawWeekStart
+      ? getDateKey(rawWeekStart)
+      : (req.body?.date ? getDateKey(req.body.date) : toDateKeyWithOffset(new Date(), timezoneOffsetMin));
+    const weekStart = getWeekStartKey(dateKey);
+
+    const dbUser = await ensureUserRecord(parsed);
+    if (timezoneOffsetMin !== null) {
+      await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { timezoneOffsetMin }
+      });
+    }
+
+    const client = getS3Client();
+    if (!client || !S3_BUCKET) {
+      return res.status(500).json({ ok: false, error: 'storage_not_configured' });
+    }
+
+    const prefix = `measurements/${dbUser.id}/${weekStart}`;
+    const key = buildMediaObjectKey(prefix, fileName);
+    const uploadUrl = await getSignedPutUrl({
+      key,
+      contentType,
+      contentLength: Math.round(size)
+    });
+    if (!uploadUrl) {
+      return res.status(500).json({ ok: false, error: 'upload_url_failed' });
+    }
+
+    res.json({
+      ok: true,
+      uploadUrl,
+      objectKey: key,
+      publicUrl: getPublicObjectUrl(key),
+      weekStart,
+      side,
+      maxBytes: CHAT_MAX_UPLOAD_BYTES
+    });
+  } catch (e) {
+    console.error('[api/measurements:upload-url] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/measurements', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.body?.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const side = cleanString(req.body?.side);
+    if (!['front', 'back', 'side'].includes(side)) {
+      return res.status(400).json({ ok: false, error: 'invalid_side' });
+    }
+    const objectKey = optionalString(req.body?.objectKey);
+    if (!objectKey) {
+      return res.status(400).json({ ok: false, error: 'missing_object_key' });
+    }
+
+    const rawWeekStart = req.body?.weekStart;
+    const dateKey = rawWeekStart
+      ? getDateKey(rawWeekStart)
+      : (req.body?.date ? getDateKey(req.body.date) : getDateKey(new Date().toISOString()));
+    const weekStart = getWeekStartKey(dateKey);
+
+    const dbUser = await ensureUserRecord(parsed);
+    if (!objectKey.startsWith(`measurements/${dbUser.id}/`)) {
+      return res.status(400).json({ ok: false, error: 'invalid_object_key' });
+    }
+
+    const data = {};
+    if (side === 'front') data.frontKey = objectKey;
+    if (side === 'side') data.sideKey = objectKey;
+    if (side === 'back') data.backKey = objectKey;
+
+    const item = await prisma.bodyMeasurement.upsert({
+      where: { userId_weekStart: { userId: dbUser.id, weekStart } },
+      update: data,
+      create: { userId: dbUser.id, weekStart, ...data }
+    });
+
+    res.json({ ok: true, weekStart, item });
+  } catch (e) {
+    console.error('[api/measurements:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/measurements/delete', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.body?.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const side = cleanString(req.body?.side);
+    if (!['front', 'back', 'side'].includes(side)) {
+      return res.status(400).json({ ok: false, error: 'invalid_side' });
+    }
+
+    const weekStart = getWeekStartKey(req.body?.weekStart || req.body?.date || '');
+    if (!weekStart) return res.status(400).json({ ok: false, error: 'invalid_week' });
+
+    const dbUser = await ensureUserRecord(parsed);
+    const entry = await prisma.bodyMeasurement.findUnique({
+      where: { userId_weekStart: { userId: dbUser.id, weekStart } }
+    });
+    if (!entry) return res.json({ ok: true, removed: false });
+
+    const key = side === 'front' ? entry.frontKey : side === 'side' ? entry.sideKey : entry.backKey;
+    if (key) await deleteObjectKey(key);
+
+    const update = {};
+    if (side === 'front') update.frontKey = null;
+    if (side === 'side') update.sideKey = null;
+    if (side === 'back') update.backKey = null;
+
+    const updated = await prisma.bodyMeasurement.update({
+      where: { id: entry.id },
+      data: update
+    });
+
+    if (!updated.frontKey && !updated.sideKey && !updated.backKey) {
+      await prisma.bodyMeasurement.delete({ where: { id: entry.id } });
+    }
+
+    res.json({ ok: true, removed: true });
+  } catch (e) {
+    console.error('[api/measurements:delete] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
@@ -2942,6 +3316,97 @@ app.put('/api/admin/exercises/:id', async (req, res) => {
     res.json({ ok: true, exercise: updated });
   } catch (e) {
     console.error('[api/admin/exercises:put] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: client weight history ===
+app.get('/api/admin/clients/:id/weight-history', async (req, res) => {
+  try {
+    const auth = await requireStaff(req.query?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+    if (!auth.canCurate) return res.status(403).json({ ok: false, error: 'forbidden' });
+
+    const clientId = Number(req.params.id);
+    if (!Number.isInteger(clientId)) {
+      return res.status(400).json({ ok: false, error: 'invalid_client_id' });
+    }
+
+    const client = await prisma.user.findUnique({
+      where: { id: clientId },
+      select: { id: true, trainerId: true, role: true, isCurator: true }
+    });
+    if (!client) return res.status(404).json({ ok: false, error: 'not_found' });
+    const isClientTarget = client.role === 'user' && !client.isCurator;
+    if (auth.role !== 'sadmin' && !isClientTarget) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+    if (auth.role !== 'admin' && auth.role !== 'sadmin' && client.trainerId !== auth.userId) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
+    const weeksRaw = Number(req.query.weeks || 12);
+    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+
+    const logs = await prisma.weightLog.findMany({
+      where: { userId: client.id },
+      orderBy: { weekStart: 'desc' },
+      take: weeks
+    });
+
+    res.json({ ok: true, weeks, logs });
+  } catch (e) {
+    console.error('[api/admin/clients:weight-history] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Admin: client measurements ===
+app.get('/api/admin/clients/:id/measurements', async (req, res) => {
+  try {
+    const auth = await requireStaff(req.query?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+    if (!auth.canCurate) return res.status(403).json({ ok: false, error: 'forbidden' });
+
+    const clientId = Number(req.params.id);
+    if (!Number.isInteger(clientId)) {
+      return res.status(400).json({ ok: false, error: 'invalid_client_id' });
+    }
+
+    const client = await prisma.user.findUnique({
+      where: { id: clientId },
+      select: { id: true, trainerId: true, role: true, isCurator: true }
+    });
+    if (!client) return res.status(404).json({ ok: false, error: 'not_found' });
+    const isClientTarget = client.role === 'user' && !client.isCurator;
+    if (auth.role !== 'sadmin' && !isClientTarget) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+    if (auth.role !== 'admin' && auth.role !== 'sadmin' && client.trainerId !== auth.userId) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
+    const weeksRaw = Number(req.query.weeks || 12);
+    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+
+    const rows = await prisma.bodyMeasurement.findMany({
+      where: { userId: client.id },
+      orderBy: { weekStart: 'desc' },
+      take: weeks
+    });
+
+    const items = await Promise.all(
+      rows.map(async (row) => ({
+        weekStart: row.weekStart,
+        frontUrl: row.frontKey ? (getPublicObjectUrl(row.frontKey) || await getSignedGetUrl(row.frontKey)) : null,
+        sideUrl: row.sideKey ? (getPublicObjectUrl(row.sideKey) || await getSignedGetUrl(row.sideKey)) : null,
+        backUrl: row.backKey ? (getPublicObjectUrl(row.backKey) || await getSignedGetUrl(row.backKey)) : null
+      }))
+    );
+
+    res.json({ ok: true, weeks, items });
+  } catch (e) {
+    console.error('[api/admin/clients:measurements] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
