@@ -236,6 +236,12 @@
       font-weight: 600;
     }
 
+    .progress-week-measures {
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
     .progress-photos {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1678,6 +1684,12 @@
         return String(rounded).replace(/\.0$/, "");
       };
 
+      const formatMeasure = (value) => {
+        if (!Number.isFinite(value)) return null;
+        const rounded = Math.round(value * 10) / 10;
+        return String(rounded).replace(/\.0$/, "");
+      };
+
       const renderProgress = (weightLogs = [], photoItems = []) => {
         if (!progressList) return;
         progressList.innerHTML = "";
@@ -1702,6 +1714,13 @@
         weekKeys.forEach((weekStart) => {
           const weight = weightMap.get(weekStart);
           const photos = photoMap.get(weekStart) || {};
+          const measureParts = [];
+          const waistText = formatMeasure(photos.waistCm);
+          const chestText = formatMeasure(photos.chestCm);
+          const hipsText = formatMeasure(photos.hipsCm);
+          if (waistText !== null) measureParts.push(`Талия ${waistText} см`);
+          if (chestText !== null) measureParts.push(`Грудь ${chestText} см`);
+          if (hipsText !== null) measureParts.push(`Бедра ${hipsText} см`);
           const card = document.createElement("div");
           card.className = "progress-week";
           card.innerHTML = `
@@ -1709,6 +1728,7 @@
               <span>${formatMonthRangeNumeric(weekStart)}</span>
               <span class="progress-week-weight">Вес: ${formatWeight(weight?.weightKg)} кг</span>
             </div>
+            ${measureParts.length ? `<div class="progress-week-measures">${measureParts.join(" • ")}</div>` : ""}
             <div class="progress-photos">
               ${photos.frontUrl
                 ? `<img class="progress-photo" src="${photos.frontUrl}" alt="Фото спереди">`

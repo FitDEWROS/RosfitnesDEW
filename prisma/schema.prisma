@@ -262,6 +262,9 @@ model BodyMeasurement {
   frontKey  String?
   sideKey   String?
   backKey   String?
+  waistCm   Float?   @db.DoublePrecision
+  chestCm   Float?   @db.DoublePrecision
+  hipsCm    Float?   @db.DoublePrecision
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

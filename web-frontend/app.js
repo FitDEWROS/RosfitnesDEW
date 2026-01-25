@@ -66,6 +66,11 @@
   const weightChartSvg = document.getElementById("weightChartSvg");
   const weightChartRangeEl = document.getElementById("weightChartRange");
   const weightChartEmptyEl = document.getElementById("weightChartEmpty");
+  const measureWaistEl = document.getElementById("measureWaist");
+  const measureChestEl = document.getElementById("measureChest");
+  const measureHipsEl = document.getElementById("measureHips");
+  const measureSaveBtn = document.getElementById("measureSave");
+  const measureStatusEl = document.getElementById("measureStatus");
   let nutritionLocked = false;
   let chatAllowed = false;
   let chatLastId = 0;
@@ -871,6 +876,17 @@
     }
   };
 
+  const setMeasureStatus = (text, isError = false) => {
+    if (!measureStatusEl) return;
+    measureStatusEl.textContent = text;
+    measureStatusEl.style.color = isError ? "var(--danger, #ff6b6b)" : "";
+    if (text) {
+      setTimeout(() => {
+        if (measureStatusEl.textContent === text) measureStatusEl.textContent = "";
+      }, 2500);
+    }
+  };
+
   const updatePhotoSlot = (slot, url, locked = false) => {
     if (!slot) return;
     const img = slot.querySelector(".photo-img");
@@ -903,7 +919,10 @@
     const hasAny = weekKeys.some((key) => {
       const log = weightMap.get(key);
       const photos = photoMap.get(key);
-      return Boolean(log) || Boolean(photos?.frontUrl || photos?.sideUrl || photos?.backUrl);
+      const hasMetrics = Number.isFinite(photos?.waistCm)
+        || Number.isFinite(photos?.chestCm)
+        || Number.isFinite(photos?.hipsCm);
+      return Boolean(log) || Boolean(photos?.frontUrl || photos?.sideUrl || photos?.backUrl || hasMetrics);
     });
 
     if (!hasAny) {
@@ -928,6 +947,19 @@
       if (photos.backUrl) {
         photoItems.push(`<img class="weight-week-photo" src="${photos.backUrl}" alt="Фото сзади">`);
       }
+      const measureParts = [];
+      if (Number.isFinite(photos.waistCm)) {
+        measureParts.push(`Талия ${formatSimple(photos.waistCm)} см`);
+      }
+      if (Number.isFinite(photos.chestCm)) {
+        measureParts.push(`Грудь ${formatSimple(photos.chestCm)} см`);
+      }
+      if (Number.isFinite(photos.hipsCm)) {
+        measureParts.push(`Бедра ${formatSimple(photos.hipsCm)} см`);
+      }
+      const measuresHtml = measureParts.length
+        ? `<div class="weight-week-measures">${measureParts.join(" • ")}</div>`
+        : "";
       const photosHtml = photoItems.length
         ? photoItems.join("")
         : '<div class="weight-week-empty">Фото еще не загружено</div>';
@@ -938,6 +970,7 @@
           <span>${formatMonthRangeNumeric(key)}</span>
           <span>${weightText}</span>
         </div>
+        ${measuresHtml}
         <div class="weight-week-photos">${photosHtml}</div>
       `;
       weightHistoryEl.appendChild(card);
@@ -1045,14 +1078,29 @@
         weightInputEl.value = currentLog && Number.isFinite(currentLog.weightKg) ? formatSimple(currentLog.weightKg) : "";
       }
 
+      const currentPhotos = photoMap.get(currentMonth) || {};
       if (weightPhotosEl) {
-        const currentPhotos = photoMap.get(currentMonth) || {};
         weightPhotosEl.querySelectorAll(".photo-slot").forEach((slot) => {
           const side = slot.dataset.side;
           const url = side === "front" ? currentPhotos.frontUrl : side === "side" ? currentPhotos.sideUrl : currentPhotos.backUrl;
           updatePhotoSlot(slot, url || "", currentPhotos.locked);
         });
       }
+
+      const isLocked = Boolean(currentPhotos.locked);
+      if (measureWaistEl) {
+        measureWaistEl.value = Number.isFinite(currentPhotos.waistCm) ? formatSimple(currentPhotos.waistCm) : "";
+        measureWaistEl.disabled = isLocked;
+      }
+      if (measureChestEl) {
+        measureChestEl.value = Number.isFinite(currentPhotos.chestCm) ? formatSimple(currentPhotos.chestCm) : "";
+        measureChestEl.disabled = isLocked;
+      }
+      if (measureHipsEl) {
+        measureHipsEl.value = Number.isFinite(currentPhotos.hipsCm) ? formatSimple(currentPhotos.hipsCm) : "";
+        measureHipsEl.disabled = isLocked;
+      }
+      if (measureSaveBtn) measureSaveBtn.disabled = isLocked;
 
       renderWeightTrend(logs);
 
@@ -1118,6 +1166,58 @@
     } catch (e) {
       console.warn("[weight] Ошибка сохранения", e);
       setWeightStatus("Ошибка сохранения", true);
+    }
+  };
+
+  const saveMeasurements = async () => {
+    if (!API_BASE) return;
+    if (measureSaveBtn?.disabled) {
+      showAlert("Замеры можно менять только в течение 3 дней после сохранения.");
+      return;
+    }
+    const initData = buildInitData();
+    if (!initData) return;
+    if (isGuestUser) {
+      showAlert("Редактирование недоступно в гостевом доступе.");
+      return;
+    }
+    const waistCm = measureWaistEl ? readNumber(measureWaistEl.value) : null;
+    const chestCm = measureChestEl ? readNumber(measureChestEl.value) : null;
+    const hipsCm = measureHipsEl ? readNumber(measureHipsEl.value) : null;
+    if (waistCm === null && chestCm === null && hipsCm === null) {
+      showAlert("Введите хотя бы один замер.");
+      return;
+    }
+
+    setMeasureStatus("Сохраняем...");
+    try {
+      const payload = {
+        initData,
+        monthStart: getMonthStartKey(new Date()),
+        timezoneOffsetMin: getTimezoneOffsetMin(),
+        waistCm,
+        chestCm,
+        hipsCm
+      };
+      const res = await fetch(`${API_BASE}/api/measurements/metrics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (json?.error === "locked") {
+        showAlert("Замеры можно менять только в течение 3 дней после сохранения.");
+        return;
+      }
+      if (!json?.ok) {
+        setMeasureStatus("Ошибка сохранения", true);
+        return;
+      }
+      setMeasureStatus("Сохранено");
+      await loadWeightProgress();
+    } catch (e) {
+      console.warn("[measurements] Ошибка сохранения", e);
+      setMeasureStatus("Ошибка сохранения", true);
     }
   };
 
@@ -1419,6 +1519,7 @@
   if (openWeightModalBtn) openWeightModalBtn.addEventListener("click", openWeightModal);
   if (closeWeightBtn) closeWeightBtn.addEventListener("click", closeWeightModal);
   if (weightSaveBtn) weightSaveBtn.addEventListener("click", saveWeeklyWeight);
+  if (measureSaveBtn) measureSaveBtn.addEventListener("click", saveMeasurements);
   if (weightModal) {
     weightModal.addEventListener("click", (e) => {
       if (e.target === weightModal) closeWeightModal();

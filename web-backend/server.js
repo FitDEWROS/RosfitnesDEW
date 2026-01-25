@@ -1595,6 +1595,9 @@ app.get('/api/measurements/history', async (req, res) => {
         frontUrl: row.frontKey ? (getPublicObjectUrl(row.frontKey) || await getSignedGetUrl(row.frontKey)) : null,
         sideUrl: row.sideKey ? (getPublicObjectUrl(row.sideKey) || await getSignedGetUrl(row.sideKey)) : null,
         backUrl: row.backKey ? (getPublicObjectUrl(row.backKey) || await getSignedGetUrl(row.backKey)) : null,
+        waistCm: row.waistCm ?? null,
+        chestCm: row.chestCm ?? null,
+        hipsCm: row.hipsCm ?? null,
         updatedAt: row.updatedAt,
         locked: isMeasurementLocked(row, now),
         lockUntil: getMeasurementLockUntil(row) ? new Date(getMeasurementLockUntil(row)).toISOString() : null
@@ -1738,6 +1741,69 @@ app.post('/api/measurements', async (req, res) => {
     res.json({ ok: true, weekStart, item });
   } catch (e) {
     console.error('[api/measurements:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/measurements/metrics', async (req, res) => {
+  try {
+    const parsed = parseInitData(req.body?.initData);
+    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+
+    const hasWaist = Object.prototype.hasOwnProperty.call(req.body || {}, 'waistCm');
+    const hasChest = Object.prototype.hasOwnProperty.call(req.body || {}, 'chestCm');
+    const hasHips = Object.prototype.hasOwnProperty.call(req.body || {}, 'hipsCm');
+
+    if (!hasWaist && !hasChest && !hasHips) {
+      return res.status(400).json({ ok: false, error: 'missing_metrics' });
+    }
+
+    const waistCm = hasWaist ? toFloat(req.body?.waistCm) : null;
+    const chestCm = hasChest ? toFloat(req.body?.chestCm) : null;
+    const hipsCm = hasHips ? toFloat(req.body?.hipsCm) : null;
+
+    const offsetRaw = Number(req.body?.timezoneOffsetMin);
+    const timezoneOffsetMin = Number.isFinite(offsetRaw) ? Math.round(offsetRaw) : null;
+    const rawPeriodStart = req.body?.monthStart || req.body?.weekStart;
+    const dateKey = rawPeriodStart
+      ? getDateKey(rawPeriodStart)
+      : (req.body?.date ? getDateKey(req.body.date) : toDateKeyWithOffset(new Date(), timezoneOffsetMin));
+    const weekStart = getMonthStartKey(dateKey);
+
+    const dbUser = await ensureUserRecord(parsed);
+    if (timezoneOffsetMin !== null) {
+      await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { timezoneOffsetMin }
+      });
+    }
+
+    const existing = await prisma.bodyMeasurement.findUnique({
+      where: { userId_weekStart: { userId: dbUser.id, weekStart } },
+      select: { id: true, updatedAt: true }
+    });
+    if (existing && isMeasurementLocked(existing)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'locked',
+        lockUntil: getMeasurementLockUntil(existing) ? new Date(getMeasurementLockUntil(existing)).toISOString() : null
+      });
+    }
+
+    const data = {};
+    if (hasWaist) data.waistCm = waistCm;
+    if (hasChest) data.chestCm = chestCm;
+    if (hasHips) data.hipsCm = hipsCm;
+
+    const item = await prisma.bodyMeasurement.upsert({
+      where: { userId_weekStart: { userId: dbUser.id, weekStart } },
+      update: data,
+      create: { userId: dbUser.id, weekStart, ...data }
+    });
+
+    res.json({ ok: true, weekStart, item });
+  } catch (e) {
+    console.error('[api/measurements:metrics] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
@@ -3467,6 +3533,9 @@ app.get('/api/admin/clients/:id/measurements', async (req, res) => {
         frontUrl: row.frontKey ? (getPublicObjectUrl(row.frontKey) || await getSignedGetUrl(row.frontKey)) : null,
         sideUrl: row.sideKey ? (getPublicObjectUrl(row.sideKey) || await getSignedGetUrl(row.sideKey)) : null,
         backUrl: row.backKey ? (getPublicObjectUrl(row.backKey) || await getSignedGetUrl(row.backKey)) : null,
+        waistCm: row.waistCm ?? null,
+        chestCm: row.chestCm ?? null,
+        hipsCm: row.hipsCm ?? null,
         updatedAt: row.updatedAt,
         locked: isMeasurementLocked(row, now),
         lockUntil: getMeasurementLockUntil(row) ? new Date(getMeasurementLockUntil(row)).toISOString() : null

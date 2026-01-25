@@ -1140,6 +1140,34 @@
       grid-column: 1 / -1;
     }
 
+    .measurements-block {
+      margin-top: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .measurements-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      font-family: var(--font-title);
+      text-align: center;
+    }
+
+    .measurements-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .measurements-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
     .weight-chart {
       border: 1px solid var(--card-border);
       border-radius: 16px;
@@ -1343,6 +1371,12 @@
       justify-content: space-between;
       gap: 8px;
       font-size: 0.8rem;
+    }
+
+    .weight-week-measures {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
     }
 
     .weight-week-photos {
@@ -2084,6 +2118,18 @@
         <div class="weight-chart-body">
           <svg id="weightChartSvg" class="weight-chart-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
           <div id="weightChartEmpty" class="weight-chart-empty">Пока нет данных по весу.</div>
+        </div>
+      </div>
+      <div class="measurements-block">
+        <div class="measurements-title">Замеры, см</div>
+        <div class="measurements-form">
+          <input id="measureWaist" class="profile-input" type="number" inputmode="decimal" step="0.1" placeholder="Талия, см" />
+          <input id="measureChest" class="profile-input" type="number" inputmode="decimal" step="0.1" placeholder="Грудь, см" />
+          <input id="measureHips" class="profile-input" type="number" inputmode="decimal" step="0.1" placeholder="Бедра, см" />
+        </div>
+        <div class="measurements-actions">
+          <span id="measureStatus" class="profile-status"></span>
+          <button id="measureSave" class="profile-save" type="button">Сохранить замеры</button>
         </div>
       </div>
       <div class="weight-photos" id="weightPhotos">
