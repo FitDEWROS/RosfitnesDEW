@@ -236,6 +236,16 @@
     return `${start.getDate()} ${monthsShort[start.getMonth()]} вЂ” ${end.getDate()} ${monthsShort[end.getMonth()]}`;
   };
 
+  const formatMonthRangeNumeric = (monthStartKey) => {
+    if (!monthStartKey) return "";
+    const start = parseYMD(monthStartKey);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+    const pad = (value) => String(value).padStart(2, "0");
+    const startLabel = `${pad(start.getDate())}.${pad(start.getMonth() + 1)}`;
+    const endLabel = `${pad(end.getDate())}.${pad(end.getMonth() + 1)}`;
+    return `${startLabel} - ${endLabel}`;
+  };
+
   const isBasicTariff = (tariff) => {
     const value = String(tariff || "").toLowerCase();
     return value.includes("базов");
@@ -891,18 +901,28 @@
       if (!log && !photos.frontUrl && !photos.sideUrl && !photos.backUrl) return;
 
       const weightText = Number.isFinite(log?.weightKg) ? `${formatSimple(log.weightKg)} кг` : "—";
+
+      const photoItems = [];
+      if (photos.frontUrl) {
+        photoItems.push(`<img class="weight-week-photo" src="${photos.frontUrl}" alt="Фото спереди">`);
+      }
+      if (photos.sideUrl) {
+        photoItems.push(`<img class="weight-week-photo" src="${photos.sideUrl}" alt="Фото сбоку">`);
+      }
+      if (photos.backUrl) {
+        photoItems.push(`<img class="weight-week-photo" src="${photos.backUrl}" alt="Фото сзади">`);
+      }
+      const photosHtml = photoItems.length
+        ? photoItems.join("")
+        : '<div class="weight-week-empty">Фото еще не загружено</div>';
       const card = document.createElement("div");
       card.className = "weight-week-card";
       card.innerHTML = `
         <div class="weight-week-meta">
-          <span>${formatMonthRange(key)}</span>
+          <span>${formatMonthRangeNumeric(key)}</span>
           <span>${weightText}</span>
         </div>
-        <div class="weight-week-photos">
-          ${photos.frontUrl ? `<img class="weight-week-photo" src="${photos.frontUrl}" alt="Фото спереди">` : `<div class="weight-week-photo"></div>`}
-          ${photos.sideUrl ? `<img class="weight-week-photo" src="${photos.sideUrl}" alt="Фото сбоку">` : `<div class="weight-week-photo"></div>`}
-          ${photos.backUrl ? `<img class="weight-week-photo" src="${photos.backUrl}" alt="Фото сзади">` : `<div class="weight-week-photo"></div>`}
-        </div>
+        <div class="weight-week-photos">${photosHtml}</div>
       `;
       weightHistoryEl.appendChild(card);
     });
@@ -913,7 +933,7 @@
     const initData = buildInitData();
     if (!initData) return;
     const currentMonth = getMonthStartKey(new Date());
-    if (weightWeekLabelEl) weightWeekLabelEl.textContent = formatMonthRange(currentMonth);
+    if (weightWeekLabelEl) weightWeekLabelEl.textContent = formatMonthRangeNumeric(currentMonth);
 
     try {
       const [weightRes, photoRes] = await Promise.all([

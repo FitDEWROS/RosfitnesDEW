@@ -1492,6 +1492,16 @@
         return `${start.getDate()} ${monthsShort[start.getMonth()]} — ${end.getDate()} ${monthsShort[end.getMonth()]}`;
       };
 
+      const formatMonthRangeNumeric = (monthStartKey) => {
+        if (!monthStartKey) return "—";
+        const start = parseYMD(monthStartKey);
+        const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+        const pad = (value) => String(value).padStart(2, "0");
+        const startLabel = `${pad(start.getDate())}.${pad(start.getMonth() + 1)}`;
+        const endLabel = `${pad(end.getDate())}.${pad(end.getMonth() + 1)}`;
+        return `${startLabel} - ${endLabel}`;
+      };
+
       const formatWeekRange = (weekStartKey) => {
         if (!weekStartKey) return "—";
         const start = parseYMD(weekStartKey);
@@ -1696,7 +1706,7 @@
           card.className = "progress-week";
           card.innerHTML = `
             <div class="progress-week-meta">
-              <span>${formatMonthRange(weekStart)}</span>
+              <span>${formatMonthRangeNumeric(weekStart)}</span>
               <span class="progress-week-weight">Вес: ${formatWeight(weight?.weightKg)} кг</span>
             </div>
             <div class="progress-photos">
