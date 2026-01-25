@@ -725,63 +725,29 @@ html.light .list-head::after {
 .density-toggle {
   display: flex;
   align-items: center;
-  padding: 0;
-  border: none;
-  background: transparent;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
 }
 
 .density-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
-  background: var(--card);
-  color: var(--text);
+  border: none;
+  border-radius: 999px;
+  min-width: 28px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #1b1b1b;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .density-btn:active {
   transform: scale(0.96);
-}
-
-.density-icon {
-  width: 18px;
-  height: 18px;
-  position: relative;
-  display: block;
-}
-
-.density-icon::before,
-.density-icon::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  width: 6px;
-  border-radius: 3px;
-  background: currentColor;
-}
-
-.density-icon::before {
-  left: 2px;
-}
-
-.density-icon::after {
-  right: 2px;
-}
-
-.density-btn[data-cols="1"] .density-icon::after {
-  opacity: 0;
-}
-
-.density-btn[data-cols="1"] .density-icon::before {
-  left: 50%;
-  transform: translateX(-50%);
 }
 
 .list-title-group {
@@ -992,11 +958,6 @@ html.light .exercise-card {
 @media (max-width: 640px) {
   .list-controls {
     gap: 8px;
-  }
-
-  .density-btn {
-    width: 34px;
-    height: 34px;
   }
 }
 .empty-state {

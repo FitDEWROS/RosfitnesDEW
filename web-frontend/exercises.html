@@ -73,9 +73,7 @@
             <input id="listSearch" type="search" placeholder="Поиск упражнения" autocomplete="off">
           </label>
           <div class="density-toggle" role="group" aria-label="Колонки">
-            <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">
-              <span class="density-icon" aria-hidden="true"></span>
-            </button>
+            <button class="density-btn" type="button" data-cols="2" aria-label="Колонки: 2">2</button>
           </div>
         </div>
         <div class="exercise-list" id="exerciseList" data-cols="2"></div>
@@ -232,6 +230,7 @@
       exerciseList.dataset.cols = safeCols;
       if (densityButton) {
         densityButton.dataset.cols = safeCols;
+        densityButton.textContent = safeCols;
         densityButton.setAttribute("aria-label", `Колонки: ${safeCols}`);
       }
     };
