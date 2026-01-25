@@ -1578,9 +1578,8 @@ app.get('/api/measurements/history', async (req, res) => {
     const parsed = parseInitData(req.query.initData);
     if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
 
-    const monthsRaw = Number(req.query.months);
-    const weeksRaw = Number(req.query.weeks ?? (Number.isFinite(monthsRaw) ? monthsRaw * 4 : 12));
-    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+    const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
+    const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
 
     const dbUser = await ensureUserRecord(parsed);
     const rows = await prisma.bodyMeasurement.findMany({
@@ -3411,8 +3410,8 @@ app.get('/api/admin/clients/:id/weight-history', async (req, res) => {
       return res.status(403).json({ ok: false, error: 'forbidden' });
     }
 
-    const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
-    const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
+    const weeksRaw = Number(req.query.weeks ?? req.query.months ?? 12);
+    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
 
     const logs = await prisma.weightLog.findMany({
       where: { userId: client.id },
