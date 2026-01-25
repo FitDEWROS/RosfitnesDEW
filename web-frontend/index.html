@@ -1111,10 +1111,10 @@
     }
 
     .weight-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: grid;
+      justify-items: center;
       gap: 12px;
+      text-align: center;
     }
 
     .weight-title {
@@ -1123,14 +1123,11 @@
       font-family: var(--font-title);
     }
 
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
     .weight-week {
-      font-size: 0.75rem;
+      font-size: 0.85rem;
+      font-family: var(--font-title);
       color: var(--muted);
-      text-align: right;
+      letter-spacing: 0.08em;
     }
 
     .weight-form {
@@ -1164,8 +1161,14 @@
 
     .weight-photos {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
+    }
+
+    .weight-photos .photo-slot:nth-child(3) {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: min(220px, 100%);
     }
 
     .photo-slot {
@@ -1182,7 +1185,7 @@
       text-transform: uppercase;
       letter-spacing: 0.16em;
       color: var(--muted);
-      padding-left: 4px;
+      text-align: center;
     }
 
     html.light .photo-slot {
@@ -1233,6 +1236,7 @@
     .weight-history {
       display: grid;
       gap: 8px;
+      margin-top: 10px;
     }
 
     .weight-week-card {
