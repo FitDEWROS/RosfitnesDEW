@@ -116,6 +116,72 @@
     return date.toLocaleDateString("ru-RU");
   };
 
+  const IMAGE_MAX_DIM = 1280;
+  const IMAGE_QUALITY = 0.78;
+  const IMAGE_MIN_BYTES = 280 * 1024;
+
+  const loadImageElement = (file) => new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("load_failed"));
+    };
+    img.src = url;
+  });
+
+  const loadImageSource = async (file) => {
+    if (window.createImageBitmap) {
+      try {
+        return await createImageBitmap(file, { imageOrientation: "from-image" });
+      } catch (_) {
+        try {
+          return await createImageBitmap(file);
+        } catch (err) {
+          return loadImageElement(file);
+        }
+      }
+    }
+    return loadImageElement(file);
+  };
+
+  const compressImageFile = async (file) => {
+    if (!file || !file.type || !file.type.startsWith("image/")) return file;
+    if (file.type === "image/gif") return file;
+    if (file.size <= IMAGE_MIN_BYTES) return file;
+
+    try {
+      const img = await loadImageSource(file);
+      const width = img.width || img.naturalWidth || 0;
+      const height = img.height || img.naturalHeight || 0;
+      if (!width || !height) return file;
+
+      const scale = Math.min(1, IMAGE_MAX_DIM / Math.max(width, height));
+      const targetW = Math.round(width * scale);
+      const targetH = Math.round(height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) return file;
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      if (typeof img.close === "function") img.close();
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", IMAGE_QUALITY));
+      if (!blob) return file;
+      if (blob.size >= file.size) return file;
+
+      const baseName = file.name ? file.name.replace(/\.[^.]+$/, "") : "image";
+      return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
+    } catch (e) {
+      return file;
+    }
+  };
+
   const monthsShort = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
 
   const toYMD = (date) => {
@@ -133,6 +199,12 @@
     return d;
   };
 
+  const addMonths = (date, offset) => {
+    const d = new Date(date);
+    d.setMonth(d.getMonth() + offset);
+    return d;
+  };
+
   const startOfWeek = (date) => {
     const d = new Date(date);
     const day = (d.getDay() + 6) % 7;
@@ -147,6 +219,21 @@
     const start = parseYMD(weekStartKey);
     const end = addDays(start, 6);
     return `${start.getDate()} ${monthsShort[start.getMonth()]} — ${end.getDate()} ${monthsShort[end.getMonth()]}`;
+  };
+
+  const startOfMonth = (date) => {
+    const d = new Date(date);
+    d.setDate(1);
+    return d;
+  };
+
+  const getMonthStartKey = (date) => toYMD(startOfMonth(date));
+
+  const formatMonthRange = (monthStartKey) => {
+    if (!monthStartKey) return "";
+    const start = parseYMD(monthStartKey);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+    return `${start.getDate()} ${monthsShort[start.getMonth()]} вЂ” ${end.getDate()} ${monthsShort[end.getMonth()]}`;
   };
 
   const isBasicTariff = (tariff) => {
@@ -374,8 +461,6 @@
     if (!API_BASE || !chatAllowed || !file) return null;
     const initData = buildInitData();
     if (!initData) return null;
-    const size = file.size || 0;
-    if (size <= 0) return null;
     const fileType = file.type || "";
     if (!fileType) {
       showAlert("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u043f\u0440\u0435\u0434\u0435\u043b\u0438\u0442\u044c \u0442\u0438\u043f \u0444\u0430\u0439\u043b\u0430.");
@@ -385,6 +470,15 @@
       showAlert("\u041c\u043e\u0436\u043d\u043e \u043e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0444\u043e\u0442\u043e \u0438\u043b\u0438 \u0432\u0438\u0434\u0435\u043e.");
       return null;
     }
+
+    let workingFile = file;
+    if (fileType.startsWith("image/")) {
+      workingFile = await compressImageFile(file);
+    }
+    const uploadType = workingFile.type || fileType;
+    const uploadName = workingFile.name || file.name || (uploadType.startsWith("image/") ? "photo.jpg" : "video.mp4");
+    const size = workingFile.size || 0;
+    if (size <= 0) return null;
     if (size > 50 * 1024 * 1024) {
       showAlert("\u0424\u0430\u0439\u043b \u0431\u043e\u043b\u044c\u0448\u0435 50 \u041c\u0411. \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u043f\u043e\u043c\u0435\u043d\u044c\u0448\u0435.");
       return null;
@@ -394,8 +488,8 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         initData,
-        fileName: file.name || "video.mp4",
-        contentType: fileType,
+        fileName: uploadName,
+        contentType: uploadType,
         size
       })
     });
@@ -406,8 +500,8 @@
     }
     const uploadRes = await fetch(json.uploadUrl, {
       method: "PUT",
-      headers: { "Content-Type": fileType },
-      body: file
+      headers: { "Content-Type": uploadType },
+      body: workingFile
     });
     if (!uploadRes.ok) {
       showAlert("\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438 \u0444\u0430\u0439\u043b\u0430.");
@@ -415,8 +509,8 @@
     }
     return {
       key: json.objectKey,
-      type: fileType,
-      name: file.name || "video.mp4",
+      type: uploadType,
+      name: uploadName,
       size
     };
   };
@@ -751,16 +845,20 @@
     }
   };
 
-  const updatePhotoSlot = (slot, url) => {
+  const updatePhotoSlot = (slot, url, locked = false) => {
     if (!slot) return;
     const img = slot.querySelector(".photo-img");
     const placeholder = slot.querySelector(".photo-placeholder");
     const deleteBtn = slot.querySelector(".photo-delete");
+    const uploadBtn = slot.querySelector(".photo-upload");
+    const isLocked = Boolean(locked);
+    if (uploadBtn) uploadBtn.disabled = isLocked;
     if (img && url) {
       img.src = url;
       img.hidden = false;
       if (placeholder) placeholder.hidden = true;
-      if (deleteBtn) deleteBtn.disabled = false;
+      if (deleteBtn) deleteBtn.disabled = isLocked;
+      slot.dataset.locked = isLocked ? "1" : "0";
       return;
     }
     if (img) {
@@ -769,6 +867,7 @@
     }
     if (placeholder) placeholder.hidden = false;
     if (deleteBtn) deleteBtn.disabled = true;
+    slot.dataset.locked = isLocked ? "1" : "0";
   };
 
   const renderWeightHistory = (weekKeys, weightMap, photoMap) => {
@@ -796,7 +895,7 @@
       card.className = "weight-week-card";
       card.innerHTML = `
         <div class="weight-week-meta">
-          <span>${formatWeekRange(key)}</span>
+          <span>${formatMonthRange(key)}</span>
           <span>${weightText}</span>
         </div>
         <div class="weight-week-photos">
@@ -813,47 +912,55 @@
     if (!API_BASE || !weightModal) return;
     const initData = buildInitData();
     if (!initData) return;
-    const currentWeek = getWeekStartKey(new Date());
-    if (weightWeekLabelEl) weightWeekLabelEl.textContent = formatWeekRange(currentWeek);
+    const currentMonth = getMonthStartKey(new Date());
+    if (weightWeekLabelEl) weightWeekLabelEl.textContent = formatMonthRange(currentMonth);
 
     try {
       const [weightRes, photoRes] = await Promise.all([
-        fetch(`${API_BASE}/api/weight/history?initData=${encodeURIComponent(initData)}&weeks=24`),
-        fetch(`${API_BASE}/api/measurements/history?initData=${encodeURIComponent(initData)}&weeks=24`)
+        fetch(`${API_BASE}/api/weight/history?initData=${encodeURIComponent(initData)}&months=12`),
+        fetch(`${API_BASE}/api/measurements/history?initData=${encodeURIComponent(initData)}&months=12`)
       ]);
       const weightJson = await weightRes.json().catch(() => ({}));
       const photoJson = await photoRes.json().catch(() => ({}));
       const logs = Array.isArray(weightJson.logs) ? weightJson.logs : [];
       const items = Array.isArray(photoJson.items) ? photoJson.items : [];
-      const weightMap = new Map(logs.map((log) => [log.weekStart, log]));
-      const photoMap = new Map(items.map((item) => [item.weekStart, item]));
+      const weightMap = new Map();
+      logs.forEach((log) => {
+        const key = getMonthStartKey(parseYMD(log.weekStart));
+        if (!weightMap.has(key)) weightMap.set(key, log);
+      });
+      const photoMap = new Map();
+      items.forEach((item) => {
+        const key = getMonthStartKey(parseYMD(item.weekStart));
+        if (!photoMap.has(key)) photoMap.set(key, item);
+      });
 
-      const currentLog = weightMap.get(currentWeek);
+      const currentLog = weightMap.get(currentMonth);
       if (weightInputEl) {
         weightInputEl.value = currentLog && Number.isFinite(currentLog.weightKg) ? formatSimple(currentLog.weightKg) : "";
       }
 
       if (weightPhotosEl) {
-        const currentPhotos = photoMap.get(currentWeek) || {};
+        const currentPhotos = photoMap.get(currentMonth) || {};
         weightPhotosEl.querySelectorAll(".photo-slot").forEach((slot) => {
           const side = slot.dataset.side;
           const url = side === "front" ? currentPhotos.frontUrl : side === "side" ? currentPhotos.sideUrl : currentPhotos.backUrl;
-          updatePhotoSlot(slot, url || "");
+          updatePhotoSlot(slot, url || "", currentPhotos.locked);
         });
       }
 
-      const weekKeys = Array.from({ length: 12 }).map((_, idx) => {
-        const start = startOfWeek(new Date());
-        const wk = addDays(start, -idx * 7);
-        return toYMD(wk);
+      const monthKeys = Array.from({ length: 12 }).map((_, idx) => {
+        const start = startOfMonth(new Date());
+        const month = addMonths(start, -idx);
+        return toYMD(month);
       });
-      renderWeightHistory(weekKeys, weightMap, photoMap);
+      renderWeightHistory(monthKeys, weightMap, photoMap);
     } catch (e) {
       console.warn("[weight] Ошибка загрузки прогресса", e);
     }
   };
 
-  const saveWeeklyWeight = async () => {
+  const saveMonthlyWeight = async () => {
     if (!API_BASE || !weightInputEl) return;
     const weightKg = readNumber(weightInputEl.value);
     if (weightKg === null) {
@@ -872,7 +979,7 @@
       const payload = {
         initData,
         weightKg,
-        weekStart: getWeekStartKey(new Date()),
+        monthStart: getMonthStartKey(new Date()),
         timezoneOffsetMin: getTimezoneOffsetMin()
       };
       const res = await fetch(`${API_BASE}/api/weight`, {
@@ -881,6 +988,10 @@
         body: JSON.stringify(payload)
       });
       const json = await res.json().catch(() => ({}));
+      if (json?.error === "locked") {
+        showAlert("Фото можно менять или удалять только в течение 3 дней после загрузки.");
+        return;
+      }
       if (!json?.ok) {
         setWeightStatus("Ошибка сохранения", true);
         return;
@@ -915,7 +1026,15 @@
       showAlert("Можно загружать только фото.");
       return;
     }
-    const weekStart = getWeekStartKey(new Date());
+    const workingFile = await compressImageFile(file);
+    const uploadType = workingFile.type || file.type;
+    const uploadName = workingFile.name || file.name || "photo.jpg";
+    const uploadSize = workingFile.size || 0;
+    if (uploadSize <= 0) {
+      showAlert("РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕРґРіРѕС‚РѕРІРёС‚СЊ С„РѕС‚Рѕ.");
+      return;
+    }
+    const weekStart = getMonthStartKey(new Date());
     const timezoneOffsetMin = getTimezoneOffsetMin();
 
     try {
@@ -925,22 +1044,26 @@
         body: JSON.stringify({
           initData,
           side,
-          fileName: file.name,
-          contentType: file.type,
-          size: file.size,
-          weekStart,
+          fileName: uploadName,
+          contentType: uploadType,
+          size: uploadSize,
+          monthStart: weekStart,
           timezoneOffsetMin
         })
       });
       const json = await res.json().catch(() => ({}));
+      if (json?.error === "locked") {
+        showAlert("Фото можно менять или удалять только в течение 3 дней после загрузки.");
+        return;
+      }
       if (!json?.ok || !json?.uploadUrl || !json?.objectKey) {
         showAlert("Не удалось подготовить загрузку фото.");
         return;
       }
       const uploadRes = await fetch(json.uploadUrl, {
         method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file
+        headers: { "Content-Type": uploadType },
+        body: workingFile
       });
       if (!uploadRes.ok) {
         showAlert("Не удалось загрузить фото.");
@@ -954,10 +1077,14 @@
           initData,
           side,
           objectKey: json.objectKey,
-          weekStart
+          monthStart: weekStart
         })
       });
       const saveJson = await saveRes.json().catch(() => ({}));
+      if (saveJson?.error === "locked") {
+        showAlert("Фото можно менять или удалять только в течение 3 дней после загрузки.");
+        return;
+      }
       if (!saveJson?.ok) {
         showAlert("Не удалось сохранить фото.");
         return;
@@ -978,12 +1105,12 @@
       showAlert("Редактирование недоступно в гостевом доступе.");
       return;
     }
-    const weekStart = getWeekStartKey(new Date());
+    const weekStart = getMonthStartKey(new Date());
     try {
       const res = await fetch(`${API_BASE}/api/measurements/delete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData, side, weekStart })
+        body: JSON.stringify({ initData, side, monthStart: weekStart })
       });
       const json = await res.json().catch(() => ({}));
       if (!json?.ok) {
@@ -1007,14 +1134,31 @@
       const uploadBtn = slot.querySelector(".photo-upload");
       const deleteBtn = slot.querySelector(".photo-delete");
 
-      uploadBtn?.addEventListener("click", () => input?.click());
+      uploadBtn?.addEventListener("click", () => {
+        if (slot.dataset.locked === "1") {
+          showAlert("Фото можно менять или удалять только в течение 3 дней после загрузки.");
+          return;
+        }
+        input?.click();
+      });
       input?.addEventListener("change", async () => {
+        if (slot.dataset.locked === "1") {
+          showAlert("Фото можно менять или удалять только в течение 3 дней после загрузки.");
+          input.value = "";
+          return;
+        }
         const file = input.files?.[0];
         input.value = "";
         if (!file) return;
         await uploadMeasurement(side, file);
       });
-      deleteBtn?.addEventListener("click", () => deleteMeasurement(side));
+      deleteBtn?.addEventListener("click", () => {
+        if (slot.dataset.locked === "1") {
+          showAlert("Фото можно менять или удалять только в течение 3 дней после загрузки.");
+          return;
+        }
+        deleteMeasurement(side);
+      });
     });
   };
 
@@ -1167,7 +1311,7 @@
   if (closeProfile) closeProfile.addEventListener("click", () => profileModal?.classList.remove("show"));
   if (openWeightModalBtn) openWeightModalBtn.addEventListener("click", openWeightModal);
   if (closeWeightBtn) closeWeightBtn.addEventListener("click", closeWeightModal);
-  if (weightSaveBtn) weightSaveBtn.addEventListener("click", saveWeeklyWeight);
+  if (weightSaveBtn) weightSaveBtn.addEventListener("click", saveMonthlyWeight);
   if (weightModal) {
     weightModal.addEventListener("click", (e) => {
       if (e.target === weightModal) closeWeightModal();

@@ -436,9 +436,34 @@ const getWeekStartKey = (dateKey) => {
   return toDateKeyUTC(base);
 };
 
+const getMonthStartKey = (dateKey) => {
+  const raw = typeof dateKey === 'string' ? dateKey.slice(0, 10) : toDateKeyUTC(new Date());
+  const base = new Date(`${raw}T00:00:00Z`);
+  if (Number.isNaN(base.getTime())) return raw;
+  base.setUTCDate(1);
+  return toDateKeyUTC(base);
+};
+
 const getWeekStartKeyWithOffset = (date, offsetMin) => {
   const localKey = toDateKeyWithOffset(date, offsetMin);
   return getWeekStartKey(localKey);
+};
+
+const getMonthStartKeyWithOffset = (date, offsetMin) => {
+  const localKey = toDateKeyWithOffset(date, offsetMin);
+  return getMonthStartKey(localKey);
+};
+
+const getMeasurementLockUntil = (entry) => {
+  const updatedAt = entry?.updatedAt ? new Date(entry.updatedAt) : null;
+  if (!updatedAt || Number.isNaN(updatedAt.getTime())) return null;
+  return updatedAt.getTime() + MEASUREMENT_EDIT_WINDOW_MS;
+};
+
+const isMeasurementLocked = (entry, now = Date.now()) => {
+  const lockUntil = getMeasurementLockUntil(entry);
+  if (!lockUntil) return false;
+  return now >= lockUntil;
 };
 
 function parseInitData(initData) {
@@ -730,14 +755,14 @@ const runWeightReminders = async () => {
 
     for (const user of users) {
       if (!isWithinReminderWindow(now, user.timezoneOffsetMin)) continue;
-      const currentWeek = getWeekStartKeyWithOffset(now, user.timezoneOffsetMin);
-      const reminderWeek = user.weightReminderAt
-        ? getWeekStartKeyWithOffset(new Date(user.weightReminderAt), user.timezoneOffsetMin)
+      const currentMonth = getMonthStartKeyWithOffset(now, user.timezoneOffsetMin);
+      const reminderMonth = user.weightReminderAt
+        ? getMonthStartKeyWithOffset(new Date(user.weightReminderAt), user.timezoneOffsetMin)
         : null;
-      if (reminderWeek === currentWeek) continue;
+      if (reminderMonth === currentMonth) continue;
 
       const existing = await prisma.weightLog.findUnique({
-        where: { userId_weekStart: { userId: user.id, weekStart: currentWeek } },
+        where: { userId_weekStart: { userId: user.id, weekStart: currentMonth } },
         select: { id: true }
       });
       if (existing) continue;
@@ -745,7 +770,7 @@ const runWeightReminders = async () => {
       await createNotificationsForUsers([user.id], {
         type: 'weight_reminder',
         title: '\u0414\u0438\u043d\u0430\u043c\u0438\u043a\u0430 \u0432\u0435\u0441\u0430',
-        message: '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043d\u0435\u0434\u0435\u043b\u044e.'
+        message: '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043c\u0435\u0441\u044f\u0446.'
       });
 
       await prisma.user.update({
@@ -774,6 +799,9 @@ const WEIGHT_REMINDER_INTERVAL_MS = Number(process.env.WEIGHT_REMINDER_INTERVAL_
 const WEIGHT_REMINDER_HOUR = Number(process.env.WEIGHT_REMINDER_HOUR || 15);
 const WEIGHT_REMINDER_MINUTE = Number(process.env.WEIGHT_REMINDER_MINUTE || 0);
 const WEIGHT_REMINDER_WINDOW_MIN = Number(process.env.WEIGHT_REMINDER_WINDOW_MIN || 15);
+const MEASUREMENT_EDIT_DAYS_RAW = Number(process.env.MEASUREMENT_EDIT_DAYS || 3);
+const MEASUREMENT_EDIT_DAYS = Number.isFinite(MEASUREMENT_EDIT_DAYS_RAW) ? MEASUREMENT_EDIT_DAYS_RAW : 3;
+const MEASUREMENT_EDIT_WINDOW_MS = Math.max(1, MEASUREMENT_EDIT_DAYS) * 24 * 60 * 60 * 1000;
 
 const S3_BUCKET = process.env.S3_BUCKET || '';
 const S3_ENDPOINT = process.env.S3_ENDPOINT || 'https://s3.twcstorage.ru';
@@ -930,7 +958,7 @@ const buildTelegramNotificationText = (payload) => {
   }
 
   if (type === 'weight_reminder') {
-    return message || '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043d\u0435\u0434\u0435\u043b\u044e.';
+    return message || '\u041f\u043e\u0440\u0430 \u0432\u043d\u0435\u0441\u0442\u0438 \u0432\u0435\u0441 \u0438 \u0444\u043e\u0442\u043e \u0437\u0430\u043c\u0435\u0440\u043e\u0432 \u0437\u0430 \u043c\u0435\u0441\u044f\u0446.';
   }
 
   if (title && message) return `${title}\n${message}`;
@@ -1485,17 +1513,17 @@ app.get('/api/weight/history', async (req, res) => {
     const parsed = parseInitData(req.query.initData);
     if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
 
-    const weeksRaw = Number(req.query.weeks || 12);
-    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+    const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
+    const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
 
     const dbUser = await ensureUserRecord(parsed);
     const logs = await prisma.weightLog.findMany({
       where: { userId: dbUser.id },
       orderBy: { weekStart: 'desc' },
-      take: weeks
+      take: months
     });
 
-    res.json({ ok: true, weeks, logs });
+    res.json({ ok: true, months, logs });
   } catch (e) {
     console.error('[api/weight:history] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -1514,11 +1542,11 @@ app.post('/api/weight', async (req, res) => {
 
     const offsetRaw = Number(req.body?.timezoneOffsetMin);
     const timezoneOffsetMin = Number.isFinite(offsetRaw) ? Math.round(offsetRaw) : null;
-    const rawWeekStart = req.body?.weekStart;
-    const dateKey = rawWeekStart
-      ? getDateKey(rawWeekStart)
+    const rawPeriodStart = req.body?.monthStart || req.body?.weekStart;
+    const dateKey = rawPeriodStart
+      ? getDateKey(rawPeriodStart)
       : (req.body?.date ? getDateKey(req.body.date) : toDateKeyWithOffset(new Date(), timezoneOffsetMin));
-    const weekStart = getWeekStartKey(dateKey);
+    const weekStart = getMonthStartKey(dateKey);
 
     const dbUser = await ensureUserRecord(parsed);
     const log = await prisma.weightLog.upsert({
@@ -1549,26 +1577,30 @@ app.get('/api/measurements/history', async (req, res) => {
     const parsed = parseInitData(req.query.initData);
     if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
 
-    const weeksRaw = Number(req.query.weeks || 12);
-    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+    const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
+    const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
 
     const dbUser = await ensureUserRecord(parsed);
     const rows = await prisma.bodyMeasurement.findMany({
       where: { userId: dbUser.id },
       orderBy: { weekStart: 'desc' },
-      take: weeks
+      take: months
     });
 
+    const now = Date.now();
     const items = await Promise.all(
       rows.map(async (row) => ({
         weekStart: row.weekStart,
         frontUrl: row.frontKey ? (getPublicObjectUrl(row.frontKey) || await getSignedGetUrl(row.frontKey)) : null,
         sideUrl: row.sideKey ? (getPublicObjectUrl(row.sideKey) || await getSignedGetUrl(row.sideKey)) : null,
-        backUrl: row.backKey ? (getPublicObjectUrl(row.backKey) || await getSignedGetUrl(row.backKey)) : null
+        backUrl: row.backKey ? (getPublicObjectUrl(row.backKey) || await getSignedGetUrl(row.backKey)) : null,
+        updatedAt: row.updatedAt,
+        locked: isMeasurementLocked(row, now),
+        lockUntil: getMeasurementLockUntil(row) ? new Date(getMeasurementLockUntil(row)).toISOString() : null
       }))
     );
 
-    res.json({ ok: true, weeks, items });
+    res.json({ ok: true, months, items });
   } catch (e) {
     console.error('[api/measurements:history] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -1597,17 +1629,29 @@ app.post('/api/measurements/upload-url', async (req, res) => {
 
     const offsetRaw = Number(req.body?.timezoneOffsetMin);
     const timezoneOffsetMin = Number.isFinite(offsetRaw) ? Math.round(offsetRaw) : null;
-    const rawWeekStart = req.body?.weekStart;
-    const dateKey = rawWeekStart
-      ? getDateKey(rawWeekStart)
+    const rawPeriodStart = req.body?.monthStart || req.body?.weekStart;
+    const dateKey = rawPeriodStart
+      ? getDateKey(rawPeriodStart)
       : (req.body?.date ? getDateKey(req.body.date) : toDateKeyWithOffset(new Date(), timezoneOffsetMin));
-    const weekStart = getWeekStartKey(dateKey);
+    const weekStart = getMonthStartKey(dateKey);
 
     const dbUser = await ensureUserRecord(parsed);
     if (timezoneOffsetMin !== null) {
       await prisma.user.update({
         where: { id: dbUser.id },
         data: { timezoneOffsetMin }
+      });
+    }
+
+    const existing = await prisma.bodyMeasurement.findUnique({
+      where: { userId_weekStart: { userId: dbUser.id, weekStart } },
+      select: { id: true, updatedAt: true }
+    });
+    if (existing && isMeasurementLocked(existing)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'locked',
+        lockUntil: getMeasurementLockUntil(existing) ? new Date(getMeasurementLockUntil(existing)).toISOString() : null
       });
     }
 
@@ -1656,15 +1700,27 @@ app.post('/api/measurements', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'missing_object_key' });
     }
 
-    const rawWeekStart = req.body?.weekStart;
-    const dateKey = rawWeekStart
-      ? getDateKey(rawWeekStart)
+    const rawPeriodStart = req.body?.monthStart || req.body?.weekStart;
+    const dateKey = rawPeriodStart
+      ? getDateKey(rawPeriodStart)
       : (req.body?.date ? getDateKey(req.body.date) : getDateKey(new Date().toISOString()));
-    const weekStart = getWeekStartKey(dateKey);
+    const weekStart = getMonthStartKey(dateKey);
 
     const dbUser = await ensureUserRecord(parsed);
     if (!objectKey.startsWith(`measurements/${dbUser.id}/`)) {
       return res.status(400).json({ ok: false, error: 'invalid_object_key' });
+    }
+
+    const existing = await prisma.bodyMeasurement.findUnique({
+      where: { userId_weekStart: { userId: dbUser.id, weekStart } },
+      select: { id: true, updatedAt: true }
+    });
+    if (existing && isMeasurementLocked(existing)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'locked',
+        lockUntil: getMeasurementLockUntil(existing) ? new Date(getMeasurementLockUntil(existing)).toISOString() : null
+      });
     }
 
     const data = {};
@@ -1695,7 +1751,8 @@ app.post('/api/measurements/delete', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'invalid_side' });
     }
 
-    const weekStart = getWeekStartKey(req.body?.weekStart || req.body?.date || '');
+    const rawPeriodStart = req.body?.monthStart || req.body?.weekStart || req.body?.date || '';
+    const weekStart = getMonthStartKey(rawPeriodStart);
     if (!weekStart) return res.status(400).json({ ok: false, error: 'invalid_week' });
 
     const dbUser = await ensureUserRecord(parsed);
@@ -1703,6 +1760,13 @@ app.post('/api/measurements/delete', async (req, res) => {
       where: { userId_weekStart: { userId: dbUser.id, weekStart } }
     });
     if (!entry) return res.json({ ok: true, removed: false });
+    if (isMeasurementLocked(entry)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'locked',
+        lockUntil: getMeasurementLockUntil(entry) ? new Date(getMeasurementLockUntil(entry)).toISOString() : null
+      });
+    }
 
     const key = side === 'front' ? entry.frontKey : side === 'side' ? entry.sideKey : entry.backKey;
     if (key) await deleteObjectKey(key);
@@ -3345,16 +3409,16 @@ app.get('/api/admin/clients/:id/weight-history', async (req, res) => {
       return res.status(403).json({ ok: false, error: 'forbidden' });
     }
 
-    const weeksRaw = Number(req.query.weeks || 12);
-    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+    const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
+    const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
 
     const logs = await prisma.weightLog.findMany({
       where: { userId: client.id },
       orderBy: { weekStart: 'desc' },
-      take: weeks
+      take: months
     });
 
-    res.json({ ok: true, weeks, logs });
+    res.json({ ok: true, months, logs });
   } catch (e) {
     console.error('[api/admin/clients:weight-history] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -3386,25 +3450,29 @@ app.get('/api/admin/clients/:id/measurements', async (req, res) => {
       return res.status(403).json({ ok: false, error: 'forbidden' });
     }
 
-    const weeksRaw = Number(req.query.weeks || 12);
-    const weeks = Number.isFinite(weeksRaw) ? Math.max(1, Math.min(weeksRaw, 52)) : 12;
+    const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
+    const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
 
     const rows = await prisma.bodyMeasurement.findMany({
       where: { userId: client.id },
       orderBy: { weekStart: 'desc' },
-      take: weeks
+      take: months
     });
 
+    const now = Date.now();
     const items = await Promise.all(
       rows.map(async (row) => ({
         weekStart: row.weekStart,
         frontUrl: row.frontKey ? (getPublicObjectUrl(row.frontKey) || await getSignedGetUrl(row.frontKey)) : null,
         sideUrl: row.sideKey ? (getPublicObjectUrl(row.sideKey) || await getSignedGetUrl(row.sideKey)) : null,
-        backUrl: row.backKey ? (getPublicObjectUrl(row.backKey) || await getSignedGetUrl(row.backKey)) : null
+        backUrl: row.backKey ? (getPublicObjectUrl(row.backKey) || await getSignedGetUrl(row.backKey)) : null,
+        updatedAt: row.updatedAt,
+        locked: isMeasurementLocked(row, now),
+        lockUntil: getMeasurementLockUntil(row) ? new Date(getMeasurementLockUntil(row)).toISOString() : null
       }))
     );
 
-    res.json({ ok: true, weeks, items });
+    res.json({ ok: true, months, items });
   } catch (e) {
     console.error('[api/admin/clients:measurements] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });

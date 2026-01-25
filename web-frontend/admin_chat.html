@@ -344,6 +344,72 @@
       let chatPollTimer = null;
       let statusTimer = null;
 
+      const IMAGE_MAX_DIM = 1280;
+      const IMAGE_QUALITY = 0.78;
+      const IMAGE_MIN_BYTES = 280 * 1024;
+
+      const loadImageElement = (file) => new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("load_failed"));
+        };
+        img.src = url;
+      });
+
+      const loadImageSource = async (file) => {
+        if (window.createImageBitmap) {
+          try {
+            return await createImageBitmap(file, { imageOrientation: "from-image" });
+          } catch (_) {
+            try {
+              return await createImageBitmap(file);
+            } catch (err) {
+              return loadImageElement(file);
+            }
+          }
+        }
+        return loadImageElement(file);
+      };
+
+      const compressImageFile = async (file) => {
+        if (!file || !file.type || !file.type.startsWith("image/")) return file;
+        if (file.type === "image/gif") return file;
+        if (file.size <= IMAGE_MIN_BYTES) return file;
+
+        try {
+          const img = await loadImageSource(file);
+          const width = img.width || img.naturalWidth || 0;
+          const height = img.height || img.naturalHeight || 0;
+          if (!width || !height) return file;
+
+          const scale = Math.min(1, IMAGE_MAX_DIM / Math.max(width, height));
+          const targetW = Math.round(width * scale);
+          const targetH = Math.round(height * scale);
+          const canvas = document.createElement("canvas");
+          canvas.width = targetW;
+          canvas.height = targetH;
+          const ctx = canvas.getContext("2d", { alpha: false });
+          if (!ctx) return file;
+          ctx.drawImage(img, 0, 0, targetW, targetH);
+          if (typeof img.close === "function") img.close();
+
+          const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", IMAGE_QUALITY));
+          if (!blob) return file;
+          if (blob.size >= file.size) return file;
+
+          const baseName = file.name ? file.name.replace(/\.[^.]+$/, "") : "image";
+          return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
+        } catch (e) {
+          return file;
+        }
+      };
+
       const showStatus = (message) => {
         if (!chatStatus) return;
         chatStatus.textContent = message;
@@ -634,8 +700,6 @@
           showStatus("Нет данных для загрузки.");
           return null;
         }
-        const size = file.size || 0;
-        if (size <= 0) return null;
         const fileType = file.type || "";
         if (!fileType) {
           showStatus("Не удалось определить тип файла.");
@@ -645,6 +709,14 @@
           showStatus("Можно отправлять только фото или видео.");
           return null;
         }
+        let workingFile = file;
+        if (fileType.startsWith("image/")) {
+          workingFile = await compressImageFile(file);
+        }
+        const uploadType = workingFile.type || fileType;
+        const uploadName = workingFile.name || file.name || (uploadType.startsWith("image/") ? "photo.jpg" : "video.mp4");
+        const size = workingFile.size || 0;
+        if (size <= 0) return null;
         if (size > 50 * 1024 * 1024) {
           showStatus("Файл больше 50 МБ.");
           return null;
@@ -656,8 +728,8 @@
             body: JSON.stringify({
               initData,
               clientId,
-              fileName: file.name || "video.mp4",
-              contentType: fileType,
+              fileName: uploadName,
+              contentType: uploadType,
               size
             })
           });
@@ -668,19 +740,19 @@
           }
           const uploadRes = await fetch(json.uploadUrl, {
             method: "PUT",
-          headers: { "Content-Type": fileType },
-          body: file
-        });
+            headers: { "Content-Type": uploadType },
+            body: workingFile
+          });
           if (!uploadRes.ok) {
             showStatus("Ошибка загрузки.");
             return null;
           }
           return {
             key: json.objectKey,
-          type: fileType,
-          name: file.name || "video.mp4",
-          size
-        };
+            type: uploadType,
+            name: uploadName,
+            size
+          };
         } catch (e) {
           showStatus("Ошибка сети.");
           return null;
