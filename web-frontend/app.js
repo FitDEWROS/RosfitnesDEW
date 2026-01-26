@@ -1008,6 +1008,9 @@
       const max = rawMax + pad;
       const range = max - min || 1;
       const denom = Math.max(1, values.length - 1);
+      const padding = values.length <= 2 ? 10 : 6;
+      const span = 100 - padding * 2;
+      const mapX = (idx) => (padding + (idx / denom) * span).toFixed(2);
 
       const segments = [];
       let current = [];
@@ -1017,11 +1020,40 @@
           current = [];
           return;
         }
-        const x = ((idx / denom) * 100).toFixed(2);
+        const x = mapX(idx);
         const y = (100 - ((value - min) / range) * 100).toFixed(2);
         current.push({ x, y });
       });
       if (current.length) segments.push(current);
+
+      if (present.length === 1) {
+        const singleIdx = values.findIndex((value) => Number.isFinite(value));
+        const singleValue = present[0];
+        const y = (100 - ((singleValue - min) / range) * 100).toFixed(2);
+        const leftX = padding.toFixed(2);
+        const rightX = (100 - padding).toFixed(2);
+        const pointX = mapX(singleIdx < 0 ? Math.floor(values.length / 2) : singleIdx);
+        const grid = [25, 50, 75]
+          .map((gridY) => `<line class="weight-chart-grid" x1="0" y1="${gridY}" x2="100" y2="${gridY}" />`)
+          .join("");
+        weightChartSvg.setAttribute("viewBox", "0 0 100 100");
+        weightChartSvg.innerHTML = `
+          <defs>
+            <linearGradient id="weightChartFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.45" />
+              <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          ${grid}
+          <path class="weight-chart-area" d="M ${leftX} ${y} L ${rightX} ${y} L ${rightX} 100 L ${leftX} 100 Z" />
+          <path class="weight-chart-line" d="M ${leftX} ${y} L ${rightX} ${y}" />
+          <circle class="weight-chart-point" cx="${pointX}" cy="${y}" r="3.2" />
+        `;
+        if (weightChartRangeEl) {
+          weightChartRangeEl.textContent = rangeLabel;
+        }
+        return;
+      }
 
       const buildLine = (points) => points.map((point, idx) => `${idx ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
       const areas = segments.map((points) => {

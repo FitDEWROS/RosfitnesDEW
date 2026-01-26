@@ -247,6 +247,7 @@ function startPythonBot() {
     startPythonBot();
     startAutoAssign();
     startWeightReminders();
+    startChatCleanup();
     app.listen(PORT, () => {
       console.log(`✅ Server is running on port ${PORT}`);
     });
@@ -792,6 +793,53 @@ function startWeightReminders() {
   if (typeof timer.unref === 'function') timer.unref();
 }
 
+let chatCleanupRunning = false;
+const runChatCleanup = async () => {
+  if (chatCleanupRunning) return;
+  chatCleanupRunning = true;
+  try {
+    if (CHAT_RETENTION_DAYS <= 0) return;
+    const cutoff = new Date(Date.now() - CHAT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    while (true) {
+      const messages = await prisma.chatMessage.findMany({
+        where: { createdAt: { lt: cutoff } },
+        select: { id: true, mediaKey: true },
+        orderBy: { id: 'asc' },
+        take: CHAT_CLEANUP_BATCH_SIZE
+      });
+      if (!messages.length) break;
+
+      const deleteIds = [];
+      for (const message of messages) {
+        if (message.mediaKey) {
+          const deleted = await deleteObjectKey(message.mediaKey);
+          if (!deleted) continue;
+        }
+        deleteIds.push(message.id);
+      }
+
+      if (!deleteIds.length) break;
+
+      await prisma.chatMessage.deleteMany({
+        where: { id: { in: deleteIds } }
+      });
+
+      if (messages.length < CHAT_CLEANUP_BATCH_SIZE) break;
+    }
+  } catch (e) {
+    console.error('[chat-cleanup] error', e);
+  } finally {
+    chatCleanupRunning = false;
+  }
+};
+
+function startChatCleanup() {
+  if (CHAT_CLEANUP_INTERVAL_MS <= 0 || CHAT_RETENTION_DAYS <= 0) return;
+  runChatCleanup();
+  const timer = setInterval(runChatCleanup, CHAT_CLEANUP_INTERVAL_MS);
+  if (typeof timer.unref === 'function') timer.unref();
+}
+
 const CHAT_MAX_UPLOAD_MB = Number(process.env.CHAT_MAX_UPLOAD_MB || 50);
 const CHAT_MAX_UPLOAD_BYTES = Math.round(CHAT_MAX_UPLOAD_MB * 1024 * 1024);
 const CHAT_SIGNED_URL_TTL = Number(process.env.CHAT_SIGNED_URL_TTL || 900);
@@ -799,6 +847,13 @@ const WEIGHT_REMINDER_INTERVAL_MS = Number(process.env.WEIGHT_REMINDER_INTERVAL_
 const WEIGHT_REMINDER_HOUR = Number(process.env.WEIGHT_REMINDER_HOUR || 15);
 const WEIGHT_REMINDER_MINUTE = Number(process.env.WEIGHT_REMINDER_MINUTE || 0);
 const WEIGHT_REMINDER_WINDOW_MIN = Number(process.env.WEIGHT_REMINDER_WINDOW_MIN || 15);
+const CHAT_RETENTION_DAYS_RAW = Number(process.env.CHAT_RETENTION_DAYS || 20);
+const CHAT_RETENTION_DAYS = Number.isFinite(CHAT_RETENTION_DAYS_RAW) ? CHAT_RETENTION_DAYS_RAW : 20;
+const CHAT_CLEANUP_INTERVAL_MS = Number(process.env.CHAT_CLEANUP_INTERVAL_MS || 6 * 60 * 60 * 1000);
+const CHAT_CLEANUP_BATCH_SIZE_RAW = Number(process.env.CHAT_CLEANUP_BATCH_SIZE || 200);
+const CHAT_CLEANUP_BATCH_SIZE = Number.isFinite(CHAT_CLEANUP_BATCH_SIZE_RAW)
+  ? Math.max(20, Math.min(CHAT_CLEANUP_BATCH_SIZE_RAW, 1000))
+  : 200;
 const MEASUREMENT_EDIT_DAYS_RAW = Number(process.env.MEASUREMENT_EDIT_DAYS || 3);
 const MEASUREMENT_EDIT_DAYS = Number.isFinite(MEASUREMENT_EDIT_DAYS_RAW) ? MEASUREMENT_EDIT_DAYS_RAW : 3;
 const MEASUREMENT_EDIT_WINDOW_MS = Math.max(1, MEASUREMENT_EDIT_DAYS) * 24 * 60 * 60 * 1000;
