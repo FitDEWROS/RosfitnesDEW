@@ -991,7 +991,7 @@
       if (weightChartRangeEl) weightChartRangeEl.textContent = "";
       weightChartSvg.innerHTML = "";
     };
-    const drawChart = (values, rangeLabel) => {
+    const drawChart = (values, rangeLabel, pointLabels = []) => {
       const present = values.filter((value) => Number.isFinite(value));
       if (!present.length) {
         setEmptyChart();
@@ -1018,6 +1018,7 @@
       const plotHeight = bottom - top;
       const mapX = (idx) => left + (idx / denom) * plotWidth;
       const mapY = (value) => bottom - ((value - min) / range) * plotHeight;
+      const clampValue = (value, minValue, maxValue) => Math.max(minValue, Math.min(maxValue, value));
       const labelX = left + 2;
 
       const segments = [];
@@ -1030,7 +1031,7 @@
         }
         const x = mapX(idx);
         const y = mapY(value);
-        current.push({ x, y });
+        current.push({ x, y, label: pointLabels[idx] || "" });
       });
       if (current.length) segments.push(current);
 
@@ -1058,7 +1059,10 @@
         const leftX = left.toFixed(2);
         const rightX = right.toFixed(2);
         const baseY = bottom.toFixed(2);
-        const pointX = mapX(singleIdx < 0 ? Math.floor(values.length / 2) : singleIdx).toFixed(2);
+        const pointIndex = singleIdx < 0 ? Math.floor(values.length / 2) : singleIdx;
+        const pointX = mapX(pointIndex).toFixed(2);
+        const pointLabel = pointLabels[pointIndex] || "";
+        const labelY = clampValue(parseFloat(y) - 4.2, top + 4.5, bottom - 3.5).toFixed(2);
         weightChartSvg.setAttribute("viewBox", "0 0 100 100");
         weightChartSvg.innerHTML = `
           <defs>
@@ -1076,8 +1080,8 @@
           ${grid}
           <path class="weight-chart-area" d="M ${leftX} ${y} L ${rightX} ${y} L ${rightX} ${baseY} L ${leftX} ${baseY} Z" />
           <path class="weight-chart-line" style="stroke: url(#weightChartLine);" d="M ${leftX} ${y} L ${rightX} ${y}" />
-          <circle class="weight-chart-point-glow" cx="${pointX}" cy="${y}" r="5.2" />
-          <circle class="weight-chart-point" cx="${pointX}" cy="${y}" r="3.2" />
+          <circle class="weight-chart-point" cx="${pointX}" cy="${y}" r="2.6" />
+          ${pointLabel ? `<text class="weight-chart-point-label" x="${pointX}" y="${labelY}">${pointLabel}</text>` : ""}
           ${labels}
         `;
         if (weightChartRangeEl) {
@@ -1086,7 +1090,6 @@
         return;
       }
 
-      const clamp = (value, minValue, maxValue) => Math.max(minValue, Math.min(maxValue, value));
       const buildLine = (points) => points.map((point, idx) => {
         const x = point.x.toFixed(2);
         const y = point.y.toFixed(2);
@@ -1101,10 +1104,10 @@
           const curr = points[i];
           const next = points[i + 1] || curr;
           const prevPrev = points[i - 2] || prev;
-          const cp1x = clamp(prev.x + (curr.x - prevPrev.x) * tension, left, right);
-          const cp1y = clamp(prev.y + (curr.y - prevPrev.y) * tension, top, bottom);
-          const cp2x = clamp(curr.x - (next.x - prev.x) * tension, left, right);
-          const cp2y = clamp(curr.y - (next.y - prev.y) * tension, top, bottom);
+          const cp1x = clampValue(prev.x + (curr.x - prevPrev.x) * tension, left, right);
+          const cp1y = clampValue(prev.y + (curr.y - prevPrev.y) * tension, top, bottom);
+          const cp2x = clampValue(curr.x - (next.x - prev.x) * tension, left, right);
+          const cp2y = clampValue(curr.y - (next.y - prev.y) * tension, top, bottom);
           d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${curr.x.toFixed(2)} ${curr.y.toFixed(2)}`;
         }
         return d;
@@ -1120,12 +1123,13 @@
         .map((points) => `<path class="weight-chart-line" style="stroke: url(#weightChartLine);" d="${buildSmooth(points)}" />`)
         .join("");
       const circles = segments.flatMap((points) => points.map(
-        (point) => `<circle class="weight-chart-point" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="2.8" />`
+        (point) => `<circle class="weight-chart-point" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="2.2" />`
       )).join("");
-      const lastPoint = segments.length ? segments[segments.length - 1][segments[segments.length - 1].length - 1] : null;
-      const highlight = lastPoint
-        ? `<circle class="weight-chart-point-glow" cx="${lastPoint.x.toFixed(2)}" cy="${lastPoint.y.toFixed(2)}" r="4.8" />`
-        : "";
+      const pointLabelsSvg = segments.flatMap((points) => points.map((point) => {
+        if (!point.label) return "";
+        const labelY = clampValue(point.y - 4.2, top + 4.5, bottom - 3.5);
+        return `<text class="weight-chart-point-label" x="${point.x.toFixed(2)}" y="${labelY.toFixed(2)}">${point.label}</text>`;
+      })).join("");
 
       weightChartSvg.setAttribute("viewBox", "0 0 100 100");
       weightChartSvg.innerHTML = `
@@ -1145,7 +1149,7 @@
         ${areas}
         ${lines}
         ${circles}
-        ${highlight}
+        ${pointLabelsSvg}
         ${labels}
       `;
 
@@ -1164,6 +1168,13 @@
         return;
       }
     });
+    const pointLabels = weekKeys.map((key) => {
+      try {
+        return formatDateShort(parseYMD(key));
+      } catch {
+        return "";
+      }
+    });
     const values = weekKeys.map((key) => {
       const value = logMap.get(key)?.weightKg;
       return Number.isFinite(value) ? value : null;
@@ -1179,15 +1190,16 @@
         return;
       }
       const fallbackValues = numericLogs.map((item) => item.weight);
+      const fallbackLabels = numericLogs.map((item) => formatDateShort(item.date));
       const startLabel = formatDateShort(numericLogs[0].date);
       const endLabel = formatDateShort(addDays(numericLogs[numericLogs.length - 1].date, 6));
-      drawChart(fallbackValues, `${startLabel} - ${endLabel}`);
+      drawChart(fallbackValues, `${startLabel} - ${endLabel}`, fallbackLabels);
       return;
     }
 
     const startLabel = formatDateShort(parseYMD(weekKeys[0]));
     const endLabel = formatDateShort(addDays(parseYMD(weekKeys[weekKeys.length - 1]), 6));
-    drawChart(values, `${startLabel} - ${endLabel}`);
+    drawChart(values, `${startLabel} - ${endLabel}`, pointLabels);
   };
 
   const loadWeightProgress = async () => {

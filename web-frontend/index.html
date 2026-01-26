@@ -1228,6 +1228,7 @@
       stroke: rgba(255, 255, 255, 0.12);
       stroke-width: 0.5;
       stroke-dasharray: 2.5 6;
+      shape-rendering: crispEdges;
     }
 
     html.light .weight-chart-grid {
@@ -1237,6 +1238,7 @@
     .weight-chart-axis {
       stroke: rgba(255, 255, 255, 0.22);
       stroke-width: 0.6;
+      shape-rendering: crispEdges;
     }
 
     html.light .weight-chart-axis {
@@ -1245,47 +1247,55 @@
 
     .weight-chart-line {
       fill: none;
-      stroke-width: 2.6;
+      stroke-width: 1.4;
       stroke-linecap: round;
       stroke-linejoin: round;
-      filter: drop-shadow(0 6px 12px rgba(243, 213, 139, 0.35));
+      filter: none;
     }
 
     html.light .weight-chart-line {
-      filter: drop-shadow(0 4px 8px rgba(174, 118, 20, 0.28));
+      filter: none;
     }
 
     .weight-chart-area {
       fill: url(#weightChartFill);
-      opacity: 0.85;
+      opacity: 0.35;
     }
 
     .weight-chart-point {
       fill: var(--accent);
       stroke: rgba(0, 0, 0, 0.35);
-      stroke-width: 0.7;
+      stroke-width: 0.5;
     }
 
     html.light .weight-chart-point {
       stroke: rgba(0, 0, 0, 0.2);
     }
 
-    .weight-chart-point-glow {
-      fill: var(--accent);
-      opacity: 0.25;
-    }
-
     .weight-chart-label {
       fill: var(--muted);
-      font-size: 5.2px;
+      font-size: 4.6px;
       font-family: var(--font-title);
-      letter-spacing: 0.12em;
-      font-weight: 700;
+      letter-spacing: 0.08em;
+      font-weight: 600;
       text-anchor: start;
       dominant-baseline: middle;
-      paint-order: stroke;
-      stroke: rgba(0, 0, 0, 0.45);
-      stroke-width: 0.35;
+      stroke: none;
+      text-rendering: geometricPrecision;
+    }
+
+    .weight-chart-point-label {
+      fill: rgba(255, 255, 255, 0.75);
+      font-size: 3.4px;
+      font-family: var(--font-title);
+      letter-spacing: 0.06em;
+      text-anchor: middle;
+      dominant-baseline: central;
+      text-rendering: geometricPrecision;
+    }
+
+    html.light .weight-chart-point-label {
+      fill: rgba(0, 0, 0, 0.6);
     }
 
     .weight-chart-empty {
@@ -1925,7 +1935,7 @@
       }
     }
   </style>
-  <script defer src="app.js?v=20260130"></script>
+  <script defer src="app.js?v=20260131"></script>
 </head>
 
 <body>
