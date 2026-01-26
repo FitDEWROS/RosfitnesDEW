@@ -1008,9 +1008,17 @@
       const max = rawMax + pad;
       const range = max - min || 1;
       const denom = Math.max(1, values.length - 1);
-      const padding = values.length <= 2 ? 10 : 6;
-      const span = 100 - padding * 2;
-      const mapX = (idx) => (padding + (idx / denom) * span).toFixed(2);
+      const paddingX = values.length <= 2 ? 16 : 12;
+      const paddingY = 14;
+      const left = paddingX;
+      const right = 100 - paddingX;
+      const top = paddingY;
+      const bottom = 100 - paddingY;
+      const plotWidth = right - left;
+      const plotHeight = bottom - top;
+      const mapX = (idx) => left + (idx / denom) * plotWidth;
+      const mapY = (value) => bottom - ((value - min) / range) * plotHeight;
+      const labelX = left + 2;
 
       const segments = [];
       let current = [];
@@ -1021,38 +1029,56 @@
           return;
         }
         const x = mapX(idx);
-        const y = (100 - ((value - min) / range) * 100).toFixed(2);
+        const y = mapY(value);
         current.push({ x, y });
       });
       if (current.length) segments.push(current);
 
       const maxLabel = `${formatSimple(rawMax)} кг`;
       const minLabel = `${formatSimple(rawMin)} кг`;
+      const axis = `
+        <line class="weight-chart-axis" x1="${left}" y1="${top}" x2="${left}" y2="${bottom}" />
+        <line class="weight-chart-axis" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}" />
+      `;
+      const grid = [0.25, 0.5, 0.75]
+        .map((ratio) => {
+          const y = top + plotHeight * ratio;
+          return `<line class="weight-chart-grid" x1="${left}" y1="${y.toFixed(2)}" x2="${right}" y2="${y.toFixed(2)}" />`;
+        })
+        .join("");
+      const labels = `
+        <text class="weight-chart-label" x="${labelX}" y="${(top + 3).toFixed(2)}">${maxLabel}</text>
+        <text class="weight-chart-label" x="${labelX}" y="${(bottom - 2).toFixed(2)}">${minLabel}</text>
+      `;
 
       if (present.length === 1) {
         const singleIdx = values.findIndex((value) => Number.isFinite(value));
         const singleValue = present[0];
-        const y = (100 - ((singleValue - min) / range) * 100).toFixed(2);
-        const leftX = padding.toFixed(2);
-        const rightX = (100 - padding).toFixed(2);
-        const pointX = mapX(singleIdx < 0 ? Math.floor(values.length / 2) : singleIdx);
-        const grid = [25, 50, 75]
-          .map((gridY) => `<line class="weight-chart-grid" x1="0" y1="${gridY}" x2="100" y2="${gridY}" />`)
-          .join("");
+        const y = mapY(singleValue).toFixed(2);
+        const leftX = left.toFixed(2);
+        const rightX = right.toFixed(2);
+        const baseY = bottom.toFixed(2);
+        const pointX = mapX(singleIdx < 0 ? Math.floor(values.length / 2) : singleIdx).toFixed(2);
         weightChartSvg.setAttribute("viewBox", "0 0 100 100");
         weightChartSvg.innerHTML = `
           <defs>
+            <linearGradient id="weightChartLine" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="var(--accent)" />
+              <stop offset="100%" stop-color="var(--accent-strong)" />
+            </linearGradient>
             <linearGradient id="weightChartFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.45" />
+              <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.5" />
+              <stop offset="55%" stop-color="var(--accent)" stop-opacity="0.15" />
               <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
             </linearGradient>
           </defs>
+          ${axis}
           ${grid}
-          <text class="weight-chart-label" x="2" y="6">${maxLabel}</text>
-          <text class="weight-chart-label" x="2" y="96">${minLabel}</text>
-          <path class="weight-chart-area" d="M ${leftX} ${y} L ${rightX} ${y} L ${rightX} 100 L ${leftX} 100 Z" />
-          <path class="weight-chart-line" d="M ${leftX} ${y} L ${rightX} ${y}" />
+          <path class="weight-chart-area" d="M ${leftX} ${y} L ${rightX} ${y} L ${rightX} ${baseY} L ${leftX} ${baseY} Z" />
+          <path class="weight-chart-line" style="stroke: url(#weightChartLine);" d="M ${leftX} ${y} L ${rightX} ${y}" />
+          <circle class="weight-chart-point-glow" cx="${pointX}" cy="${y}" r="5.2" />
           <circle class="weight-chart-point" cx="${pointX}" cy="${y}" r="3.2" />
+          ${labels}
         `;
         if (weightChartRangeEl) {
           weightChartRangeEl.textContent = rangeLabel;
@@ -1060,36 +1086,67 @@
         return;
       }
 
-      const buildLine = (points) => points.map((point, idx) => `${idx ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
+      const clamp = (value, minValue, maxValue) => Math.max(minValue, Math.min(maxValue, value));
+      const buildLine = (points) => points.map((point, idx) => {
+        const x = point.x.toFixed(2);
+        const y = point.y.toFixed(2);
+        return `${idx ? "L" : "M"} ${x} ${y}`;
+      }).join(" ");
+      const buildSmooth = (points) => {
+        if (points.length < 2) return buildLine(points);
+        const tension = 0.35;
+        let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+        for (let i = 1; i < points.length; i += 1) {
+          const prev = points[i - 1];
+          const curr = points[i];
+          const next = points[i + 1] || curr;
+          const prevPrev = points[i - 2] || prev;
+          const cp1x = clamp(prev.x + (curr.x - prevPrev.x) * tension, left, right);
+          const cp1y = clamp(prev.y + (curr.y - prevPrev.y) * tension, top, bottom);
+          const cp2x = clamp(curr.x - (next.x - prev.x) * tension, left, right);
+          const cp2y = clamp(curr.y - (next.y - prev.y) * tension, top, bottom);
+          d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${curr.x.toFixed(2)} ${curr.y.toFixed(2)}`;
+        }
+        return d;
+      };
       const areas = segments.map((points) => {
-        const line = buildLine(points);
+        const line = buildSmooth(points);
         const first = points[0];
         const last = points[points.length - 1];
-        return `<path class="weight-chart-area" d="${line} L ${last.x} 100 L ${first.x} 100 Z" />`;
+        const baseY = bottom.toFixed(2);
+        return `<path class="weight-chart-area" d="${line} L ${last.x.toFixed(2)} ${baseY} L ${first.x.toFixed(2)} ${baseY} Z" />`;
       }).join("");
-      const lines = segments.map((points) => `<path class="weight-chart-line" d="${buildLine(points)}" />`).join("");
-      const circles = segments.flatMap((points) => points.map(
-        (point) => `<circle class="weight-chart-point" cx="${point.x}" cy="${point.y}" r="2.8" />`
-      )).join("");
-
-      const grid = [25, 50, 75]
-        .map((y) => `<line class="weight-chart-grid" x1="0" y1="${y}" x2="100" y2="${y}" />`)
+      const lines = segments
+        .map((points) => `<path class="weight-chart-line" style="stroke: url(#weightChartLine);" d="${buildSmooth(points)}" />`)
         .join("");
+      const circles = segments.flatMap((points) => points.map(
+        (point) => `<circle class="weight-chart-point" cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="2.8" />`
+      )).join("");
+      const lastPoint = segments.length ? segments[segments.length - 1][segments[segments.length - 1].length - 1] : null;
+      const highlight = lastPoint
+        ? `<circle class="weight-chart-point-glow" cx="${lastPoint.x.toFixed(2)}" cy="${lastPoint.y.toFixed(2)}" r="4.8" />`
+        : "";
 
       weightChartSvg.setAttribute("viewBox", "0 0 100 100");
       weightChartSvg.innerHTML = `
         <defs>
+          <linearGradient id="weightChartLine" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--accent)" />
+            <stop offset="100%" stop-color="var(--accent-strong)" />
+          </linearGradient>
           <linearGradient id="weightChartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.45" />
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.5" />
+            <stop offset="55%" stop-color="var(--accent)" stop-opacity="0.15" />
             <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
           </linearGradient>
         </defs>
+        ${axis}
         ${grid}
-        <text class="weight-chart-label" x="2" y="6">${maxLabel}</text>
-        <text class="weight-chart-label" x="2" y="96">${minLabel}</text>
         ${areas}
         ${lines}
         ${circles}
+        ${highlight}
+        ${labels}
       `;
 
       if (weightChartRangeEl) {
