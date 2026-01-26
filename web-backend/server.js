@@ -455,6 +455,18 @@ const getMonthStartKeyWithOffset = (date, offsetMin) => {
   return getMonthStartKey(localKey);
 };
 
+const getWeightLockUntil = (entry) => {
+  const updatedAt = entry?.updatedAt ? new Date(entry.updatedAt) : null;
+  if (!updatedAt || Number.isNaN(updatedAt.getTime())) return null;
+  return updatedAt.getTime() + WEIGHT_EDIT_WINDOW_MS;
+};
+
+const isWeightLocked = (entry, now = Date.now()) => {
+  const lockUntil = getWeightLockUntil(entry);
+  if (!lockUntil) return false;
+  return now >= lockUntil;
+};
+
 const getMeasurementLockUntil = (entry) => {
   const updatedAt = entry?.updatedAt ? new Date(entry.updatedAt) : null;
   if (!updatedAt || Number.isNaN(updatedAt.getTime())) return null;
@@ -854,6 +866,9 @@ const CHAT_CLEANUP_BATCH_SIZE_RAW = Number(process.env.CHAT_CLEANUP_BATCH_SIZE |
 const CHAT_CLEANUP_BATCH_SIZE = Number.isFinite(CHAT_CLEANUP_BATCH_SIZE_RAW)
   ? Math.max(20, Math.min(CHAT_CLEANUP_BATCH_SIZE_RAW, 1000))
   : 200;
+const WEIGHT_EDIT_HOURS_RAW = Number(process.env.WEIGHT_EDIT_HOURS || 24);
+const WEIGHT_EDIT_HOURS = Number.isFinite(WEIGHT_EDIT_HOURS_RAW) ? WEIGHT_EDIT_HOURS_RAW : 24;
+const WEIGHT_EDIT_WINDOW_MS = Math.max(1, WEIGHT_EDIT_HOURS) * 60 * 60 * 1000;
 const MEASUREMENT_EDIT_DAYS_RAW = Number(process.env.MEASUREMENT_EDIT_DAYS || 3);
 const MEASUREMENT_EDIT_DAYS = Number.isFinite(MEASUREMENT_EDIT_DAYS_RAW) ? MEASUREMENT_EDIT_DAYS_RAW : 3;
 const MEASUREMENT_EDIT_WINDOW_MS = Math.max(1, MEASUREMENT_EDIT_DAYS) * 24 * 60 * 60 * 1000;
@@ -1609,6 +1624,18 @@ app.post('/api/weight', async (req, res) => {
     const weekStart = getWeekStartKey(dateKey);
 
     const dbUser = await ensureUserRecord(parsed);
+    const existing = await prisma.weightLog.findUnique({
+      where: { userId_weekStart: { userId: dbUser.id, weekStart } },
+      select: { id: true, updatedAt: true }
+    });
+    if (existing && isWeightLocked(existing)) {
+      return res.status(403).json({
+        ok: false,
+        error: 'locked',
+        lockUntil: getWeightLockUntil(existing) ? new Date(getWeightLockUntil(existing)).toISOString() : null
+      });
+    }
+
     const log = await prisma.weightLog.upsert({
       where: { userId_weekStart: { userId: dbUser.id, weekStart } },
       update: { weightKg },
