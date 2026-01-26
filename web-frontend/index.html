@@ -1226,7 +1226,13 @@
     .weight-chart-line {
       fill: none;
       stroke: var(--accent);
-      stroke-width: 2;
+      stroke-width: 2.6;
+      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+    }
+
+    .weight-chart-area {
+      fill: url(#weightChartFill);
+      opacity: 0.9;
     }
 
     .weight-chart-point {
@@ -1247,6 +1253,10 @@
       text-align: center;
       padding: 10px;
       background: rgba(0, 0, 0, 0.16);
+    }
+
+    .weight-chart-empty[hidden] {
+      display: none;
     }
 
     .weight-chart.is-empty .weight-chart-svg {
@@ -1868,7 +1878,7 @@
       }
     }
   </style>
-  <script defer src="app.js?v=20260126"></script>
+  <script defer src="app.js?v=20260127"></script>
 </head>
 
 <body>

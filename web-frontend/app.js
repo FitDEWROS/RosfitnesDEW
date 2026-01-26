@@ -985,6 +985,78 @@
       const wk = addDays(start, -(weeksCount - 1 - idx) * 7);
       return toYMD(wk);
     });
+    const setEmptyChart = () => {
+      weightChartEl.classList.add("is-empty");
+      if (weightChartEmptyEl) weightChartEmptyEl.hidden = false;
+      if (weightChartRangeEl) weightChartRangeEl.textContent = "";
+      weightChartSvg.innerHTML = "";
+    };
+    const drawChart = (values, rangeLabel) => {
+      const present = values.filter((value) => Number.isFinite(value));
+      if (!present.length) {
+        setEmptyChart();
+        return;
+      }
+
+      weightChartEl.classList.remove("is-empty");
+      if (weightChartEmptyEl) weightChartEmptyEl.hidden = true;
+
+      const rawMin = Math.min(...present);
+      const rawMax = Math.max(...present);
+      const pad = Math.max((rawMax - rawMin) * 0.2, 1);
+      const min = rawMin - pad;
+      const max = rawMax + pad;
+      const range = max - min || 1;
+      const denom = Math.max(1, values.length - 1);
+
+      const segments = [];
+      let current = [];
+      values.forEach((value, idx) => {
+        if (!Number.isFinite(value)) {
+          if (current.length) segments.push(current);
+          current = [];
+          return;
+        }
+        const x = ((idx / denom) * 100).toFixed(2);
+        const y = (100 - ((value - min) / range) * 100).toFixed(2);
+        current.push({ x, y });
+      });
+      if (current.length) segments.push(current);
+
+      const buildLine = (points) => points.map((point, idx) => `${idx ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
+      const areas = segments.map((points) => {
+        const line = buildLine(points);
+        const first = points[0];
+        const last = points[points.length - 1];
+        return `<path class="weight-chart-area" d="${line} L ${last.x} 100 L ${first.x} 100 Z" />`;
+      }).join("");
+      const lines = segments.map((points) => `<path class="weight-chart-line" d="${buildLine(points)}" />`).join("");
+      const circles = segments.flatMap((points) => points.map(
+        (point) => `<circle class="weight-chart-point" cx="${point.x}" cy="${point.y}" r="2.8" />`
+      )).join("");
+
+      const grid = [25, 50, 75]
+        .map((y) => `<line class="weight-chart-grid" x1="0" y1="${y}" x2="100" y2="${y}" />`)
+        .join("");
+
+      weightChartSvg.setAttribute("viewBox", "0 0 100 100");
+      weightChartSvg.innerHTML = `
+        <defs>
+          <linearGradient id="weightChartFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.45" />
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        ${grid}
+        ${areas}
+        ${lines}
+        ${circles}
+      `;
+
+      if (weightChartRangeEl) {
+        weightChartRangeEl.textContent = rangeLabel;
+      }
+    };
     const logMap = new Map();
     logs.forEach((log) => {
       if (!log?.weekStart) return;
@@ -1007,96 +1079,19 @@
         .map((log) => ({ date: parseYMD(log.weekStart), weight: log.weightKg }));
       numericLogs.sort((a, b) => a.date - b.date);
       if (!numericLogs.length) {
-        weightChartEl.classList.add("is-empty");
-        if (weightChartEmptyEl) weightChartEmptyEl.hidden = false;
-        if (weightChartRangeEl) weightChartRangeEl.textContent = "";
-        weightChartSvg.innerHTML = "";
+        setEmptyChart();
         return;
       }
-
-      weightChartEl.classList.remove("is-empty");
-      if (weightChartEmptyEl) weightChartEmptyEl.hidden = true;
-
-      const min = Math.min(...numericLogs.map((item) => item.weight));
-      const max = Math.max(...numericLogs.map((item) => item.weight));
-      const range = max - min || 1;
-      const denom = Math.max(1, numericLogs.length - 1);
-      let d = "";
-      let circles = "";
-
-      numericLogs.forEach((item, idx) => {
-        const x = ((idx / denom) * 100).toFixed(2);
-        const y = (100 - ((item.weight - min) / range) * 100).toFixed(2);
-        if (!d) {
-          d += `M ${x} ${y}`;
-        } else {
-          d += ` L ${x} ${y}`;
-        }
-        circles += `<circle class="weight-chart-point" cx="${x}" cy="${y}" r="2.4" />`;
-      });
-
-      const grid = [25, 50, 75]
-        .map((y) => `<line class="weight-chart-grid" x1="0" y1="${y}" x2="100" y2="${y}" />`)
-        .join("");
-
-      weightChartSvg.setAttribute("viewBox", "0 0 100 100");
-      weightChartSvg.innerHTML = `
-        ${grid}
-        <path class="weight-chart-line" d="${d}" />
-        ${circles}
-      `;
-
-      if (weightChartRangeEl) {
-        const startLabel = formatDateShort(numericLogs[0].date);
-        const endLabel = formatDateShort(addDays(numericLogs[numericLogs.length - 1].date, 6));
-        weightChartRangeEl.textContent = `${startLabel} - ${endLabel}`;
-      }
+      const fallbackValues = numericLogs.map((item) => item.weight);
+      const startLabel = formatDateShort(numericLogs[0].date);
+      const endLabel = formatDateShort(addDays(numericLogs[numericLogs.length - 1].date, 6));
+      drawChart(fallbackValues, `${startLabel} - ${endLabel}`);
       return;
     }
 
-    weightChartEl.classList.remove("is-empty");
-    if (weightChartEmptyEl) weightChartEmptyEl.hidden = true;
-
-    const min = Math.min(...present);
-    const max = Math.max(...present);
-    const range = max - min || 1;
-    const denom = Math.max(1, weekKeys.length - 1);
-    let d = "";
-    let circles = "";
-    let started = false;
-
-    values.forEach((value, idx) => {
-      if (!Number.isFinite(value)) {
-        started = false;
-        return;
-      }
-      const x = ((idx / denom) * 100).toFixed(2);
-      const y = (100 - ((value - min) / range) * 100).toFixed(2);
-      if (!started) {
-        d += `M ${x} ${y}`;
-        started = true;
-      } else {
-        d += ` L ${x} ${y}`;
-      }
-      circles += `<circle class="weight-chart-point" cx="${x}" cy="${y}" r="2.4" />`;
-    });
-
-    const grid = [25, 50, 75]
-      .map((y) => `<line class="weight-chart-grid" x1="0" y1="${y}" x2="100" y2="${y}" />`)
-      .join("");
-
-    weightChartSvg.setAttribute("viewBox", "0 0 100 100");
-    weightChartSvg.innerHTML = `
-      ${grid}
-      <path class="weight-chart-line" d="${d}" />
-      ${circles}
-    `;
-
-    if (weightChartRangeEl) {
-      const startLabel = formatDateShort(parseYMD(weekKeys[0]));
-      const endLabel = formatDateShort(addDays(parseYMD(weekKeys[weekKeys.length - 1]), 6));
-      weightChartRangeEl.textContent = `${startLabel} - ${endLabel}`;
-    }
+    const startLabel = formatDateShort(parseYMD(weekKeys[0]));
+    const endLabel = formatDateShort(addDays(parseYMD(weekKeys[weekKeys.length - 1]), 6));
+    drawChart(values, `${startLabel} - ${endLabel}`);
   };
 
   const loadWeightProgress = async () => {
