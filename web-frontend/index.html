@@ -1226,7 +1226,7 @@
     .weight-chart-line {
       fill: none;
       stroke: var(--accent);
-      stroke-width: 2.6;
+      stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
       filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
@@ -1241,6 +1241,16 @@
       fill: var(--accent);
       stroke: rgba(0, 0, 0, 0.35);
       stroke-width: 0.6;
+    }
+
+    .weight-chart-label {
+      fill: var(--muted);
+      font-size: 4px;
+      font-family: var(--font-title);
+      letter-spacing: 0.12em;
+      paint-order: stroke;
+      stroke: rgba(0, 0, 0, 0.45);
+      stroke-width: 0.4;
     }
 
     .weight-chart-empty {
@@ -1880,7 +1890,7 @@
       }
     }
   </style>
-  <script defer src="app.js?v=20260128"></script>
+  <script defer src="app.js?v=20260129"></script>
 </head>
 
 <body>

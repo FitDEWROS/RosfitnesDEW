@@ -857,6 +857,9 @@ const CHAT_CLEANUP_BATCH_SIZE = Number.isFinite(CHAT_CLEANUP_BATCH_SIZE_RAW)
 const MEASUREMENT_EDIT_DAYS_RAW = Number(process.env.MEASUREMENT_EDIT_DAYS || 3);
 const MEASUREMENT_EDIT_DAYS = Number.isFinite(MEASUREMENT_EDIT_DAYS_RAW) ? MEASUREMENT_EDIT_DAYS_RAW : 3;
 const MEASUREMENT_EDIT_WINDOW_MS = Math.max(1, MEASUREMENT_EDIT_DAYS) * 24 * 60 * 60 * 1000;
+const CACHE_CONTROL_PUBLIC_LONG = 'public, max-age=31536000, immutable';
+const CACHE_CONTROL_PRIVATE = 'private, max-age=3600';
+const CACHE_CONTROL_NO_STORE = 'no-store';
 
 const S3_BUCKET = process.env.S3_BUCKET || '';
 const S3_ENDPOINT = process.env.S3_ENDPOINT || 'https://s3.twcstorage.ru';
@@ -910,14 +913,15 @@ const getPublicObjectUrl = (key) => {
   return `${S3_ENDPOINT.replace(/\/+$/, '')}/${S3_BUCKET}/${key}`;
 };
 
-const getSignedPutUrl = async ({ key, contentType, contentLength }) => {
+const getSignedPutUrl = async ({ key, contentType, contentLength, cacheControl }) => {
   const client = getS3Client();
   if (!client || !key) return null;
   const command = new PutObjectCommand({
     Bucket: S3_BUCKET,
     Key: key,
     ContentType: contentType,
-    ContentLength: contentLength
+    ContentLength: contentLength,
+    ...(cacheControl ? { CacheControl: cacheControl } : {})
   });
   return getSignedUrl(client, command, { expiresIn: CHAT_SIGNED_URL_TTL });
 };
@@ -1724,7 +1728,8 @@ app.post('/api/measurements/upload-url', async (req, res) => {
     const uploadUrl = await getSignedPutUrl({
       key,
       contentType,
-      contentLength: Math.round(size)
+      contentLength: Math.round(size),
+      cacheControl: CACHE_CONTROL_PRIVATE
     });
     if (!uploadUrl) {
       return res.status(500).json({ ok: false, error: 'upload_url_failed' });
@@ -2326,7 +2331,8 @@ app.post('/api/chat/upload-url', async (req, res) => {
     const uploadUrl = await getSignedPutUrl({
       key,
       contentType,
-      contentLength: Math.round(size)
+      contentLength: Math.round(size),
+      cacheControl: CACHE_CONTROL_NO_STORE
     });
     if (!uploadUrl) {
       return res.status(500).json({ ok: false, error: 'upload_url_failed' });
@@ -2356,9 +2362,9 @@ app.post('/api/admin/upload-url', async (req, res) => {
     const size = req.body?.size ? Number(req.body.size) : null;
 
     const kindMap = {
-      exercise_video: { prefix: 'exercises/videos', types: ['video/'] },
-      program_video: { prefix: 'programs/videos', types: ['video/'] },
-      program_cover: { prefix: 'programs/covers', types: ['image/'] }
+      exercise_video: { prefix: 'exercises/videos', types: ['video/'], cacheControl: CACHE_CONTROL_PUBLIC_LONG },
+      program_video: { prefix: 'programs/videos', types: ['video/'], cacheControl: CACHE_CONTROL_PUBLIC_LONG },
+      program_cover: { prefix: 'programs/covers', types: ['image/'], cacheControl: CACHE_CONTROL_PUBLIC_LONG }
     };
     const rule = kind ? kindMap[kind] : null;
     if (!rule) return res.status(400).json({ ok: false, error: 'invalid_kind' });
@@ -2378,7 +2384,8 @@ app.post('/api/admin/upload-url', async (req, res) => {
     const uploadUrl = await getSignedPutUrl({
       key,
       contentType,
-      contentLength: Math.round(size)
+      contentLength: Math.round(size),
+      cacheControl: rule.cacheControl
     });
     if (!uploadUrl) {
       return res.status(500).json({ ok: false, error: 'upload_url_failed' });

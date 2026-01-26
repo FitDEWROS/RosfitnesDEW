@@ -1026,6 +1026,9 @@
       });
       if (current.length) segments.push(current);
 
+      const maxLabel = `${formatSimple(rawMax)} кг`;
+      const minLabel = `${formatSimple(rawMin)} кг`;
+
       if (present.length === 1) {
         const singleIdx = values.findIndex((value) => Number.isFinite(value));
         const singleValue = present[0];
@@ -1045,6 +1048,8 @@
             </linearGradient>
           </defs>
           ${grid}
+          <text class="weight-chart-label" x="2" y="6">${maxLabel}</text>
+          <text class="weight-chart-label" x="2" y="96">${minLabel}</text>
           <path class="weight-chart-area" d="M ${leftX} ${y} L ${rightX} ${y} L ${rightX} 100 L ${leftX} 100 Z" />
           <path class="weight-chart-line" d="M ${leftX} ${y} L ${rightX} ${y}" />
           <circle class="weight-chart-point" cx="${pointX}" cy="${y}" r="3.2" />
@@ -1080,6 +1085,8 @@
           </linearGradient>
         </defs>
         ${grid}
+        <text class="weight-chart-label" x="2" y="6">${maxLabel}</text>
+        <text class="weight-chart-label" x="2" y="96">${minLabel}</text>
         ${areas}
         ${lines}
         ${circles}
