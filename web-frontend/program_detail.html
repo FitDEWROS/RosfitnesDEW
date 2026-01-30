@@ -90,12 +90,13 @@
       width: fit-content;
       border: none;
       border-radius: 999px;
-      padding: 8px 16px;
+      padding: 7px 18px;
       background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       color: #1b1b1b;
       font-family: var(--font-title);
       font-weight: 700;
-      letter-spacing: 0.08em;
+      font-size: 0.68rem;
+      letter-spacing: 0.26em;
       text-transform: uppercase;
       cursor: pointer;
       box-shadow: 0 10px 22px rgba(243, 213, 139, 0.3);
@@ -633,9 +634,14 @@ html.light
             const toggle = weekCard.querySelector(".week-toggle");
             if (toggle && !isDisabled) {
               toggle.addEventListener("click", () => {
+                let workoutToOpen = targetWorkoutId;
+                try {
+                  const stored = localStorage.getItem(`cf_last_workout_${program.slug}`);
+                  if (stored) workoutToOpen = stored;
+                } catch (_) {}
                 const query = new URLSearchParams();
                 query.set("slug", program.slug);
-                query.set("workout", targetWorkoutId);
+                if (workoutToOpen) query.set("workout", workoutToOpen);
                 if (backTarget) query.set("back", backTarget);
                 if (initData) query.set("initData", initData);
                 window.location.href = `program_workout.html?${query.toString()}`;

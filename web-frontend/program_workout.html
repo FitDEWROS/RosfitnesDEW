@@ -296,6 +296,11 @@
       gap: 12px;
     }
 
+    .cf-nav-spacer {
+      width: 72px;
+      height: 1px;
+    }
+
     .back-btn.compact {
       padding: 6px 12px;
       font-size: 0.65rem;
@@ -311,6 +316,7 @@
       text-transform: uppercase;
       letter-spacing: 0.28em;
       font-size: 0.8rem;
+      justify-self: center;
     }
 
     .cf-day-title {
@@ -393,6 +399,8 @@
       position: relative;
       scroll-snap-align: start;
       box-shadow: var(--shadow);
+      animation: rise 0.5s ease both;
+      animation-delay: var(--delay, 0ms);
     }
 
     html.light .cf-card {
@@ -445,6 +453,10 @@
       display: grid;
       place-items: center;
       font-size: 0.75rem;
+    }
+
+    .cf-card-check.is-hidden {
+      display: none;
     }
 
     .cf-more {
@@ -502,6 +514,8 @@
       display: grid;
       gap: 10px;
       box-shadow: var(--shadow);
+      animation: rise 0.5s ease both;
+      animation-delay: var(--delay, 0ms);
     }
 
     html.light .cf-step-card {
@@ -541,6 +555,12 @@
       gap: 4px;
     }
 
+    .cf-step-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .cf-step-toggle {
       border: none;
       width: 32px;
@@ -572,6 +592,23 @@
       transform: rotate(90deg);
     }
 
+    .cf-ex-status {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      display: grid;
+      place-items: center;
+      font-size: 0.7rem;
+      color: transparent;
+    }
+
+    .cf-ex-status.is-done {
+      border-color: rgba(54, 199, 90, 0.6);
+      background: rgba(54, 199, 90, 0.18);
+      color: #36c75a;
+    }
+
     .cf-video-accordion {
       display: grid;
       gap: 8px;
@@ -585,15 +622,13 @@
     .cf-step-actions {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 12px;
       margin-top: 6px;
     }
 
-    .cf-step-actions-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .cf-video-accordion {
+      margin-top: 4px;
     }
 
     .cf-video-trigger {
@@ -624,22 +659,6 @@
       cursor: not-allowed;
     }
 
-    .cf-more-btn {
-      border: 1px solid var(--card-border);
-      background: rgba(0, 0, 0, 0.25);
-      color: var(--text);
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      text-transform: none;
-      cursor: pointer;
-      padding: 8px 14px;
-      border-radius: 999px;
-    }
-
-    html.light .cf-more-btn {
-      background: rgba(0, 0, 0, 0.06);
-    }
 
     .cf-video-panel {
       display: none;
@@ -671,6 +690,11 @@
       font-size: 0.85rem;
       cursor: pointer;
       width: fit-content;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .cf-step.is-done .cf-done-btn {
@@ -814,8 +838,7 @@ html.light
       .cf-card { min-width: 0; }
       .cf-step { grid-template-columns: 28px 1fr; }
       .cf-step-index { width: 28px; height: 28px; font-size: 0.7rem; }
-      .cf-step-actions { flex-direction: column; align-items: flex-start; }
-      .cf-step-actions-left { width: 100%; justify-content: flex-start; }
+      .cf-step-actions { flex-direction: column; align-items: flex-end; }
       .cf-done-btn { align-self: flex-end; }
       .video-modal { max-height: 80dvh; }
       .video-modal video { max-height: 50dvh; }
@@ -873,7 +896,7 @@ html.light
             <span class="cf-day-title" id="cfDayTitle">ДЕНЬ 1</span>
             <button class="nav-arrow" id="nextWorkout" type="button" aria-label="Следующий день">&#8594;</button>
           </div>
-          <span aria-hidden="true"></span>
+          <span class="cf-nav-spacer" aria-hidden="true"></span>
         </div>
         <div class="cf-meta">
           <span id="cfWeekLabel">1 неделя</span>
@@ -1110,6 +1133,10 @@ html.light
       };
 
       const navigateToWorkout = (targetWorkoutId, programSlug) => {
+        const storageKey = `cf_last_workout_${programSlug || slug || ""}`;
+        if (targetWorkoutId && storageKey) {
+          try { localStorage.setItem(storageKey, String(targetWorkoutId)); } catch (_) {}
+        }
         window.location.href = buildWorkoutUrl(targetWorkoutId, programSlug);
       };
 
@@ -1368,6 +1395,26 @@ html.light
         const dayNumber = currentItem?.workoutIndex || (currentIndex >= 0 ? currentIndex + 1 : 1);
         const weekLabel = currentItem?.weekTitle ? currentItem.weekTitle : `${weekIndex} неделя`;
 
+        const storagePrefix = "cf_done";
+        const buildExerciseKey = (workoutItem, exercise, index) => {
+          const slugPart = program?.slug || "program";
+          const workoutPart = workoutItem?.id || "workout";
+          const exPart = exercise?.id ?? exercise?.order ?? index;
+          return `${slugPart}::${workoutPart}::${exPart}`;
+        };
+        const isExerciseDone = (key) => {
+          try {
+            return localStorage.getItem(`${storagePrefix}:${key}`) === "1";
+          } catch (_) {
+            return false;
+          }
+        };
+        const setExerciseDone = (key, value) => {
+          try {
+            localStorage.setItem(`${storagePrefix}:${key}`, value ? "1" : "0");
+          } catch (_) {}
+        };
+
         if (cfDayTitle) cfDayTitle.textContent = `ДЕНЬ ${dayNumber}`;
         if (cfWeekLabel) cfWeekLabel.textContent = weekLabel;
         if (cfProgramLabel) cfProgramLabel.textContent = program?.title || "";
@@ -1388,11 +1435,17 @@ html.light
 
         const weekItems = items.filter((item) => item.weekIndex === weekIndex);
         cfWorkoutCards.innerHTML = "";
-        weekItems.forEach((item) => {
+        weekItems.forEach((item, idx) => {
           const card = document.createElement("button");
           card.type = "button";
           const isActive = currentItem && item.id === currentItem.id;
+          const exercises = Array.isArray(item.workout?.exercises) ? item.workout.exercises : [];
+          const isComplete = exercises.length
+            ? exercises.every((exercise, idx) => isExerciseDone(buildExerciseKey(item, exercise, idx)))
+            : false;
           card.className = `cf-card${isActive ? " is-active" : ""}`;
+          card.style.setProperty("--delay", `${idx * 60}ms`);
+          card.dataset.workoutId = item.id;
           const title = item.workout?.title || `Тренировка ${item.workoutIndex}`;
           const tasksCount = Array.isArray(item.workout?.exercises) ? item.workout.exercises.length : 0;
           const avatarLabel = String(item.workoutIndex || "").padStart(2, "0");
@@ -1402,7 +1455,7 @@ html.light
               <p class="cf-card-title">${escapeHtml(title)}</p>
               <p class="cf-card-sub">${tasksCount} ${getTaskLabel(tasksCount)}</p>
             </div>
-            ${isActive ? '<span class="cf-card-check">&#10003;</span>' : ""}
+            <span class="cf-card-check${isComplete ? "" : " is-hidden"}">&#10003;</span>
           `;
           card.addEventListener("click", () => navigateToWorkout(item.id, program?.slug));
           cfWorkoutCards.appendChild(card);
@@ -1426,6 +1479,7 @@ html.light
         exercises.forEach((exercise, index) => {
           const step = document.createElement("div");
           step.className = "cf-step";
+          step.style.setProperty("--delay", `${index * 45}ms`);
           const stepIndex = exercise.order ?? (index + 1);
           const detailText = exercise.details && exercise.description ? exercise.details : exercise.details || "";
           const descText = exercise.description || (exercise.details && !exercise.description ? exercise.details : "");
@@ -1439,36 +1493,43 @@ html.light
                   <p class="cf-step-title">${escapeHtml(exercise.title || "Упражнение")}</p>
                   ${detailText ? `<p class="cf-step-sub">${escapeHtml(detailText)}</p>` : ""}
                 </div>
-                <button class="cf-step-toggle" type="button" aria-expanded="false">&#8250;</button>
+                <div class="cf-step-head-actions">
+                  <span class="cf-ex-status" aria-hidden="true">&#10003;</span>
+                  <button class="cf-video-trigger" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>&#9662;</button>
+                  <button class="cf-step-toggle" type="button" aria-expanded="false">&#8250;</button>
+                </div>
+              </div>
+              <div class="cf-video-accordion${hasVideo ? "" : " is-disabled"}">
+                <div class="cf-video-panel">
+                  ${
+                    hasVideo
+                      ? '<video class="cf-video-player" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>'
+                      : '<div class="cf-video-empty">Видео пока не добавлено.</div>'
+                  }
+                </div>
               </div>
               <div class="cf-step-body">
                 <p class="cf-step-desc">${descHtml}</p>
-                <div class="cf-video-accordion${hasVideo ? "" : " is-disabled"}">
-                  <div class="cf-step-actions">
-                    <div class="cf-step-actions-left">
-                      <button class="cf-video-trigger" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>&#9662;</button>
-                      <button class="cf-more-btn" type="button">Подробнее</button>
-                    </div>
-                    <button class="cf-done-btn" type="button">Выполнил</button>
-                  </div>
-                  <div class="cf-video-panel">
-                    ${
-                      hasVideo
-                        ? '<video class="cf-video-player" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>'
-                        : '<div class="cf-video-empty">Видео пока не добавлено.</div>'
-                    }
-                  </div>
+                <div class="cf-step-actions">
+                  <button class="cf-done-btn" type="button">Выполнил</button>
                 </div>
               </div>
             </div>
           `;
           const toggleBtn = step.querySelector(".cf-step-toggle");
           const head = step.querySelector(".cf-step-head");
+          const statusBadge = step.querySelector(".cf-ex-status");
           const videoTrigger = step.querySelector(".cf-video-trigger");
-          const videoMore = step.querySelector(".cf-more-btn");
           const videoAccordion = step.querySelector(".cf-video-accordion");
           const videoPlayer = step.querySelector(".cf-video-player");
           const doneBtn = step.querySelector(".cf-done-btn");
+          const exerciseKey = buildExerciseKey(currentItem, exercise, index);
+          const initialDone = isExerciseDone(exerciseKey);
+          if (initialDone) {
+            step.classList.add("is-done");
+            if (statusBadge) statusBadge.classList.add("is-done");
+            if (doneBtn) doneBtn.textContent = "Выполнено";
+          }
           const toggle = () => {
             const isOpen = step.classList.toggle("is-open");
             if (toggleBtn) toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
@@ -1516,17 +1577,19 @@ html.light
               await toggleVideo();
             });
           }
-          if (videoMore) {
-            videoMore.addEventListener("click", (event) => {
-              event.stopPropagation();
-              openVideo(exercise);
-            });
-          }
           if (doneBtn) {
             doneBtn.addEventListener("click", (event) => {
               event.stopPropagation();
               const isDone = step.classList.toggle("is-done");
               doneBtn.textContent = isDone ? "Выполнено" : "Выполнил";
+              if (statusBadge) statusBadge.classList.toggle("is-done", isDone);
+              setExerciseDone(exerciseKey, isDone);
+              const workoutExercises = Array.isArray(workout?.exercises) ? workout.exercises : [];
+              const allDone = workoutExercises.length
+                ? workoutExercises.every((ex, idx) => isExerciseDone(buildExerciseKey(currentItem, ex, idx)))
+                : false;
+              const checkEl = cfWorkoutCards.querySelector(`[data-workout-id="${currentItem?.id}"] .cf-card-check`);
+              if (checkEl) checkEl.classList.toggle("is-hidden", !allDone);
             });
           }
           cfProcessList.appendChild(step);
@@ -1571,7 +1634,14 @@ html.light
             return;
           }
           const workoutItems = flattenWorkouts(program);
+          const storageKey = `cf_last_workout_${program?.slug || ""}`;
           let targetId = workoutId;
+          if (!targetId && storageKey) {
+            try {
+              const stored = localStorage.getItem(storageKey);
+              if (stored) targetId = stored;
+            } catch (_) {}
+          }
           if (isGuestMode) {
             const allowedId = getFirstWorkoutId(program);
             if (allowedId) {
@@ -1583,6 +1653,9 @@ html.light
           }
           const currentItem = findWorkoutItem(workoutItems, targetId);
           const workout = currentItem?.workout || null;
+          if (storageKey && currentItem?.id) {
+            try { localStorage.setItem(storageKey, String(currentItem.id)); } catch (_) {}
+          }
           renderWorkout(program, workout, { workoutItems, currentItem });
         };
 
