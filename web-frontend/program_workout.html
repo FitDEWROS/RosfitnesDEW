@@ -29,6 +29,7 @@
       --card-border: rgba(255, 255, 255, 0.08);
       --accent: #f6e5a6;
       --accent-strong: #f2d17c;
+      --accent-cool: #9ad7ca;
       --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
       --radius: 18px;
       --radius-lg: 28px;
@@ -46,6 +47,7 @@
       --card-border: rgba(0, 0, 0, 0.08);
       --accent: #e8cc7a;
       --accent-strong: #ddb965;
+      --accent-cool: #6ab6a7;
       --shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
     }
 
@@ -265,6 +267,377 @@
       text-align: center;
     }
 
+    .crossfit-layout {
+      display: none;
+      margin-top: 10px;
+    }
+
+    body.crossfit .default-layout {
+      display: none;
+    }
+
+    body.crossfit .crossfit-layout {
+      display: block;
+    }
+
+    body.crossfit #emptyState {
+      display: none !important;
+    }
+
+    .cf-header {
+      display: grid;
+      gap: 12px;
+    }
+
+    .cf-nav {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .back-btn.compact {
+      padding: 6px 12px;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+    }
+
+    .cf-day-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      font-size: 0.8rem;
+    }
+
+    .cf-day-title {
+      white-space: nowrap;
+    }
+
+    .nav-arrow {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    html.light .nav-arrow {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .nav-arrow.is-disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .cf-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .cf-divider {
+      opacity: 0.6;
+    }
+
+    .cf-stars {
+      color: var(--accent-strong);
+      letter-spacing: 0.12em;
+    }
+
+    .cf-cards {
+      margin-top: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .cf-cards-row {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .cf-cards-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cf-cards-row.expanded {
+      flex-wrap: wrap;
+      overflow: visible;
+    }
+
+    .cf-cards-row.expanded .cf-card {
+      flex: 1 1 calc(50% - 12px);
+    }
+
+    .cf-card {
+      min-width: 160px;
+      flex: 0 0 auto;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.25);
+      display: grid;
+      gap: 10px;
+      align-items: center;
+      text-align: left;
+      color: inherit;
+      cursor: pointer;
+      position: relative;
+      scroll-snap-align: start;
+      box-shadow: var(--shadow);
+    }
+
+    html.light .cf-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .cf-card.is-active {
+      border-color: rgba(243, 213, 139, 0.6);
+      box-shadow: 0 12px 28px rgba(243, 213, 139, 0.18);
+    }
+
+    .cf-card-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--accent-strong);
+    }
+
+    html.light .cf-card-avatar {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .cf-card-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .cf-card-sub {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .cf-card-check {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(54, 199, 90, 0.18);
+      border: 1px solid rgba(54, 199, 90, 0.6);
+      color: #36c75a;
+      display: grid;
+      place-items: center;
+      font-size: 0.75rem;
+    }
+
+    .cf-more {
+      border: none;
+      background: none;
+      color: var(--muted);
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      justify-self: center;
+    }
+
+    .cf-process {
+      margin-top: 22px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .cf-section-title {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: 1.05rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .cf-process-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .cf-step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+    }
+
+    .cf-step-index {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--card-border);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .cf-step-card {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.22);
+      display: grid;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    html.light .cf-step-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .cf-step-title {
+      margin: 0;
+      font-weight: 700;
+      font-size: 0.98rem;
+    }
+
+    .cf-step-sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .cf-step-desc {
+      margin: 0;
+      padding-left: 12px;
+      border-left: 2px solid rgba(243, 213, 139, 0.45);
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+    .cf-step-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cf-chip {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .cf-chip.secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+    }
+
+    html.light .cf-chip.secondary {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .cf-chip:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .cf-videos {
+      margin-top: 24px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .cf-video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+    }
+
+    .cf-video-card {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.22);
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+      text-align: left;
+      color: inherit;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    html.light .cf-video-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .cf-video-thumb {
+      position: relative;
+      border-radius: 12px;
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(135deg, rgba(243, 213, 139, 0.22), rgba(154, 215, 202, 0.18));
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .cf-video-thumb::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .cf-play {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.45);
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    .cf-video-title {
+      font-weight: 600;
+    }
+
+    .cf-video-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
     .modal {
       display: none;
       position: fixed;
@@ -392,6 +765,13 @@ html.light
       .exercise-item { grid-template-columns: 36px 1fr; }
       .exercise-marker { width: 32px; height: 32px; font-size: 0.75rem; }
       .exercise-line { left: 15px; }
+      .cf-nav { gap: 8px; }
+      .cf-day-nav { letter-spacing: 0.18em; font-size: 0.7rem; }
+      .nav-arrow { width: 30px; height: 30px; }
+      .cf-card { min-width: 140px; }
+      .cf-step { grid-template-columns: 28px 1fr; }
+      .cf-step-index { width: 28px; height: 28px; font-size: 0.7rem; }
+      .cf-video-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
       .video-modal { max-height: 80dvh; }
       .video-modal video { max-height: 50dvh; }
     }
@@ -418,21 +798,57 @@ html.light
 
 <body>
   <div class="workout-screen">
-    <header class="page-header">
+    <header class="page-header default-layout">
       <button class="back-btn" id="backBtn" type="button">Назад</button>
       <span class="page-eyebrow">Тренировка</span>
       <h1 class="page-title" id="workoutTitle">Тренировка</h1>
       <p class="page-subtitle" id="programTitle"></p>
     </header>
 
-    <section class="summary-card">
+    <section class="summary-card default-layout">
       <span class="summary-tag" id="programTag">КРОССФИТ</span>
       <h2 class="summary-title" id="workoutHeading">Тренировка</h2>
       <p class="summary-note" id="workoutDescription"></p>
     </section>
 
-    <section class="exercise-list" id="exerciseList"></section>
+    <section class="exercise-list default-layout" id="exerciseList"></section>
     <div class="empty-state" id="emptyState" style="display: none;">Упражнения скоро появятся.</div>
+    <section class="crossfit-layout" id="crossfitLayout">
+      <header class="cf-header">
+        <div class="cf-nav">
+          <button class="back-btn compact" id="backBtnAlt" type="button">Назад</button>
+          <div class="cf-day-nav">
+            <button class="nav-arrow" id="prevWorkout" type="button" aria-label="Предыдущий день">&#8592;</button>
+            <span class="cf-day-title" id="cfDayTitle">ДЕНЬ 1</span>
+            <button class="nav-arrow" id="nextWorkout" type="button" aria-label="Следующий день">&#8594;</button>
+          </div>
+          <span aria-hidden="true"></span>
+        </div>
+        <div class="cf-meta">
+          <span id="cfWeekLabel">1 неделя</span>
+          <span class="cf-divider">|</span>
+          <span id="cfProgramLabel">Functional Training</span>
+          <span class="cf-divider">|</span>
+          <span id="cfTariffLabel">Базовый</span>
+          <span class="cf-stars" aria-hidden="true">&#9733; &#9733;</span>
+        </div>
+      </header>
+
+      <section class="cf-cards">
+        <div class="cf-cards-row" id="cfWorkoutCards"></div>
+        <button class="cf-more" id="cfToggleCards" type="button">Показать больше</button>
+      </section>
+
+      <section class="cf-process">
+        <h3 class="cf-section-title">Тренировочный процесс</h3>
+        <div class="cf-process-list" id="cfProcessList"></div>
+      </section>
+
+      <section class="cf-videos" id="cfVideoSection">
+        <h3 class="cf-section-title">Видео упражнений</h3>
+        <div class="cf-video-grid" id="cfVideoGrid"></div>
+      </section>
+    </section>
   </div>
 
   <div id="videoModal" class="modal" aria-hidden="true">
@@ -510,6 +926,18 @@ html.light
 
       const byId = (id) => document.getElementById(id);
       const backBtn = byId("backBtn");
+      const backBtnAlt = byId("backBtnAlt");
+      const prevWorkoutBtn = byId("prevWorkout");
+      const nextWorkoutBtn = byId("nextWorkout");
+      const cfDayTitle = byId("cfDayTitle");
+      const cfWeekLabel = byId("cfWeekLabel");
+      const cfProgramLabel = byId("cfProgramLabel");
+      const cfTariffLabel = byId("cfTariffLabel");
+      const cfWorkoutCards = byId("cfWorkoutCards");
+      const cfToggleCards = byId("cfToggleCards");
+      const cfProcessList = byId("cfProcessList");
+      const cfVideoSection = byId("cfVideoSection");
+      const cfVideoGrid = byId("cfVideoGrid");
       const emptyState = byId("emptyState");
       const list = byId("exerciseList");
       const videoModal = byId("videoModal");
@@ -522,6 +950,7 @@ html.light
       let currentVideoRequest = 0;
       let currentVideoUrl = "";
       let currentVideoLocked = false;
+      let cardsExpanded = false;
 
       const isYandexPublicLink = (url) => {
         try {
@@ -609,23 +1038,85 @@ html.light
         `;
       };
 
-      if (backBtn) {
-        backBtn.addEventListener("click", () => {
-          if (slug) {
-            const query = new URLSearchParams();
-            query.set("slug", slug);
-            if (backTarget) query.set("back", backTarget);
-            if (initData) query.set("initData", initData);
-            window.location.href = `program_detail.html?${query.toString()}`;
-            return;
-          }
-          if (backTarget) {
-            window.location.href = backTarget;
-            return;
-          }
-          window.location.href = "programs.html";
+      const handleBack = () => {
+        if (slug) {
+          const query = new URLSearchParams();
+          query.set("slug", slug);
+          if (backTarget) query.set("back", backTarget);
+          if (initData) query.set("initData", initData);
+          window.location.href = `program_detail.html?${query.toString()}`;
+          return;
+        }
+        if (backTarget) {
+          window.location.href = backTarget;
+          return;
+        }
+        window.location.href = "programs.html";
+      };
+
+      const buildWorkoutUrl = (targetWorkoutId, programSlug) => {
+        const query = new URLSearchParams();
+        const effectiveSlug = programSlug || slug;
+        if (effectiveSlug) query.set("slug", effectiveSlug);
+        if (targetWorkoutId) query.set("workout", targetWorkoutId);
+        if (backTarget) query.set("back", backTarget);
+        if (initData) query.set("initData", initData);
+        return `program_workout.html?${query.toString()}`;
+      };
+
+      const navigateToWorkout = (targetWorkoutId, programSlug) => {
+        window.location.href = buildWorkoutUrl(targetWorkoutId, programSlug);
+      };
+
+      const normalizeIndex = (value, fallback) => {
+        const num = Number(value);
+        return Number.isFinite(num) && num > 0 ? num : fallback;
+      };
+
+      const flattenWorkouts = (program) => {
+        const weeks = Array.isArray(program?.weeks) ? program.weeks : [];
+        const items = [];
+        weeks.forEach((week, weekPos) => {
+          const weekIndex = normalizeIndex(week?.index, weekPos + 1);
+          const weekTitle = week?.title || "";
+          const workouts = Array.isArray(week?.workouts) ? week.workouts : [];
+          workouts.forEach((workout, workoutPos) => {
+            const workoutIndex = normalizeIndex(workout?.index, workoutPos + 1);
+            const id = workout?.id != null ? String(workout.id) : `${weekIndex}-${workoutIndex}`;
+            items.push({
+              id,
+              weekIndex,
+              weekTitle,
+              workoutIndex,
+              workout
+            });
+          });
+        });
+        return items;
+      };
+
+      const getTariffLabel = (program) => {
+        const tariffs = Array.isArray(program?.tariffs) ? program.tariffs.filter(Boolean) : [];
+        if (tariffs.length) return tariffs[0];
+        if (program?.guestAccess) return "Гостевой";
+        return "Без тарифа";
+      };
+
+      const updateCardsExpansion = () => {
+        if (!cfWorkoutCards || !cfToggleCards) return;
+        cfWorkoutCards.classList.toggle("expanded", cardsExpanded);
+        cfToggleCards.textContent = cardsExpanded ? "Свернуть" : "Показать больше";
+      };
+
+      if (cfToggleCards) {
+        cfToggleCards.addEventListener("click", () => {
+          cardsExpanded = !cardsExpanded;
+          updateCardsExpansion();
         });
       }
+
+      if (backBtn) backBtn.addEventListener("click", handleBack);
+      if (backBtnAlt) backBtnAlt.addEventListener("click", handleBack);
 
       const openVideo = async (exercise) => {
         if (!videoModal) return;
@@ -756,30 +1247,30 @@ html.light
         });
       }
 
-      const findWorkout = (program, target) => {
-        if (!program || !Array.isArray(program.weeks)) return null;
-        for (const week of program.weeks) {
-          const workouts = Array.isArray(week.workouts) ? week.workouts : [];
-          for (const workout of workouts) {
-            const id = workout.id ?? `${week.index}-${workout.index}`;
-            if (String(id) === String(target)) {
-              return workout;
-            }
-          }
+      const findWorkoutItem = (items, target) => {
+        if (!Array.isArray(items) || !items.length) return null;
+        if (target) {
+          const found = items.find((item) => String(item.id) === String(target));
+          if (found) return found;
         }
-        return null;
+        return items[0] || null;
       };
 
       const getFirstWorkoutId = (program) => {
-        const weeks = Array.isArray(program?.weeks) ? program.weeks : [];
-        const firstWeek = weeks[0];
-        if (!firstWeek || !Array.isArray(firstWeek.workouts) || !firstWeek.workouts.length) return "";
-        const firstWorkout = firstWeek.workouts[0];
-        const rawId = firstWorkout?.id ?? `${firstWeek.index}-${firstWorkout.index}`;
-        return String(rawId);
+        const items = flattenWorkouts(program);
+        return items[0]?.id || "";
       };
 
-      const renderWorkout = (program, workout) => {
+      const getTaskLabel = (count) => {
+        const value = Number(count) || 0;
+        const mod10 = value % 10;
+        const mod100 = value % 100;
+        if (mod10 === 1 && mod100 !== 11) return "задание";
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "задания";
+        return "заданий";
+      };
+
+      const renderDefaultWorkout = (program, workout) => {
         if (program) {
           byId("programTitle").textContent = program.title || "";
           byId("programTag").textContent = program.type === "gym" ? "ЗАЛ" : "КРОССФИТ";
@@ -790,13 +1281,14 @@ html.light
           byId("workoutDescription").textContent = workout.description || "";
         }
 
+        if (!list) return;
         list.innerHTML = "";
         const exercises = Array.isArray(workout?.exercises) ? workout.exercises : [];
         if (!exercises.length) {
-          emptyState.style.display = "block";
+          if (emptyState) emptyState.style.display = "block";
           return;
         }
-        emptyState.style.display = "none";
+        if (emptyState) emptyState.style.display = "none";
 
         exercises.forEach((exercise) => {
           const item = document.createElement("button");
@@ -822,6 +1314,145 @@ html.light
         });
       };
 
+      const renderCrossfitWorkout = (program, workout, meta) => {
+        if (!cfProcessList || !cfWorkoutCards) return;
+        const items = Array.isArray(meta?.workoutItems) ? meta.workoutItems : [];
+        const currentItem = meta?.currentItem || items[0] || null;
+        const currentIndex = currentItem ? items.findIndex((item) => item.id === currentItem.id) : -1;
+        const weekIndex = currentItem?.weekIndex || 1;
+        const dayNumber = currentItem?.workoutIndex || (currentIndex >= 0 ? currentIndex + 1 : 1);
+        const weekLabel = currentItem?.weekTitle ? currentItem.weekTitle : `${weekIndex} неделя`;
+
+        if (cfDayTitle) cfDayTitle.textContent = `ДЕНЬ ${dayNumber}`;
+        if (cfWeekLabel) cfWeekLabel.textContent = weekLabel;
+        if (cfProgramLabel) cfProgramLabel.textContent = program?.title || "";
+        if (cfTariffLabel) cfTariffLabel.textContent = getTariffLabel(program);
+
+        const prevItem = currentIndex > 0 ? items[currentIndex - 1] : null;
+        const nextItem = currentIndex >= 0 && currentIndex < items.length - 1 ? items[currentIndex + 1] : null;
+        if (prevWorkoutBtn) {
+          prevWorkoutBtn.disabled = !prevItem;
+          prevWorkoutBtn.classList.toggle("is-disabled", !prevItem);
+          prevWorkoutBtn.onclick = prevItem ? () => navigateToWorkout(prevItem.id, program?.slug) : null;
+        }
+        if (nextWorkoutBtn) {
+          nextWorkoutBtn.disabled = !nextItem;
+          nextWorkoutBtn.classList.toggle("is-disabled", !nextItem);
+          nextWorkoutBtn.onclick = nextItem ? () => navigateToWorkout(nextItem.id, program?.slug) : null;
+        }
+
+        const weekItems = items.filter((item) => item.weekIndex === weekIndex);
+        cfWorkoutCards.innerHTML = "";
+        weekItems.forEach((item) => {
+          const card = document.createElement("button");
+          card.type = "button";
+          const isActive = currentItem && item.id === currentItem.id;
+          card.className = `cf-card${isActive ? " is-active" : ""}`;
+          const title = item.workout?.title || `Тренировка ${item.workoutIndex}`;
+          const tasksCount = Array.isArray(item.workout?.exercises) ? item.workout.exercises.length : 0;
+          const avatarLabel = String(item.workoutIndex || "").padStart(2, "0");
+          card.innerHTML = `
+            <div class="cf-card-avatar">${avatarLabel}</div>
+            <div>
+              <p class="cf-card-title">${escapeHtml(title)}</p>
+              <p class="cf-card-sub">${tasksCount} ${getTaskLabel(tasksCount)}</p>
+            </div>
+            ${isActive ? '<span class="cf-card-check">&#10003;</span>' : ""}
+          `;
+          card.addEventListener("click", () => navigateToWorkout(item.id, program?.slug));
+          cfWorkoutCards.appendChild(card);
+        });
+
+        if (cfToggleCards) {
+          const shouldShowToggle = weekItems.length > 3;
+          cfToggleCards.style.display = shouldShowToggle ? "inline-flex" : "none";
+          if (!shouldShowToggle) {
+            cardsExpanded = false;
+          }
+          updateCardsExpansion();
+        }
+
+        cfProcessList.innerHTML = "";
+        const exercises = Array.isArray(workout?.exercises) ? workout.exercises : [];
+        if (!exercises.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty-state";
+          empty.textContent = "Упражнения скоро появятся.";
+          cfProcessList.appendChild(empty);
+          if (cfVideoSection) cfVideoSection.style.display = "none";
+          return;
+        }
+
+        exercises.forEach((exercise, index) => {
+          const step = document.createElement("div");
+          step.className = "cf-step";
+          const stepIndex = exercise.order ?? (index + 1);
+          const detailText = exercise.details && exercise.description ? exercise.details : exercise.details || "";
+          const descText = exercise.description || (exercise.details && !exercise.description ? exercise.details : "");
+          const descHtml = descText ? formatText(descText) : "Описание появится позже.";
+          step.innerHTML = `
+            <div class="cf-step-index">${stepIndex}</div>
+            <div class="cf-step-card">
+              <p class="cf-step-title">${escapeHtml(exercise.title || "Упражнение")}</p>
+              ${detailText ? `<p class="cf-step-sub">${escapeHtml(detailText)}</p>` : ""}
+              <p class="cf-step-desc">${descHtml}</p>
+              <div class="cf-step-actions">
+                <button class="cf-chip" type="button" data-action="video">Видео</button>
+                <button class="cf-chip secondary" type="button" data-action="more">Подробнее</button>
+              </div>
+            </div>
+          `;
+          const videoBtn = step.querySelector('[data-action="video"]');
+          const moreBtn = step.querySelector('[data-action="more"]');
+          if (videoBtn) {
+            if (!exercise.videoUrl) videoBtn.disabled = true;
+            videoBtn.addEventListener("click", (event) => {
+              event.stopPropagation();
+              openVideo(exercise);
+            });
+          }
+          if (moreBtn) {
+            moreBtn.addEventListener("click", (event) => {
+              event.stopPropagation();
+              openVideo(exercise);
+            });
+          }
+          step.addEventListener("click", () => openVideo(exercise));
+          cfProcessList.appendChild(step);
+        });
+
+        if (cfVideoSection && cfVideoGrid) {
+          const videoExercises = exercises.filter((exercise) => Boolean(exercise.videoUrl));
+          cfVideoGrid.innerHTML = "";
+          if (!videoExercises.length) {
+            cfVideoSection.style.display = "none";
+          } else {
+            cfVideoSection.style.display = "";
+            videoExercises.forEach((exercise) => {
+              const card = document.createElement("button");
+              card.type = "button";
+              card.className = "cf-video-card";
+              card.innerHTML = `
+                <div class="cf-video-thumb"><span class="cf-play">&#9654;</span></div>
+                <div class="cf-video-title">${escapeHtml(exercise.title || "Видео")}</div>
+                <div class="cf-video-meta">${escapeHtml(exercise.details || "")}</div>
+              `;
+              card.addEventListener("click", () => openVideo(exercise));
+              cfVideoGrid.appendChild(card);
+            });
+          }
+        }
+      };
+
+      const renderWorkout = (program, workout, meta = {}) => {
+        const isCrossfit = program?.type === "crossfit";
+        document.body.classList.toggle("crossfit", isCrossfit);
+        renderDefaultWorkout(program, workout);
+        if (isCrossfit) {
+          renderCrossfitWorkout(program, workout, meta);
+        }
+      };
+
       const loadWorkout = async () => {
         const resolveGuestMode = async () => {
           const profile = await fetchUserProfile();
@@ -842,7 +1473,7 @@ html.light
 
         const handleProgram = (program) => {
           if (!program) {
-            renderWorkout(null, null);
+            renderWorkout(null, null, { workoutItems: [], currentItem: null });
             return;
           }
           if (isGuestMode && !program.guestAccess) {
@@ -850,6 +1481,7 @@ html.light
             window.location.href = backTarget || "programs.html";
             return;
           }
+          const workoutItems = flattenWorkouts(program);
           let targetId = workoutId;
           if (isGuestMode) {
             const allowedId = getFirstWorkoutId(program);
@@ -860,8 +1492,9 @@ html.light
               targetId = allowedId;
             }
           }
-          const workout = findWorkout(program, targetId) || (program?.weeks?.[0]?.workouts?.[0] || null);
-          renderWorkout(program, workout);
+          const currentItem = findWorkoutItem(workoutItems, targetId);
+          const workout = currentItem?.workout || null;
+          renderWorkout(program, workout, { workoutItems, currentItem });
         };
 
         if (API_BASE && targetSlug) {
