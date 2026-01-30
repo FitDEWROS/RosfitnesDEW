@@ -1503,9 +1503,6 @@ html.light
                   <button class="cf-step-toggle" type="button" aria-expanded="false">&#8250;</button>
                 </div>
               </div>
-              <div class="cf-step-footer">
-                <button class="cf-video-trigger" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>&#9662;</button>
-              </div>
               <div class="cf-video-accordion${hasVideo ? "" : " is-disabled"}">
                 <div class="cf-video-panel">
                   ${
@@ -1516,6 +1513,9 @@ html.light
                 </div>
               </div>
               <div class="cf-step-body">
+                <div class="cf-step-footer">
+                  <button class="cf-video-trigger" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>&#9662;</button>
+                </div>
                 <p class="cf-step-desc">${descHtml}</p>
                 <div class="cf-step-actions">
                   <button class="cf-done-btn" type="button">Выполнил</button>
