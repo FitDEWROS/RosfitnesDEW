@@ -538,104 +538,81 @@
       line-height: 1.55;
     }
 
-    .cf-step-actions {
+    .cf-step-head {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .cf-chip {
-      border: none;
-      border-radius: 999px;
-      padding: 6px 12px;
-      background: rgba(0, 0, 0, 0.35);
-      color: var(--text);
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-
-    .cf-chip.secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--muted);
-    }
-
-    html.light .cf-chip.secondary {
-      background: rgba(0, 0, 0, 0.08);
-    }
-
-    .cf-chip:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .cf-videos {
-      margin-top: 24px;
-      display: grid;
+      align-items: center;
+      justify-content: space-between;
       gap: 12px;
     }
 
-    .cf-video-grid {
+    .cf-step-head-text {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 14px;
+      gap: 4px;
     }
 
-    .cf-video-card {
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.22);
-      padding: 10px;
-      display: grid;
-      gap: 10px;
-      text-align: left;
-      color: inherit;
+    .cf-step-toggle {
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 1.1rem;
       cursor: pointer;
-      box-shadow: var(--shadow);
-    }
-
-    html.light .cf-video-card {
-      background: rgba(0, 0, 0, 0.04);
-    }
-
-    .cf-video-thumb {
-      position: relative;
-      border-radius: 12px;
-      aspect-ratio: 16 / 9;
-      background: linear-gradient(135deg, rgba(243, 213, 139, 0.22), rgba(154, 215, 202, 0.18));
+      transition: transform 0.2s ease;
       display: grid;
       place-items: center;
-      overflow: hidden;
     }
 
-    .cf-video-thumb::after {
-      content: "";
-      position: absolute;
-      inset: 0;
+    html.light .cf-step-toggle {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .cf-step-body {
+      display: none;
+      gap: 10px;
+    }
+
+    .cf-step.is-open .cf-step-body {
+      display: grid;
+    }
+
+    .cf-step.is-open .cf-step-toggle {
+      transform: rotate(90deg);
+    }
+
+    .cf-video-row {
+      border: 1px solid var(--card-border);
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.32);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      cursor: pointer;
     }
 
-    .cf-play {
-      width: 40px;
-      height: 40px;
+    html.light .cf-video-row {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .cf-video-row.disabled,
+    .cf-video-row:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .cf-video-icon {
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.45);
+      color: var(--accent);
       display: grid;
       place-items: center;
-      color: var(--accent);
-      font-size: 1.1rem;
-    }
-
-    .cf-video-title {
-      font-weight: 600;
-    }
-
-    .cf-video-meta {
-      font-size: 0.75rem;
-      color: var(--muted);
+      font-size: 0.95rem;
     }
 
     .modal {
@@ -771,7 +748,6 @@ html.light
       .cf-card { min-width: 140px; }
       .cf-step { grid-template-columns: 28px 1fr; }
       .cf-step-index { width: 28px; height: 28px; font-size: 0.7rem; }
-      .cf-video-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
       .video-modal { max-height: 80dvh; }
       .video-modal video { max-height: 50dvh; }
     }
@@ -844,10 +820,6 @@ html.light
         <div class="cf-process-list" id="cfProcessList"></div>
       </section>
 
-      <section class="cf-videos" id="cfVideoSection">
-        <h3 class="cf-section-title">Видео упражнений</h3>
-        <div class="cf-video-grid" id="cfVideoGrid"></div>
-      </section>
     </section>
   </div>
 
@@ -936,8 +908,6 @@ html.light
       const cfWorkoutCards = byId("cfWorkoutCards");
       const cfToggleCards = byId("cfToggleCards");
       const cfProcessList = byId("cfProcessList");
-      const cfVideoSection = byId("cfVideoSection");
-      const cfVideoGrid = byId("cfVideoGrid");
       const emptyState = byId("emptyState");
       const list = byId("exerciseList");
       const videoModal = byId("videoModal");
@@ -1379,7 +1349,6 @@ html.light
           empty.className = "empty-state";
           empty.textContent = "Упражнения скоро появятся.";
           cfProcessList.appendChild(empty);
-          if (cfVideoSection) cfVideoSection.style.display = "none";
           return;
         }
 
@@ -1390,58 +1359,53 @@ html.light
           const detailText = exercise.details && exercise.description ? exercise.details : exercise.details || "";
           const descText = exercise.description || (exercise.details && !exercise.description ? exercise.details : "");
           const descHtml = descText ? formatText(descText) : "Описание появится позже.";
+          const hasVideo = Boolean(exercise.videoUrl);
           step.innerHTML = `
             <div class="cf-step-index">${stepIndex}</div>
             <div class="cf-step-card">
-              <p class="cf-step-title">${escapeHtml(exercise.title || "Упражнение")}</p>
-              ${detailText ? `<p class="cf-step-sub">${escapeHtml(detailText)}</p>` : ""}
-              <p class="cf-step-desc">${descHtml}</p>
-              <div class="cf-step-actions">
-                <button class="cf-chip" type="button" data-action="video">Видео</button>
-                <button class="cf-chip secondary" type="button" data-action="more">Подробнее</button>
+              <div class="cf-step-head">
+                <div class="cf-step-head-text">
+                  <p class="cf-step-title">${escapeHtml(exercise.title || "Упражнение")}</p>
+                  ${detailText ? `<p class="cf-step-sub">${escapeHtml(detailText)}</p>` : ""}
+                </div>
+                <button class="cf-step-toggle" type="button" aria-expanded="false">&#8250;</button>
+              </div>
+              <div class="cf-step-body">
+                <p class="cf-step-desc">${descHtml}</p>
+                <button class="cf-video-row${hasVideo ? "" : " disabled"}" type="button" ${hasVideo ? "" : "disabled"}>
+                  <span class="cf-video-icon">&#9654;</span>
+                  <span>${hasVideo ? "Видео" : "Видео пока не добавлено"}</span>
+                </button>
               </div>
             </div>
           `;
-          const videoBtn = step.querySelector('[data-action="video"]');
-          const moreBtn = step.querySelector('[data-action="more"]');
-          if (videoBtn) {
-            if (!exercise.videoUrl) videoBtn.disabled = true;
-            videoBtn.addEventListener("click", (event) => {
+          const toggleBtn = step.querySelector(".cf-step-toggle");
+          const head = step.querySelector(".cf-step-head");
+          const videoRow = step.querySelector(".cf-video-row");
+          const toggle = () => {
+            const isOpen = step.classList.toggle("is-open");
+            if (toggleBtn) toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+          };
+          if (toggleBtn) {
+            toggleBtn.addEventListener("click", (event) => {
+              event.stopPropagation();
+              toggle();
+            });
+          }
+          if (head) {
+            head.addEventListener("click", (event) => {
+              event.stopPropagation();
+              toggle();
+            });
+          }
+          if (videoRow && hasVideo) {
+            videoRow.addEventListener("click", (event) => {
               event.stopPropagation();
               openVideo(exercise);
             });
           }
-          if (moreBtn) {
-            moreBtn.addEventListener("click", (event) => {
-              event.stopPropagation();
-              openVideo(exercise);
-            });
-          }
-          step.addEventListener("click", () => openVideo(exercise));
           cfProcessList.appendChild(step);
         });
-
-        if (cfVideoSection && cfVideoGrid) {
-          const videoExercises = exercises.filter((exercise) => Boolean(exercise.videoUrl));
-          cfVideoGrid.innerHTML = "";
-          if (!videoExercises.length) {
-            cfVideoSection.style.display = "none";
-          } else {
-            cfVideoSection.style.display = "";
-            videoExercises.forEach((exercise) => {
-              const card = document.createElement("button");
-              card.type = "button";
-              card.className = "cf-video-card";
-              card.innerHTML = `
-                <div class="cf-video-thumb"><span class="cf-play">&#9654;</span></div>
-                <div class="cf-video-title">${escapeHtml(exercise.title || "Видео")}</div>
-                <div class="cf-video-meta">${escapeHtml(exercise.details || "")}</div>
-              `;
-              card.addEventListener("click", () => openVideo(exercise));
-              cfVideoGrid.appendChild(card);
-            });
-          }
-        }
       };
 
       const renderWorkout = (program, workout, meta = {}) => {
