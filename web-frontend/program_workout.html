@@ -581,7 +581,17 @@
       transform: rotate(90deg);
     }
 
-    .cf-video-row {
+    .cf-video-accordion {
+      display: grid;
+      gap: 8px;
+    }
+
+    .cf-video-accordion.is-disabled .cf-video-toggle {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .cf-video-toggle {
       border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 10px 12px;
@@ -589,30 +599,64 @@
       color: var(--text);
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 10px;
       font-weight: 600;
       cursor: pointer;
     }
 
-    html.light .cf-video-row {
+    html.light .cf-video-toggle {
       background: rgba(0, 0, 0, 0.06);
     }
 
-    .cf-video-row.disabled,
-    .cf-video-row:disabled {
+    .cf-video-toggle:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
 
+    .cf-video-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cf-video-chevron {
+      transition: transform 0.2s ease;
+    }
+
+    .cf-video-accordion.is-open .cf-video-chevron {
+      transform: rotate(90deg);
+    }
+
+    .cf-video-panel {
+      display: none;
+    }
+
+    .cf-video-accordion.is-open .cf-video-panel {
+      display: grid;
+      gap: 8px;
+    }
+
+    .cf-video-player {
+      width: 100%;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    .cf-video-empty {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
     .cf-video-icon {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.45);
       color: var(--accent);
       display: grid;
       place-items: center;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
     }
 
     .modal {
@@ -1372,16 +1416,30 @@ html.light
               </div>
               <div class="cf-step-body">
                 <p class="cf-step-desc">${descHtml}</p>
-                <button class="cf-video-row${hasVideo ? "" : " disabled"}" type="button" ${hasVideo ? "" : "disabled"}>
-                  <span class="cf-video-icon">&#9654;</span>
-                  <span>${hasVideo ? "Видео" : "Видео пока не добавлено"}</span>
-                </button>
+                <div class="cf-video-accordion${hasVideo ? "" : " is-disabled"}">
+                  <button class="cf-video-toggle" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>
+                    <span class="cf-video-label">
+                      <span class="cf-video-icon">&#9654;</span>
+                      <span>${hasVideo ? "Видео" : "Видео пока не добавлено"}</span>
+                    </span>
+                    <span class="cf-video-chevron">&#8250;</span>
+                  </button>
+                  <div class="cf-video-panel">
+                    ${
+                      hasVideo
+                        ? '<video class="cf-video-player" controls controlslist="nodownload noplaybackrate" disablepictureinpicture></video>'
+                        : '<div class="cf-video-empty">Видео пока не добавлено.</div>'
+                    }
+                  </div>
+                </div>
               </div>
             </div>
           `;
           const toggleBtn = step.querySelector(".cf-step-toggle");
           const head = step.querySelector(".cf-step-head");
-          const videoRow = step.querySelector(".cf-video-row");
+          const videoToggle = step.querySelector(".cf-video-toggle");
+          const videoAccordion = step.querySelector(".cf-video-accordion");
+          const videoPlayer = step.querySelector(".cf-video-player");
           const toggle = () => {
             const isOpen = step.classList.toggle("is-open");
             if (toggleBtn) toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
@@ -1398,10 +1456,35 @@ html.light
               toggle();
             });
           }
-          if (videoRow && hasVideo) {
-            videoRow.addEventListener("click", (event) => {
+          const loadInlineVideo = async () => {
+            if (!hasVideo || !videoPlayer || videoPlayer.dataset.loaded) return;
+            videoPlayer.dataset.loaded = "true";
+            const resolved = await resolveVideoUrl(exercise.videoUrl);
+            const finalUrl = resolved || exercise.videoUrl;
+            if (finalUrl) {
+              videoPlayer.src = finalUrl;
+              videoPlayer.load();
+            }
+          };
+          const toggleVideo = async () => {
+            if (!videoAccordion || !videoToggle || !hasVideo) return;
+            const isOpen = videoAccordion.classList.toggle("is-open");
+            videoToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            if (isOpen) {
+              document.querySelectorAll(".cf-video-player").forEach((player) => {
+                if (player !== videoPlayer) {
+                  try { player.pause(); } catch (_) {}
+                }
+              });
+              await loadInlineVideo();
+            } else if (videoPlayer) {
+              try { videoPlayer.pause(); } catch (_) {}
+            }
+          };
+          if (videoToggle) {
+            videoToggle.addEventListener("click", async (event) => {
               event.stopPropagation();
-              openVideo(exercise);
+              await toggleVideo();
             });
           }
           cfProcessList.appendChild(step);
