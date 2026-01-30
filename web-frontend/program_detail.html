@@ -597,6 +597,7 @@ html.light
 
         const weeks = Array.isArray(program.weeks) ? program.weeks : [];
         const guestAllowedId = isGuestMode ? getFirstWorkoutId(program) : "";
+        const isCrossfitProgram = program.type === "crossfit";
         weeks.forEach((week, idx) => {
           const weekCard = document.createElement("article");
           const workouts = Array.isArray(week.workouts) ? week.workouts : [];
@@ -612,58 +613,92 @@ html.light
               : "Планируется";
 
           weekCard.className = "week-card";
-          weekCard.dataset.open = idx === 0 ? "true" : "false";
-          weekCard.innerHTML = `
-            <button class="week-toggle" type="button">
-              <div>
-                <div class="week-title">${week.title || `Неделя ${week.index || idx + 1}`}</div>
-                <div class="week-meta">${workoutsLabel}</div>
-              </div>
-              <div class="week-chevron">⌄</div>
-            </button>
-            <div class="week-body"></div>
-          `;
-
-          const body = weekCard.querySelector(".week-body");
-          workouts.forEach((workout, workoutIdx) => {
-            const workoutCard = document.createElement("button");
-            const exerciseCount = Array.isArray(workout.exercises) ? workout.exercises.length : 0;
-            const workoutId = getWorkoutId(week, workout);
-            const isLocked = isGuestMode && (!guestAllowedId || workoutId !== guestAllowedId);
-            const subtitleText = isLocked
-              ? "Недоступно для гостей"
-              : `${exerciseCount} упражнений`;
-            workoutCard.className = `workout-card${isLocked ? " is-locked" : ""}`;
-            workoutCard.type = "button";
-            workoutCard.innerHTML = `
-              <div>
-                <div class="workout-title">${workout.title || "Тренировка"}</div>
-                <div class="workout-subtitle">${subtitleText}</div>
-              </div>
-              <div class="workout-arrow">›</div>
+          if (isCrossfitProgram) {
+            const firstWorkout = workouts[0] || null;
+            const firstWorkoutId = firstWorkout ? getWorkoutId(week, firstWorkout) : "";
+            const targetWorkoutId = isGuestMode
+              ? (hasAllowedWorkout ? guestAllowedId : "")
+              : firstWorkoutId;
+            const isLocked = isGuestMode && !hasAllowedWorkout;
+            const isDisabled = !targetWorkoutId || isLocked;
+            weekCard.innerHTML = `
+              <button class="week-toggle" type="button" ${isDisabled ? "disabled" : ""}>
+                <div>
+                  <div class="week-title">${week.title || `Неделя ${week.index || idx + 1}`}</div>
+                  <div class="week-meta">${workoutsLabel}</div>
+                </div>
+                <div class="week-chevron">›</div>
+              </button>
             `;
-            if (!isLocked) {
-              workoutCard.addEventListener("click", () => {
-                if (!workoutId) return;
+            const toggle = weekCard.querySelector(".week-toggle");
+            if (toggle && !isDisabled) {
+              toggle.addEventListener("click", () => {
                 const query = new URLSearchParams();
                 query.set("slug", program.slug);
-                query.set("workout", workoutId);
+                query.set("workout", targetWorkoutId);
                 if (backTarget) query.set("back", backTarget);
                 if (initData) query.set("initData", initData);
                 window.location.href = `program_workout.html?${query.toString()}`;
               });
-            } else {
-              workoutCard.addEventListener("click", () => {
+            } else if (toggle && isLocked) {
+              toggle.addEventListener("click", () => {
                 showAlert("Доступно только после покупки тарифа.");
               });
             }
-            body.appendChild(workoutCard);
-          });
+          } else {
+            weekCard.dataset.open = idx === 0 ? "true" : "false";
+            weekCard.innerHTML = `
+              <button class="week-toggle" type="button">
+                <div>
+                  <div class="week-title">${week.title || `Неделя ${week.index || idx + 1}`}</div>
+                  <div class="week-meta">${workoutsLabel}</div>
+                </div>
+                <div class="week-chevron">⌄</div>
+              </button>
+              <div class="week-body"></div>
+            `;
 
-          weekCard.querySelector(".week-toggle").addEventListener("click", () => {
-            const isOpen = weekCard.dataset.open === "true";
-            weekCard.dataset.open = isOpen ? "false" : "true";
-          });
+            const body = weekCard.querySelector(".week-body");
+            workouts.forEach((workout) => {
+              const workoutCard = document.createElement("button");
+              const exerciseCount = Array.isArray(workout.exercises) ? workout.exercises.length : 0;
+              const workoutId = getWorkoutId(week, workout);
+              const isLocked = isGuestMode && (!guestAllowedId || workoutId !== guestAllowedId);
+              const subtitleText = isLocked
+                ? "Недоступно для гостей"
+                : `${exerciseCount} упражнений`;
+              workoutCard.className = `workout-card${isLocked ? " is-locked" : ""}`;
+              workoutCard.type = "button";
+              workoutCard.innerHTML = `
+                <div>
+                  <div class="workout-title">${workout.title || "Тренировка"}</div>
+                  <div class="workout-subtitle">${subtitleText}</div>
+                </div>
+                <div class="workout-arrow">›</div>
+              `;
+              if (!isLocked) {
+                workoutCard.addEventListener("click", () => {
+                  if (!workoutId) return;
+                  const query = new URLSearchParams();
+                  query.set("slug", program.slug);
+                  query.set("workout", workoutId);
+                  if (backTarget) query.set("back", backTarget);
+                  if (initData) query.set("initData", initData);
+                  window.location.href = `program_workout.html?${query.toString()}`;
+                });
+              } else {
+                workoutCard.addEventListener("click", () => {
+                  showAlert("Доступно только после покупки тарифа.");
+                });
+              }
+              body.appendChild(workoutCard);
+            });
+
+            weekCard.querySelector(".week-toggle").addEventListener("click", () => {
+              const isOpen = weekCard.dataset.open === "true";
+              weekCard.dataset.open = isOpen ? "false" : "true";
+            });
+          }
 
           weeksList.appendChild(weekCard);
         });
