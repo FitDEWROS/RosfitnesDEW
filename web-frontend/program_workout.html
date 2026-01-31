@@ -474,6 +474,36 @@
       margin-top: 22px;
       display: grid;
       gap: 12px;
+      position: relative;
+      padding: 16px 14px 6px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0));
+    }
+
+    .cf-process::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: radial-gradient(260px 140px at 12% 0%, rgba(243, 213, 139, 0.14), transparent 70%);
+      pointer-events: none;
+    }
+
+    .cf-section-head {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1;
+    }
+
+    .cf-section-line {
+      width: 26px;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(243, 213, 139, 0.95), rgba(243, 213, 139, 0));
+      box-shadow: 0 0 10px rgba(243, 213, 139, 0.35);
     }
 
     .cf-section-title {
@@ -482,6 +512,7 @@
       font-size: 1.05rem;
       letter-spacing: 0.14em;
       text-transform: uppercase;
+      text-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     }
 
     .cf-process-list {
@@ -514,6 +545,7 @@
       display: grid;
       gap: 10px;
       box-shadow: var(--shadow);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
       animation: rise 0.5s ease both;
       animation-delay: var(--delay, 0ms);
     }
@@ -611,6 +643,8 @@
       font-size: 0.7rem;
       color: transparent;
       opacity: 0;
+      transform: scale(0.6);
+      transition: transform 0.2s ease, opacity 0.2s ease;
     }
 
     .cf-ex-status.is-done {
@@ -619,6 +653,8 @@
       color: #36c75a;
       box-shadow: 0 0 10px rgba(54, 199, 90, 0.35);
       opacity: 1;
+      transform: scale(1);
+      animation: pop 0.25s ease;
     }
 
     .cf-video-accordion {
@@ -705,11 +741,23 @@
       font-size: 0.85rem;
       cursor: pointer;
       width: fit-content;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .cf-done-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
     }
 
     @keyframes rise {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.6); }
+      60% { transform: scale(1.15); }
+      100% { transform: scale(1); }
     }
 
     .cf-step.is-done .cf-done-btn {
@@ -929,7 +977,10 @@ html.light
       </section>
 
       <section class="cf-process">
-        <h3 class="cf-section-title">Тренировочный процесс</h3>
+        <div class="cf-section-head">
+          <span class="cf-section-line" aria-hidden="true"></span>
+          <h3 class="cf-section-title">Тренировочный процесс</h3>
+        </div>
         <div class="cf-process-list" id="cfProcessList"></div>
       </section>
 
