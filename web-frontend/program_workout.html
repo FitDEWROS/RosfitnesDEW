@@ -518,7 +518,7 @@
       animation-delay: var(--delay, 0ms);
     }
 
-    .cf-step.is-done .cf-step-card {
+    .cf-step.is-done.is-open .cf-step-card {
       border-color: rgba(54, 199, 90, 0.6);
       box-shadow: 0 0 0 1px rgba(54, 199, 90, 0.2), var(--shadow);
     }
@@ -606,12 +606,14 @@
       place-items: center;
       font-size: 0.7rem;
       color: transparent;
+      opacity: 0;
     }
 
     .cf-ex-status.is-done {
       border-color: rgba(54, 199, 90, 0.6);
       background: rgba(54, 199, 90, 0.18);
       color: #36c75a;
+      opacity: 1;
     }
 
     .cf-video-accordion {
@@ -1504,7 +1506,13 @@ html.light
                   <span class="cf-ex-status" aria-hidden="true">&#10003;</span>
                   <button class="cf-step-toggle" type="button" aria-expanded="false">&#8250;</button>
                 </div>
-              </div>
+              </div><div class="cf-step-body">
+                <p class="cf-step-desc">${descHtml}</p>
+                <div class="cf-step-bottom">
+                  <button class="cf-video-trigger" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>&#9662;</button>
+                  <button class="cf-done-btn" type="button">Выполнил</button>
+                </div>
+
               <div class="cf-video-accordion${hasVideo ? "" : " is-disabled"}">
                 <div class="cf-video-panel">
                   ${
@@ -1514,13 +1522,7 @@ html.light
                   }
                 </div>
               </div>
-              <div class="cf-step-body">
-                <p class="cf-step-desc">${descHtml}</p>
-                <div class="cf-step-bottom">
-                  <button class="cf-video-trigger" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>&#9662;</button>
-                  <button class="cf-done-btn" type="button">Выполнил</button>
-                </div>
-</div>
+              </div>
             </div>
           `;
           const toggleBtn = step.querySelector(".cf-step-toggle");
@@ -1540,6 +1542,16 @@ html.light
           const toggle = () => {
             const isOpen = step.classList.toggle("is-open");
             if (toggleBtn) toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+            if (!isOpen && videoAccordion) {
+              videoAccordion.classList.remove("is-open");
+              if (videoTrigger) videoTrigger.setAttribute("aria-expanded", "false");
+              if (videoPlayer) {
+                try {
+                  videoPlayer.pause();
+                  videoPlayer.currentTime = 0;
+                } catch (_) {}
+              }
+            }
           };
           if (toggleBtn) {
             toggleBtn.addEventListener("click", (event) => {
