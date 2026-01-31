@@ -627,11 +627,13 @@
       margin-top: 6px;
     }
 
-    .cf-step-footer {
+    .cf-step-bottom {
       display: flex;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: space-between;
+      gap: 12px;
       margin-top: 6px;
+      flex-wrap: wrap;
     }
 
     .cf-video-accordion {
@@ -844,7 +846,7 @@ html.light
       .cf-card { min-width: 0; }
       .cf-step { grid-template-columns: 28px 1fr; }
       .cf-step-index { width: 28px; height: 28px; font-size: 0.7rem; }
-      .cf-step-actions { flex-direction: column; align-items: flex-end; }
+      .cf-step-bottom { flex-direction: row; }
       .cf-done-btn { align-self: flex-end; }
       .video-modal { max-height: 80dvh; }
       .video-modal video { max-height: 50dvh; }
@@ -1513,14 +1515,12 @@ html.light
                 </div>
               </div>
               <div class="cf-step-body">
-                <div class="cf-step-footer">
-                  <button class="cf-video-trigger" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>&#9662;</button>
-                </div>
                 <p class="cf-step-desc">${descHtml}</p>
-                <div class="cf-step-actions">
+                <div class="cf-step-bottom">
+                  <button class="cf-video-trigger" type="button" aria-expanded="false" ${hasVideo ? "" : "disabled"}>&#9662;</button>
                   <button class="cf-done-btn" type="button">Выполнил</button>
                 </div>
-              </div>
+</div>
             </div>
           `;
           const toggleBtn = step.querySelector(".cf-step-toggle");
@@ -1693,6 +1693,7 @@ html.light
   </script>
 </body>
 </html>
+
 
 
 
