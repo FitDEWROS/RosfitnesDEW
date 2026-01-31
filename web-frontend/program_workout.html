@@ -519,8 +519,12 @@
     }
 
     .cf-step.is-done.is-open .cf-step-card {
-      border-color: rgba(54, 199, 90, 0.6);
-      box-shadow: 0 0 0 1px rgba(54, 199, 90, 0.2), var(--shadow);
+      border-color: rgba(54, 199, 90, 0.65);
+      background: linear-gradient(160deg, rgba(54, 199, 90, 0.1), rgba(0, 0, 0, 0.22) 55%);
+      box-shadow:
+        0 0 0 1px rgba(54, 199, 90, 0.2),
+        0 18px 36px rgba(0, 0, 0, 0.45),
+        0 0 18px rgba(54, 199, 90, 0.22);
     }
 
     html.light .cf-step-card {
@@ -611,8 +615,9 @@
 
     .cf-ex-status.is-done {
       border-color: rgba(54, 199, 90, 0.6);
-      background: rgba(54, 199, 90, 0.18);
+      background: linear-gradient(140deg, rgba(54, 199, 90, 0.32), rgba(54, 199, 90, 0.12));
       color: #36c75a;
+      box-shadow: 0 0 10px rgba(54, 199, 90, 0.35);
       opacity: 1;
     }
 
@@ -708,9 +713,10 @@
     }
 
     .cf-step.is-done .cf-done-btn {
-      background: rgba(54, 199, 90, 0.18);
-      color: #36c75a;
-      border: 1px solid rgba(54, 199, 90, 0.5);
+      background: linear-gradient(135deg, rgba(54, 199, 90, 0.35), rgba(54, 199, 90, 0.12));
+      color: #b5f5c4;
+      border: 1px solid rgba(54, 199, 90, 0.55);
+      box-shadow: 0 8px 16px rgba(54, 199, 90, 0.18);
     }
 
 
