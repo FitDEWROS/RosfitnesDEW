@@ -32,6 +32,7 @@ const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*')
   .split(',').map(s => s.trim()).filter(Boolean);
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || CORS_ORIGIN.includes('*') || CORS_ORIGIN.includes(origin)) return cb(null, true);
@@ -39,6 +40,11 @@ app.use(cors({
   }
 }));
 app.use(express.json());
+
+const APP_AUTH_SCHEME = process.env.APP_AUTH_SCHEME || 'fitdew';
+const APP_AUTH_HOST = process.env.APP_AUTH_HOST || 'auth';
+const TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || '';
+const MOBILE_TOKEN_SECRET = process.env.MOBILE_TOKEN_SECRET || process.env.BOT_TOKEN || '';
 
 // Prisma
 const prisma = new PrismaClient();
@@ -102,6 +108,83 @@ app.get('/api/validate', (req, res) => {
     console.error('[api/validate] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
+});
+
+function base64urlEncode(value) {
+  return Buffer.from(value).toString('base64url');
+}
+
+function signMobileToken(payload) {
+  if (!MOBILE_TOKEN_SECRET) return null;
+  const body = base64urlEncode(JSON.stringify(payload));
+  const sig = crypto.createHmac('sha256', MOBILE_TOKEN_SECRET).update(body).digest('base64url');
+  return `${body}.${sig}`;
+}
+
+function verifyTelegramLoginPayload(params) {
+  const hash = params.hash;
+  if (!hash) return { ok: false, error: 'no_hash' };
+  const botToken = process.env.BOT_TOKEN;
+  if (!botToken) return { ok: false, error: 'no_bot_token' };
+
+  const pairs = Object.keys(params)
+    .filter(k => k !== 'hash')
+    .sort()
+    .map(k => `${k}=${params[k]}`);
+
+  const dataCheckString = pairs.join('\n');
+  const secretKey = crypto.createHash('sha256').update(botToken).digest();
+  const calcHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+  if (calcHash !== hash) return { ok: false, error: 'bad_hash' };
+  return { ok: true };
+}
+
+app.get('/auth/telegram', (req, res) => {
+  const bot = TELEGRAM_BOT_USERNAME;
+  const host = req.get('host');
+  const authUrl = `${req.protocol}://${host}/auth/telegram/callback`;
+  const html = `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fit Dew — Вход</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #0f0f10; color: #f4f1e8; display: grid; place-items: center; min-height: 100vh; }
+    .card { background: #1b1b1f; padding: 24px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); }
+    .muted { color: #c6c0b2; font-size: 14px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Вход через Telegram</h2>
+    ${bot ? `<script async src="https://telegram.org/js/telegram-widget.js?22"
+      data-telegram-login="${bot}"
+      data-size="large"
+      data-radius="20"
+      data-auth-url="${authUrl}"
+      data-request-access="write"></script>` : '<div class="muted">Не указан TELEGRAM_BOT_USERNAME в .env</div>'}
+  </div>
+</body>
+</html>`;
+  res.set('content-type', 'text/html; charset=utf-8');
+  res.send(html);
+});
+
+app.get('/auth/telegram/callback', (req, res) => {
+  const params = req.query || {};
+  const check = verifyTelegramLoginPayload(params);
+  if (!check.ok) return res.status(401).send(check.error);
+  const tgId = Number(params.id);
+  if (!Number.isFinite(tgId)) return res.status(400).send('bad_id');
+  const token = signMobileToken({
+    tg_id: tgId,
+    auth_date: Number(params.auth_date) || 0
+  });
+  if (!token) return res.status(500).send('token_disabled');
+  const redirectUrl = `${APP_AUTH_SCHEME}://${APP_AUTH_HOST}?token=${encodeURIComponent(token)}`;
+  return res.redirect(302, redirectUrl);
 });
 
 // helpers
