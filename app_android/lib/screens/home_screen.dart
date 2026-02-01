@@ -29,13 +29,13 @@ class HomeScreen extends StatelessWidget {
                   Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
                   Row(
                     children: [
-                      _IconBubble(icon: Icons.chat_bubble_outline, onTap: () {}),
+                      _IconBubble(icon: Icons.chat_bubble_outline, onTap: () => Navigator.pushNamed(context, '/chat')),
                       const SizedBox(width: 8),
                       _IconBubble(icon: Icons.nights_stay_outlined, onTap: () {}),
                       const SizedBox(width: 8),
                       Stack(
                         children: [
-                          _IconBubble(icon: Icons.notifications_none, onTap: () {}),
+                          _IconBubble(icon: Icons.notifications_none, onTap: () => Navigator.pushNamed(context, '/notifications')),
                           Positioned(
                             right: 0,
                             top: 0,
@@ -129,6 +129,9 @@ class HomeScreen extends StatelessWidget {
       bottomNavigationBar: _BottomBar(
         onHome: () {},
         onPrograms: () => Navigator.of(context).pushNamed('/programs'),
+        onDiary: () => Navigator.of(context).pushNamed('/diary'),
+        onMetrics: () => Navigator.of(context).pushNamed('/metrics'),
+        onProfile: () => Navigator.of(context).pushNamed('/profile'),
       ),
     );
   }
@@ -338,7 +341,10 @@ class _Toggle extends StatelessWidget {
 class _BottomBar extends StatelessWidget {
   final VoidCallback onHome;
   final VoidCallback onPrograms;
-  const _BottomBar({required this.onHome, required this.onPrograms});
+  final VoidCallback onDiary;
+  final VoidCallback onMetrics;
+  final VoidCallback onProfile;
+  const _BottomBar({required this.onHome, required this.onPrograms, required this.onDiary, required this.onMetrics, required this.onProfile});
 
   @override
   Widget build(BuildContext context) {
@@ -353,9 +359,9 @@ class _BottomBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _BottomItem(icon: Icons.home, active: true, onTap: onHome),
-          _BottomItem(icon: Icons.bar_chart, active: false, onTap: () {}),
-          _BottomItem(icon: Icons.widgets, active: false, onTap: () {}),
-          _BottomItem(icon: Icons.person, active: false, onTap: onPrograms),
+          _BottomItem(icon: Icons.bar_chart, active: false, onTap: onMetrics),
+          _BottomItem(icon: Icons.widgets, active: false, onTap: onDiary),
+          _BottomItem(icon: Icons.person, active: false, onTap: onProfile),
         ],
       ),
     );

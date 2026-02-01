@@ -7,6 +7,13 @@ import 'screens/home_screen.dart';
 import 'screens/programs_screen.dart';
 import 'screens/program_detail_screen.dart';
 import 'screens/workout_screen.dart';
+import 'screens/diary_screen.dart';
+import 'screens/metrics_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/chat_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/exercises_screen.dart';
+import 'screens/exercise_detail_screen.dart';
 import 'theme.dart';
 
 class FitDewApp extends StatefulWidget {
@@ -73,6 +80,13 @@ class _FitDewAppState extends State<FitDewApp> {
         '/programs': (context) => const ProgramsScreen(),
         '/program': (context) => const ProgramDetailScreen(),
         '/workout': (context) => const WorkoutScreen(),
+        '/diary': (context) => const DiaryScreen(),
+        '/metrics': (context) => const MetricsScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/chat': (context) => const ChatScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
+        '/exercises': (context) => const ExercisesScreen(),
+        '/exercise': (context) => const ExerciseDetailScreen(),
       },
     );
   }
