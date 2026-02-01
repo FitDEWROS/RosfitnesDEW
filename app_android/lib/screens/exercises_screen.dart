@@ -7,9 +7,9 @@ class ExercisesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      {'title': '?????? ?? ????????', 'tag': '??????'},
-      {'title': '??????-??????', 'tag': '????'},
-      {'title': '???????', 'tag': '????'},
+      {'title': 'Прыжки на скакалке', 'tag': 'Кардио'},
+      {'title': 'Гоблет-присед', 'tag': 'Сила'},
+      {'title': 'Оверхед', 'tag': 'Сила'},
     ];
 
     return Scaffold(
@@ -28,7 +28,7 @@ class ExercisesScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('??????????', style: Theme.of(context).textTheme.titleLarge),
+                  Text('Упражнения', style: Theme.of(context).textTheme.titleLarge),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),

@@ -29,7 +29,12 @@ class HomeScreen extends StatelessWidget {
                   Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
                   Row(
                     children: [
-                      _IconBubble(icon: Icons.chat_bubble_outline, onTap: () => Navigator.pushNamed(context, '/chat')),
+                      _IconBubble(
+                        icon: Icons.chat_bubble_outline,
+                        onTap: () => Navigator.pushNamed(context, '/chat'),
+                        backgroundColor: AppTheme.accent,
+                        iconColor: Colors.black,
+                      ),
                       const SizedBox(width: 8),
                       _IconBubble(icon: Icons.nights_stay_outlined, onTap: () {}),
                       const SizedBox(width: 8),
@@ -64,7 +69,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                '??????',
+                'ПРИВЕТ',
                 style: Theme.of(context)
                     .textTheme
                     .labelSmall
@@ -74,7 +79,7 @@ class HomeScreen extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '??????',
+                    'МАКСИМ',
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge
@@ -88,7 +93,7 @@ class HomeScreen extends StatelessWidget {
                       color: Colors.white10,
                     ),
                     child: Text(
-                      '????????',
+                      'ВЛАДЕЛЕЦ',
                       style: Theme.of(context)
                           .textTheme
                           .labelSmall
@@ -104,14 +109,14 @@ class HomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '??????????',
+                    'ПОКАЗАТЕЛИ',
                     style: Theme.of(context)
                         .textTheme
                         .labelSmall
                         ?.copyWith(letterSpacing: 2.4, color: AppTheme.muted),
                   ),
                   Text(
-                    '?????????',
+                    'ПОДРОБНЕЕ',
                     style: Theme.of(context)
                         .textTheme
                         .labelSmall
@@ -140,7 +145,14 @@ class HomeScreen extends StatelessWidget {
 class _IconBubble extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _IconBubble({required this.icon, required this.onTap});
+  final Color? backgroundColor;
+  final Color? iconColor;
+  const _IconBubble({
+    required this.icon,
+    required this.onTap,
+    this.backgroundColor,
+    this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -151,10 +163,10 @@ class _IconBubble extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: Colors.white10,
+          color: backgroundColor ?? Colors.white10,
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Icon(icon, color: Colors.white70, size: 20),
+        child: Icon(icon, color: iconColor ?? Colors.white70, size: 20),
       ),
     );
   }
@@ -188,7 +200,7 @@ class _StatsCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '????',
+            'ККАЛ',
             style: Theme.of(context)
                 .textTheme
                 .labelSmall
@@ -197,11 +209,11 @@ class _StatsCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _SmallStat(title: '?', value: '0'),
+              _SmallStat(title: 'Б', value: '0'),
               const SizedBox(width: 12),
-              _SmallStat(title: '?', value: '0'),
+              _SmallStat(title: 'Ж', value: '0'),
               const SizedBox(width: 12),
-              _SmallStat(title: '?', value: '0'),
+              _SmallStat(title: 'У', value: '0'),
             ],
           ),
           const SizedBox(height: 14),
@@ -212,7 +224,7 @@ class _StatsCard extends StatelessWidget {
               color: Colors.black.withOpacity(0.15),
             ),
             child: Text(
-              '??????? ???????',
+              'ДНЕВНИК ПИТАНИЯ',
               style: Theme.of(context)
                   .textTheme
                   .labelSmall
@@ -282,27 +294,27 @@ class _MetricsCard extends StatelessWidget {
               color: AppTheme.accent,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.home, color: Colors.black),
+            child: const Icon(Icons.monitor_weight, color: Colors.black),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('???', style: Theme.of(context).textTheme.bodySmall),
+                Text('Вес', style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    _Toggle(label: '???', active: false),
+                    _Toggle(label: 'ЗАЛ', active: false),
                     const SizedBox(width: 6),
-                    _Toggle(label: '????????', active: true),
+                    _Toggle(label: 'КРОССФИТ', active: true),
                   ],
                 ),
               ],
             ),
           ),
           Text(
-            '91 ??',
+            '91 кг',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -359,8 +371,8 @@ class _BottomBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _BottomItem(icon: Icons.home, active: true, onTap: onHome),
+          _BottomItem(icon: Icons.fitness_center, active: false, onTap: onPrograms),
           _BottomItem(icon: Icons.bar_chart, active: false, onTap: onMetrics),
-          _BottomItem(icon: Icons.widgets, active: false, onTap: onDiary),
           _BottomItem(icon: Icons.person, active: false, onTap: onProfile),
         ],
       ),

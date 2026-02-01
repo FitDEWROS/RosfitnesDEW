@@ -19,7 +19,7 @@ class ProfileScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(18),
             children: [
-              Text('???????', style: Theme.of(context).textTheme.titleLarge),
+              Text('Профиль', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -28,16 +28,16 @@ class ProfileScreen extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('??????', style: Theme.of(context).textTheme.titleMedium),
-                      Text('????????', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+                      Text('Максим', style: Theme.of(context).textTheme.titleMedium),
+                      Text('Владелец', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
                     ],
                   )
                 ],
               ),
               const SizedBox(height: 16),
-              _Tile(title: '?????', value: '???????'),
-              _Tile(title: '?????????', value: '????, ???????????'),
-              _Tile(title: '?????', value: ''),
+              _Tile(title: 'Цель', value: 'Рельеф'),
+              _Tile(title: 'Программа', value: 'Код Атлета'),
+              _Tile(title: 'Подписка', value: 'Активна'),
             ],
           ),
         ),
@@ -90,7 +90,7 @@ class _BottomBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _NavItem(icon: Icons.home, active: current == 0, onTap: () => Navigator.pushNamed(context, '/home')),
-          _NavItem(icon: Icons.restaurant, active: current == 1, onTap: () => Navigator.pushNamed(context, '/diary')),
+          _NavItem(icon: Icons.fitness_center, active: current == 1, onTap: () => Navigator.pushNamed(context, '/programs')),
           _NavItem(icon: Icons.bar_chart, active: current == 2, onTap: () => Navigator.pushNamed(context, '/metrics')),
           _NavItem(icon: Icons.person, active: current == 3, onTap: () {}),
         ],

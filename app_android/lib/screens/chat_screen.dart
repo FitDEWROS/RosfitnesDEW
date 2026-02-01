@@ -23,7 +23,7 @@ class ChatScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('???', style: Theme.of(context).textTheme.titleLarge),
+                    Text('Чат', style: Theme.of(context).textTheme.titleLarge),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
@@ -35,8 +35,8 @@ class ChatScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   children: const [
-                    _Bubble(text: '??????! ??? ???????', isMe: false),
-                    _Bubble(text: '???? ???? ??????????.', isMe: true),
+                    _Bubble(text: 'Привет! Есть вопросы?', isMe: false),
+                    _Bubble(text: 'Да, хочу расписание.', isMe: true),
                   ],
                 ),
               ),
@@ -48,7 +48,7 @@ class ChatScreen extends StatelessWidget {
                     Expanded(
                       child: TextField(
                         decoration: InputDecoration(
-                          hintText: '?????????',
+                          hintText: 'Сообщение',
                           hintStyle: TextStyle(color: AppTheme.muted),
                           filled: true,
                           fillColor: Color(0xFF1B1B1F),

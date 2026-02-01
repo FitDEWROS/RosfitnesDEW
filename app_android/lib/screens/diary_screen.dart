@@ -21,13 +21,13 @@ class DiaryScreen extends StatelessWidget {
             children: [
               Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
-              _Header(title: '??????? ???????', subtitle: '???????? ?????? ???? ? ????? ?? ????.'),
+              _Header(title: 'Дневник питания', subtitle: 'Записывай еду, БЖУ и воду на день.'),
               const SizedBox(height: 16),
               _StatRow(),
               const SizedBox(height: 16),
-              _MealCard(title: '???????', time: '08:30', kcal: '0'),
-              _MealCard(title: '????', time: '13:00', kcal: '0'),
-              _MealCard(title: '????', time: '19:00', kcal: '0'),
+              _MealCard(title: 'Завтрак', time: '08:30', kcal: '0'),
+              _MealCard(title: 'Обед', time: '13:00', kcal: '0'),
+              _MealCard(title: 'Ужин', time: '19:00', kcal: '0'),
             ],
           ),
         ),
@@ -75,10 +75,10 @@ class _StatRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _SmallStat(label: '????', value: '0'),
-          _SmallStat(label: '?', value: '0'),
-          _SmallStat(label: '?', value: '0'),
-          _SmallStat(label: '?', value: '0'),
+          _SmallStat(label: 'Ккал', value: '0'),
+          _SmallStat(label: 'Б', value: '0'),
+          _SmallStat(label: 'Ж', value: '0'),
+          _SmallStat(label: 'У', value: '0'),
         ],
       ),
     );
@@ -131,7 +131,7 @@ class _MealCard extends StatelessWidget {
               ],
             ),
           ),
-          Text('$kcal ????', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+          Text('$kcal ккал', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
         ],
       ),
     );
@@ -155,7 +155,7 @@ class _BottomBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _NavItem(icon: Icons.home, active: current == 0, onTap: () => Navigator.pushNamed(context, '/home')),
-          _NavItem(icon: Icons.restaurant, active: current == 1, onTap: () {}),
+          _NavItem(icon: Icons.fitness_center, active: current == 1, onTap: () => Navigator.pushNamed(context, '/programs')),
           _NavItem(icon: Icons.bar_chart, active: current == 2, onTap: () => Navigator.pushNamed(context, '/metrics')),
           _NavItem(icon: Icons.person, active: current == 3, onTap: () => Navigator.pushNamed(context, '/profile')),
         ],

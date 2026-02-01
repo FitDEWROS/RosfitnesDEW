@@ -22,7 +22,7 @@ class NotificationsScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('???????????', style: Theme.of(context).textTheme.titleLarge),
+                  Text('Уведомления', style: Theme.of(context).textTheme.titleLarge),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
@@ -30,8 +30,8 @@ class NotificationsScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              _Notice(title: '????? ??????????', text: '???? ????????. ???????? ???????????.'),
-              _Notice(title: '???????????', text: '??????? ?????????? ?? ?????????.'),
+              _Notice(title: 'Новая тренировка', text: 'Ваш план обновлен. Проверьте расписание.'),
+              _Notice(title: 'Напоминание', text: 'Сегодня запланирована тренировка.'),
             ],
           ),
         ),

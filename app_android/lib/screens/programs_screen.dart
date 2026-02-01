@@ -54,7 +54,8 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                       title: 'Не удалось загрузить программы',
                       subtitle: 'Проверьте соединение и повторите попытку.',
                     ),
-                  if (snapshot.connectionState == ConnectionState.done && programs.isEmpty)
+                  if (snapshot.connectionState == ConnectionState.done &&
+                      programs.isEmpty)
                     _EmptyState(
                       title: 'Пока нет программ',
                       subtitle: 'Скоро появятся новые планы.',
@@ -144,7 +145,9 @@ class _ProgramCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tags = [
-      program.type.isNotEmpty ? (program.type == 'gym' ? 'ЗАЛ' : 'КРОССФИТ') : 'ПРОГРАММА',
+      program.type.isNotEmpty
+          ? (program.type == 'gym' ? 'ЗАЛ' : 'КРОССФИТ')
+          : 'ПРОГРАММА',
       if (program.level.isNotEmpty) program.level,
       if (program.gender.isNotEmpty) program.gender,
     ];
@@ -201,8 +204,7 @@ class _ProgramCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final tag in tags)
-                _Chip(label: tag.toUpperCase()),
+              for (final tag in tags) _Chip(label: tag.toUpperCase()),
             ],
           ),
           const SizedBox(height: 12),
@@ -226,8 +228,7 @@ class _ProgramCard extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final stat in stats)
-                _Chip(label: stat.toUpperCase()),
+              for (final stat in stats) _Chip(label: stat.toUpperCase()),
             ],
           ),
         ],
