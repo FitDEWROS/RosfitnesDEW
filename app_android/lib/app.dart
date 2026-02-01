@@ -3,6 +3,7 @@ import 'services/auth_service.dart';
 import 'package:flutter/services.dart';
 import 'config.dart';
 import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 import 'screens/programs_screen.dart';
 import 'screens/program_detail_screen.dart';
 import 'screens/workout_screen.dart';
@@ -38,7 +39,7 @@ class _FitDewAppState extends State<FitDewApp> {
   Future<void> _bootstrap() async {
     final token = await _auth.getToken();
     if (token != null && token.isNotEmpty) {
-      setState(() => _initialRoute = '/programs');
+      setState(() => _initialRoute = '/home');
     }
     try {
       final link = await _channel.invokeMethod<String>('getInitialLink');
@@ -54,7 +55,7 @@ class _FitDewAppState extends State<FitDewApp> {
     if (uri.scheme == AppConfig.authScheme) {
       final token = await _auth.handleAuthUri(uri);
       if (token != null) {
-        _navigatorKey.currentState?.pushReplacementNamed('/programs');
+        _navigatorKey.currentState?.pushReplacementNamed('/home');
       }
     }
   }
@@ -68,6 +69,7 @@ class _FitDewAppState extends State<FitDewApp> {
       initialRoute: _initialRoute,
       routes: {
         '/login': (context) => const LoginScreen(),
+        '/home': (context) => const HomeScreen(),
         '/programs': (context) => const ProgramsScreen(),
         '/program': (context) => const ProgramDetailScreen(),
         '/workout': (context) => const WorkoutScreen(),
