@@ -10,3 +10,15 @@ web-backend/.env
 .DS_Store
 .idea/
 .vscode/
+
+# Flutter / Android
+app_android/.dart_tool/
+app_android/build/
+app_android/.metadata
+app_android/.idea/
+app_android/*.iml
+app_android/android/.gradle/
+app_android/android/local.properties
+app_android/android/app/debug/
+app_android/android/app/profile/
+app_android/android/app/release/
