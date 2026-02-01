@@ -184,7 +184,32 @@ app.get('/auth/telegram/callback', (req, res) => {
   });
   if (!token) return res.status(500).send('token_disabled');
   const redirectUrl = `${APP_AUTH_SCHEME}://${APP_AUTH_HOST}?token=${encodeURIComponent(token)}`;
-  return res.redirect(302, redirectUrl);
+  const html = `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fit Dew — Вход</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #0f0f10; color: #f4f1e8; display: grid; place-items: center; min-height: 100vh; }
+    .card { background: #1b1b1f; padding: 24px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); text-align: center; }
+    a { display: inline-block; margin-top: 12px; padding: 10px 18px; border-radius: 999px; background: #f6e5a6; color: #1b1b1b; text-decoration: none; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  </style>
+  <script>
+    setTimeout(function() {
+      window.location.href = ${JSON.stringify(redirectUrl)};
+    }, 150);
+  </script>
+</head>
+<body>
+  <div class="card">
+    <div>Вход выполнен</div>
+    <a href="${redirectUrl}">Открыть приложение</a>
+  </div>
+</body>
+</html>`;
+  res.set('content-type', 'text/html; charset=utf-8');
+  return res.send(html);
 });
 
 // helpers
