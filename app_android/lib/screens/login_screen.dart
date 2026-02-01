@@ -11,7 +11,7 @@ class LoginScreen extends StatelessWidget {
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('?? ??????? ??????? Telegram ?????.')),
+          const SnackBar(content: Text('Не удалось открыть Telegram логин.')),
         );
       }
     }
@@ -45,7 +45,7 @@ class LoginScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  '????',
+                  'Вход',
                   style: Theme.of(context)
                       .textTheme
                       .headlineSmall
@@ -53,7 +53,7 @@ class LoginScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '??????????? ????? Telegram',
+                  'Авторизация через Telegram',
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
@@ -79,7 +79,7 @@ class LoginScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '????? ????? Telegram',
+                        'Войти через Telegram',
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
@@ -87,7 +87,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '?? ???????? ???? ?????? ?? Telegram',
+                        'Мы подтянем ваши данные из Telegram',
                         style: Theme.of(context)
                             .textTheme
                             .bodySmall
@@ -116,7 +116,7 @@ class LoginScreen extends StatelessWidget {
                                 ),
                           ),
                           onPressed: () => _openLogin(context),
-                          child: const Text('?????'),
+                          child: const Text('Войти'),
                         ),
                       )
                     ],

@@ -51,13 +51,13 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                     const Center(child: CircularProgressIndicator()),
                   if (snapshot.hasError)
                     _EmptyState(
-                      title: '?? ??????? ????????? ?????????',
-                      subtitle: '????????? ?????????? ? ????????? ???????.',
+                      title: 'Не удалось загрузить программы',
+                      subtitle: 'Проверьте соединение и повторите попытку.',
                     ),
                   if (snapshot.connectionState == ConnectionState.done && programs.isEmpty)
                     _EmptyState(
-                      title: '???? ??? ????????',
-                      subtitle: '????? ???????? ????? ?????.',
+                      title: 'Пока нет программ',
+                      subtitle: 'Скоро появятся новые планы.',
                     ),
                   for (final program in programs) _ProgramCard(program: program),
                 ],
@@ -99,7 +99,7 @@ class _HeaderCard extends StatelessWidget {
               color: AppTheme.accent,
             ),
             child: Text(
-              '?????',
+              'Назад',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Colors.black,
                     letterSpacing: 1.6,
@@ -109,7 +109,7 @@ class _HeaderCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            '?????????',
+            'Программы',
             style: Theme.of(context)
                 .textTheme
                 .labelSmall
@@ -117,7 +117,7 @@ class _HeaderCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '????? ??????????',
+            'Планы тренировок',
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
@@ -125,7 +125,7 @@ class _HeaderCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '?????? ?????? ? ??????? ???????.',
+            'Выбери формат и стартуй сегодня.',
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
@@ -144,13 +144,13 @@ class _ProgramCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tags = [
-      program.type.isNotEmpty ? (program.type == 'gym' ? '???' : '????????') : '?????????',
+      program.type.isNotEmpty ? (program.type == 'gym' ? 'ЗАЛ' : 'КРОССФИТ') : 'ПРОГРАММА',
       if (program.level.isNotEmpty) program.level,
       if (program.gender.isNotEmpty) program.gender,
     ];
     final stats = [
       if (program.frequency.isNotEmpty) program.frequency,
-      if (program.weeksCount > 0) '${program.weeksCount} ??????',
+      if (program.weeksCount > 0) '${program.weeksCount} неделя',
       if (program.level.isNotEmpty) program.level,
     ];
 
@@ -207,7 +207,7 @@ class _ProgramCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            program.title.isNotEmpty ? program.title : '?????????',
+            program.title.isNotEmpty ? program.title : 'Программа',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium

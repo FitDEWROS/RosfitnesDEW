@@ -8,13 +8,13 @@ class WorkoutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final exercises = [
       {
-        'title': '?????? ?? ????????',
-        'sub': '60 ??????',
+        'title': 'Прыжки на скакалке',
+        'sub': '60 секунд',
         'done': true,
       },
       {
-        'title': '??????-??????',
-        'sub': '12 ????????',
+        'title': 'Гоблет-присед',
+        'sub': '12 повторов',
         'done': false,
       },
     ];
@@ -35,7 +35,7 @@ class WorkoutScreen extends StatelessWidget {
                     color: AppTheme.accent,
                   ),
                   child: Text(
-                    '?????',
+                    'Назад',
                     style: Theme.of(context)
                         .textTheme
                         .labelSmall
@@ -48,7 +48,7 @@ class WorkoutScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '???? 1',
+                  'День 1',
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -58,7 +58,7 @@ class WorkoutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              '?????? 1 | ??? ?????? | ??????? ? ?',
+              'Неделя 1 | Код атлета | Базовый ★ ★',
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
@@ -66,7 +66,7 @@ class WorkoutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              '????????????? ???????',
+              'Тренировочный процесс',
               style: Theme.of(context)
                   .textTheme
                   .titleMedium

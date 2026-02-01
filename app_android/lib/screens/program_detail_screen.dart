@@ -35,7 +35,7 @@ class ProgramDetailScreen extends StatelessWidget {
                       color: AppTheme.accent,
                     ),
                     child: Text(
-                      '?????',
+                      'Назад',
                       style: Theme.of(context)
                           .textTheme
                           .labelSmall
@@ -48,7 +48,7 @@ class ProgramDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '??? ??????',
+                    'Код атлета',
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge
@@ -56,7 +56,7 @@ class ProgramDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '?????????????? ???? ????? ????',
+                    'Функциональная мощь всего тела',
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium
@@ -77,7 +77,7 @@ class ProgramDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '? ?????????',
+                    'О программе',
                     style: Theme.of(context)
                         .textTheme
                         .labelLarge
@@ -85,8 +85,8 @@ class ProgramDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '3 ???? ? ?????? ?? ????????? ???? ?? ????????. '
-                    '??? ????, ??? ??????? ? ?????? ??, ??? ??????? ????????.',
+                    '3 раза в неделю ты включаешь тело на максимум. '
+                    'Без воды, без лишнего — только то, что реально работает.',
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium
