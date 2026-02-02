@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../app.dart';
 
@@ -13,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   TrainingMode _mode = TrainingMode.crossfit;
+  bool _chatAllowed = false;
   final ScrollController _scrollController = ScrollController();
   final _metricsKey = GlobalKey();
   final _workoutsKey = GlobalKey();
@@ -22,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_handleScroll);
+    _loadPrefs();
   }
 
   @override
@@ -29,6 +32,30 @@ class _HomeScreenState extends State<HomeScreen> {
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final modeRaw = prefs.getString('training_mode');
+    final hasCurator = prefs.getBool('has_curator') ?? false;
+
+    if (!mounted) return;
+    setState(() {
+      _chatAllowed = hasCurator;
+      if (modeRaw == 'gym') {
+        _mode = TrainingMode.gym;
+      } else {
+        _mode = TrainingMode.crossfit;
+      }
+    });
+  }
+
+  Future<void> _saveMode(TrainingMode value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'training_mode',
+      value == TrainingMode.gym ? 'gym' : 'crossfit',
+    );
   }
 
   void _handleScroll() {
@@ -93,21 +120,27 @@ class _HomeScreenState extends State<HomeScreen> {
         child: SafeArea(
           child: ListView(
             controller: _scrollController,
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 140),
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
+                  Image.asset(
+                    'assets/emblem.png',
+                    width: 34,
+                    height: 34,
+                  ),
                   Row(
                     children: [
-                      _IconBubble(
-                        icon: Icons.chat_bubble_outline,
-                        onTap: () => _openChat(context),
-                        backgroundColor: AppTheme.accentColor(context),
-                        iconColor: Colors.black,
-                      ),
-                      const SizedBox(width: 8),
+                      if (_chatAllowed) ...[
+                        _IconBubble(
+                          icon: Icons.chat_bubble_outline,
+                          onTap: () => _openChat(context),
+                          backgroundColor: AppTheme.accentColor(context),
+                          iconColor: Colors.black,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       _IconBubble(
                         icon: AppScope.of(context).mode == ThemeMode.dark
                             ? Icons.nights_stay_outlined
@@ -151,9 +184,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.circular(999),
                         child: CircleAvatar(
                           radius: 18,
-                          backgroundColor: isDark
-                              ? const Color(0xFF2A2B2F)
-                              : Colors.black12,
+                          backgroundColor:
+                              isDark ? const Color(0xFF2A2B2F) : Colors.black12,
                           child: Text(
                             'М',
                             style: TextStyle(
@@ -191,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(999),
-                      color: Colors.white10,
+                      color: isDark ? Colors.white10 : Colors.black12,
                     ),
                     child: Text(
                       'ВЛАДЕЛЕЦ',
@@ -204,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              _StatsCard(),
+              const _StatsCard(),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -229,29 +261,29 @@ class _HomeScreenState extends State<HomeScreen> {
               KeyedSubtree(
                 key: _metricsKey,
                 child: Column(
-                  children: [
+                  children: const [
                     _MetricPill(
                       title: 'Вес',
                       value: '91',
                       unit: 'кг',
                       status: 'ПРОФИЛЬ',
-                      color: const Color(0xFFCBE7BA),
+                      color: Color(0xFFCBE7BA),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _MetricPill(
                       title: 'Вода',
                       value: '0',
                       unit: 'л',
                       status: 'НЕТ ДАННЫХ',
-                      color: const Color(0xFFC7E7F7),
+                      color: Color(0xFFC7E7F7),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     _MetricPill(
                       title: 'Приемы пищи',
                       value: '0',
                       unit: 'раз',
                       status: 'НЕТ ДАННЫХ',
-                      color: const Color(0xFFF2D88D),
+                      color: Color(0xFFF2D88D),
                     ),
                   ],
                 ),
@@ -293,32 +325,29 @@ class _HomeScreenState extends State<HomeScreen> {
               _UsefulCard(
                 onTap: () => Navigator.pushNamed(context, '/programs'),
               ),
-              const SizedBox(height: 16),
-              Center(
-                child: _ModeToggle(
-                  value: _mode,
-                  onChanged: (value) {
-                    setState(() => _mode = value);
-                  },
-                ),
-              ),
-              const SizedBox(height: 90),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _BottomBar(
-        activeIndex: _activeNav,
-        onHome: () {
-          _scrollController.animateTo(
-            0,
-            duration: const Duration(milliseconds: 420),
-            curve: Curves.easeOutCubic,
-          );
+      bottomNavigationBar: _BottomShell(
+        mode: _mode,
+        onModeChanged: (value) {
+          setState(() => _mode = value);
+          _saveMode(value);
         },
-        onWorkouts: () => _scrollTo(_workoutsKey),
-        onMetrics: () => _scrollTo(_metricsKey),
-        onProfile: () => Navigator.of(context).pushNamed('/profile'),
+        child: _BottomBar(
+          activeIndex: _activeNav,
+          onHome: () {
+            _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 420),
+              curve: Curves.easeOutCubic,
+            );
+          },
+          onWorkouts: () => _scrollTo(_workoutsKey),
+          onMetrics: () => _scrollTo(_metricsKey),
+          onProfile: () => Navigator.of(context).pushNamed('/profile'),
+        ),
       ),
     );
   }
@@ -338,6 +367,7 @@ class _IconBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
@@ -345,23 +375,36 @@ class _IconBubble extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: backgroundColor ?? Colors.white10,
+          color: backgroundColor ?? (isDark ? Colors.white10 : Colors.black12),
           borderRadius: BorderRadius.circular(999),
         ),
-        child: Icon(icon, color: iconColor ?? Colors.white70, size: 20),
+        child: Icon(
+          icon,
+          color: iconColor ?? (isDark ? Colors.white70 : Colors.black87),
+          size: 20,
+        ),
       ),
     );
   }
 }
 
 class _StatsCard extends StatelessWidget {
+  const _StatsCard();
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: AppTheme.accentColor(context),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.accentColor(context),
+            AppTheme.accentStrongColor(context),
+          ],
+        ),
         boxShadow: const [
           BoxShadow(
             color: Colors.black45,
@@ -370,49 +413,66 @@ class _StatsCard extends StatelessWidget {
           )
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Text(
-            '0',
-            style: Theme.of(context)
-                .textTheme
-                .headlineLarge
-                ?.copyWith(color: Colors.black, fontWeight: FontWeight.w700),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 8,
+            child: SizedBox(
+              height: 26,
+              child: CustomPaint(
+                painter: _WavePainter(
+                  color: Colors.black.withOpacity(0.15),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'ККАЛ',
-            style: Theme.of(context)
-                .textTheme
-                .labelSmall
-                ?.copyWith(color: Colors.black54, letterSpacing: 2),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: const [
-              _SmallStat(title: 'Б', value: '0'),
-              SizedBox(width: 12),
-              _SmallStat(title: 'Ж', value: '0'),
-              SizedBox(width: 12),
-              _SmallStat(title: 'У', value: '0'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '0',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineLarge
+                    ?.copyWith(color: Colors.black, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'ККАЛ',
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: Colors.black54, letterSpacing: 2),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: const [
+                  _SmallStat(title: 'Б', value: '0'),
+                  SizedBox(width: 12),
+                  _SmallStat(title: 'Ж', value: '0'),
+                  SizedBox(width: 12),
+                  _SmallStat(title: 'У', value: '0'),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: Colors.black.withOpacity(0.15),
+                ),
+                child: Text(
+                  'ДНЕВНИК ПИТАНИЯ',
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(letterSpacing: 1.6, color: Colors.black87),
+                ),
+              )
             ],
           ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              color: Colors.black.withOpacity(0.15),
-            ),
-            child: Text(
-              'ДНЕВНИК ПИТАНИЯ',
-              style: Theme.of(context)
-                  .textTheme
-                  .labelSmall
-                  ?.copyWith(letterSpacing: 1.6, color: Colors.black87),
-            ),
-          )
         ],
       ),
     );
@@ -477,7 +537,14 @@ class _MetricPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        color: color,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color,
+            Color.lerp(color, Colors.white, 0.2)!,
+          ],
+        ),
       ),
       child: Row(
         children: [
@@ -485,11 +552,13 @@ class _MetricPill extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: Colors.black)),
+                Text(
+                  title,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(color: Colors.black),
+                ),
                 const SizedBox(height: 10),
                 Text(
                   status,
@@ -545,12 +614,13 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardColor =
-        accent ? AppTheme.accentColor(context) : AppTheme.cardColor(context);
-    final titleColor = accent ? Colors.black : Colors.white;
+    final isDark = AppTheme.isDark(context);
+    final cardColor = accent ? null : AppTheme.cardColor(context);
+    final titleColor =
+        accent ? Colors.black : (isDark ? Colors.white : Colors.black);
     final subColor = accent
         ? Colors.black.withOpacity(0.65)
-        : AppTheme.mutedColor(context);
+        : (isDark ? AppTheme.mutedColor(context) : Colors.black54);
 
     return InkWell(
       onTap: onTap,
@@ -561,7 +631,17 @@ class _ActionCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           color: cardColor,
-          border: Border.all(color: Colors.white10),
+          gradient: accent
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.accentColor(context),
+                    AppTheme.accentStrongColor(context),
+                  ],
+                )
+              : null,
+          border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
           boxShadow: const [
             BoxShadow(
               color: Colors.black26,
@@ -582,7 +662,7 @@ class _ActionCard extends StatelessWidget {
                   painter: _WavePainter(
                     color: accent
                         ? Colors.black.withOpacity(0.15)
-                        : Colors.white12,
+                        : (isDark ? Colors.white12 : Colors.black12),
                   ),
                 ),
               ),
@@ -627,6 +707,8 @@ class _UsefulCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
@@ -635,7 +717,7 @@ class _UsefulCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           color: AppTheme.cardColor(context),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
         ),
         child: Row(
           children: [
@@ -667,7 +749,14 @@ class _UsefulCard extends StatelessWidget {
             Container(
               width: 120,
               decoration: BoxDecoration(
-                color: AppTheme.accentColor(context),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.accentColor(context),
+                    AppTheme.accentStrongColor(context),
+                  ],
+                ),
                 borderRadius: const BorderRadius.horizontal(
                   right: Radius.circular(24),
                 ),
@@ -855,6 +944,49 @@ class _ModeToggle extends StatelessWidget {
   }
 }
 
+class _BottomShell extends StatelessWidget {
+  final TrainingMode mode;
+  final ValueChanged<TrainingMode> onModeChanged;
+  final Widget child;
+  const _BottomShell({
+    required this.mode,
+    required this.onModeChanged,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
+        decoration: BoxDecoration(
+          color: AppTheme.bgSoftColor(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          border: Border.all(
+            color: AppTheme.isDark(context) ? Colors.white10 : Colors.black12,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 18,
+              offset: Offset(0, -6),
+            )
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ModeToggle(value: mode, onChanged: onModeChanged),
+            const SizedBox(height: 10),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BottomBar extends StatelessWidget {
   final int activeIndex;
   final VoidCallback onHome;
@@ -871,30 +1003,22 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.bgSoftColor(context),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _BottomItem(icon: Icons.home, active: activeIndex == 0, onTap: onHome),
-          _BottomItem(
-            icon: Icons.fitness_center,
-            active: activeIndex == 2,
-            onTap: onWorkouts,
-          ),
-          _BottomItem(
-            icon: Icons.bar_chart,
-            active: activeIndex == 1,
-            onTap: onMetrics,
-          ),
-          _BottomItem(icon: Icons.person, active: false, onTap: onProfile),
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _BottomItem(icon: Icons.home, active: activeIndex == 0, onTap: onHome),
+        _BottomItem(
+          icon: Icons.fitness_center,
+          active: activeIndex == 2,
+          onTap: onWorkouts,
+        ),
+        _BottomItem(
+          icon: Icons.bar_chart,
+          active: activeIndex == 1,
+          onTap: onMetrics,
+        ),
+        _BottomItem(icon: Icons.person, active: false, onTap: onProfile),
+      ],
     );
   }
 }
@@ -911,6 +1035,7 @@ class _BottomItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
@@ -921,7 +1046,10 @@ class _BottomItem extends StatelessWidget {
           color: active ? AppTheme.accentColor(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Icon(icon, color: active ? Colors.black : Colors.white70),
+        child: Icon(
+          icon,
+          color: active ? Colors.black : (isDark ? Colors.white70 : Colors.black54),
+        ),
       ),
     );
   }
@@ -1022,13 +1150,17 @@ class _ChatSheetState extends State<_ChatSheet> {
                         constraints: const BoxConstraints(maxWidth: 280),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          color: mine ? null : (isDark ? Colors.white10 : Colors.black12),
+                          color: mine
+                              ? null
+                              : (isDark ? Colors.white10 : Colors.black12),
                           gradient: bubbleColor,
                         ),
                         child: Text(
                           _messages[index],
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: mine ? Colors.black : AppTheme.textColor(context),
+                                color: mine
+                                    ? Colors.black
+                                    : AppTheme.textColor(context),
                               ),
                         ),
                       ),
