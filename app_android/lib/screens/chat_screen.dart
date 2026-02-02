@@ -8,11 +8,11 @@ class ChatScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppTheme.bg, Color(0xFF151518), Color(0xFF0C0C0D)],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -42,17 +42,18 @@ class ChatScreen extends StatelessWidget {
               ),
               Container(
                 padding: const EdgeInsets.all(12),
-                color: const Color(0xFF15161A),
+                color: AppTheme.bgSoftColor(context),
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
                         decoration: InputDecoration(
                           hintText: 'Сообщение',
-                          hintStyle: TextStyle(color: AppTheme.muted),
+                          hintStyle:
+                              TextStyle(color: AppTheme.mutedColor(context)),
                           filled: true,
-                          fillColor: Color(0xFF1B1B1F),
-                          border: OutlineInputBorder(
+                          fillColor: AppTheme.cardColor(context),
+                          border: const OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(16)),
                             borderSide: BorderSide.none,
                           ),
@@ -61,8 +62,8 @@ class ChatScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     CircleAvatar(
-                      backgroundColor: AppTheme.accent,
-                      child: Icon(Icons.send, color: Colors.black),
+                      backgroundColor: AppTheme.accentColor(context),
+                      child: const Icon(Icons.send, color: Colors.black),
                     )
                   ],
                 ),
@@ -88,12 +89,16 @@ class _Bubble extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isMe ? AppTheme.accent : const Color(0xFF1B1B1F),
+          color: isMe
+              ? AppTheme.accentColor(context)
+              : AppTheme.cardColor(context),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: isMe ? Colors.black : Colors.white),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: isMe ? Colors.black : Colors.white,
+              ),
         ),
       ),
     );

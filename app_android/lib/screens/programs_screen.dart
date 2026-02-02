@@ -24,15 +24,11 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppTheme.bg,
-              Color(0xFF151518),
-              Color(0xFF0C0C0D),
-            ],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -74,13 +70,19 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
 class _HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final headerGradient = AppTheme.isDark(context)
+        ? const LinearGradient(
+            colors: [Color(0xFF1F1F22), Color(0xFF121214)],
+          )
+        : const LinearGradient(
+            colors: [Color(0xFFFFFFFF), Color(0xFFF3EBDD)],
+          );
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1F1F22), Color(0xFF121214)],
-        ),
+        gradient: headerGradient,
         border: Border.all(color: Colors.white12),
         boxShadow: const [
           BoxShadow(
@@ -98,7 +100,10 @@ class _HeaderCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .labelSmall
-                ?.copyWith(letterSpacing: 2.6, color: AppTheme.muted),
+                ?.copyWith(
+                  letterSpacing: 2.6,
+                  color: AppTheme.mutedColor(context),
+                ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -114,7 +119,7 @@ class _HeaderCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(color: AppTheme.muted),
+                ?.copyWith(color: AppTheme.mutedColor(context)),
           ),
         ],
       ),
@@ -146,7 +151,7 @@ class _ProgramCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        color: const Color(0xFF1B1B1F),
+        color: AppTheme.cardColor(context),
         border: Border.all(color: Colors.white10),
         boxShadow: const [
           BoxShadow(
@@ -205,7 +210,7 @@ class _ProgramCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(color: AppTheme.muted),
+                ?.copyWith(color: AppTheme.mutedColor(context)),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -272,7 +277,7 @@ class _EmptyState extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
-                ?.copyWith(color: AppTheme.muted),
+                ?.copyWith(color: AppTheme.mutedColor(context)),
           ),
         ],
       ),

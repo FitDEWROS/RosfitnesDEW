@@ -8,11 +8,11 @@ class DiaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppTheme.bg, Color(0xFF151518), Color(0xFF0C0C0D)],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -21,7 +21,10 @@ class DiaryScreen extends StatelessWidget {
             children: [
               Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
-              _Header(title: 'Дневник питания', subtitle: 'Записывай еду, БЖУ и воду на день.'),
+              _Header(
+                title: 'Дневник питания',
+                subtitle: 'Записывай еду, БЖУ и воду на день.',
+              ),
               const SizedBox(height: 16),
               _StatRow(),
               const SizedBox(height: 16),
@@ -48,15 +51,25 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(colors: [Color(0xFF1F1F22), Color(0xFF121214)]),
+        gradient: AppTheme.isDark(context)
+            ? const LinearGradient(colors: [Color(0xFF1F1F22), Color(0xFF121214)])
+            : const LinearGradient(colors: [Color(0xFFFFFFFF), Color(0xFFF3EBDD)]),
         border: Border.all(color: Colors.white12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(letterSpacing: 1.2)),
+          Text(title,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(letterSpacing: 1.2)),
           const SizedBox(height: 6),
-          Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.muted)),
+          Text(subtitle,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: AppTheme.mutedColor(context))),
         ],
       ),
     );
@@ -70,11 +83,11 @@ class _StatRow extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        color: AppTheme.accent,
+        color: AppTheme.accentColor(context),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
+        children: const [
           _SmallStat(label: 'Ккал', value: '0'),
           _SmallStat(label: 'Б', value: '0'),
           _SmallStat(label: 'Ж', value: '0'),
@@ -94,8 +107,16 @@ class _SmallStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.black)),
-        Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.black54, letterSpacing: 1.2)),
+        Text(value,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(color: Colors.black)),
+        Text(label,
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: Colors.black54, letterSpacing: 1.2)),
       ],
     );
   }
@@ -114,7 +135,7 @@ class _MealCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: const Color(0xFF1B1B1F),
+        color: AppTheme.cardColor(context),
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
@@ -127,11 +148,19 @@ class _MealCard extends StatelessWidget {
               children: [
                 Text(title, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text(time, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+                Text(time,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppTheme.mutedColor(context))),
               ],
             ),
           ),
-          Text('$kcal ккал', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+          Text('$kcal ккал',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppTheme.mutedColor(context))),
         ],
       ),
     );
@@ -147,17 +176,33 @@ class _BottomBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF15161A),
+        color: AppTheme.bgSoftColor(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _NavItem(icon: Icons.home, active: current == 0, onTap: () => Navigator.pushNamed(context, '/home')),
-          _NavItem(icon: Icons.fitness_center, active: current == 1, onTap: () => Navigator.pushNamed(context, '/programs')),
-          _NavItem(icon: Icons.bar_chart, active: current == 2, onTap: () => Navigator.pushNamed(context, '/metrics')),
-          _NavItem(icon: Icons.person, active: current == 3, onTap: () => Navigator.pushNamed(context, '/profile')),
+          _NavItem(
+            icon: Icons.home,
+            active: current == 0,
+            onTap: () => Navigator.pushNamed(context, '/home'),
+          ),
+          _NavItem(
+            icon: Icons.fitness_center,
+            active: current == 1,
+            onTap: () => Navigator.pushNamed(context, '/programs'),
+          ),
+          _NavItem(
+            icon: Icons.bar_chart,
+            active: current == 2,
+            onTap: () => Navigator.pushNamed(context, '/metrics'),
+          ),
+          _NavItem(
+            icon: Icons.person,
+            active: current == 3,
+            onTap: () => Navigator.pushNamed(context, '/profile'),
+          ),
         ],
       ),
     );
@@ -179,7 +224,7 @@ class _NavItem extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: active ? AppTheme.accent : Colors.transparent,
+          color: active ? AppTheme.accentColor(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon, color: active ? Colors.black : Colors.white70),

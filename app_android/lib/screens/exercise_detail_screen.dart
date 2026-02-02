@@ -8,11 +8,11 @@ class ExerciseDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppTheme.bg, Color(0xFF151518), Color(0xFF0C0C0D)],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -41,11 +41,11 @@ class ExerciseDetailScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Text('Прыжки на скакалке', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 6),
-              Text('60 секунд', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+              Text('60 секунд', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.mutedColor(context))),
               const SizedBox(height: 12),
-              Text('Как выполнять:', style: Theme.of(context).textTheme.labelSmall?.copyWith(letterSpacing: 2.0, color: AppTheme.muted)),
+              Text('Как выполнять:', style: Theme.of(context).textTheme.labelSmall?.copyWith(letterSpacing: 2.0, color: AppTheme.mutedColor(context))),
               const SizedBox(height: 8),
-              Text('Встань прямо, удерживая скакалку за ручки по бокам.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.muted)),
+              Text('Встань прямо, удерживая скакалку за ручки по бокам.', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.mutedColor(context))),
             ],
           ),
         ),

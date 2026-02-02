@@ -17,11 +17,11 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppTheme.bg, Color(0xFF151518), Color(0xFF0C0C0D)],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -32,13 +32,15 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 28,
-                    backgroundColor: Color(0xFF2A2B2F),
+                    backgroundColor: AppTheme.isDark(context)
+                        ? const Color(0xFF2A2B2F)
+                        : Colors.black12,
                     child: Text(
                       'М',
                       style: TextStyle(
-                        color: AppTheme.accent,
+                        color: AppTheme.accentColor(context),
                         fontWeight: FontWeight.w700,
                         fontSize: 18,
                       ),
@@ -49,7 +51,13 @@ class ProfileScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Максим', style: Theme.of(context).textTheme.titleMedium),
-                      Text('Владелец', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+                      Text(
+                        'Владелец',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppTheme.mutedColor(context)),
+                      ),
                     ],
                   )
                 ],
@@ -95,14 +103,20 @@ class _Tile extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: const Color(0xFF1B1B1F),
+        color: AppTheme.cardColor(context),
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: Theme.of(context).textTheme.titleMedium),
-          Text(value, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+          Text(
+            value,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppTheme.mutedColor(context)),
+          ),
         ],
       ),
     );
@@ -118,7 +132,7 @@ class _BottomBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF15161A),
+        color: AppTheme.bgSoftColor(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: Colors.white10),
       ),
@@ -150,7 +164,7 @@ class _NavItem extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: active ? AppTheme.accent : Colors.transparent,
+          color: active ? AppTheme.accentColor(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon, color: active ? Colors.black : Colors.white70),

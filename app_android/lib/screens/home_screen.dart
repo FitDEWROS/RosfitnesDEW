@@ -9,15 +9,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppTheme.bg,
-              Color(0xFF151518),
-              Color(0xFF0C0C0D),
-            ],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -33,7 +29,7 @@ class HomeScreen extends StatelessWidget {
                       _IconBubble(
                         icon: Icons.chat_bubble_outline,
                         onTap: () => Navigator.pushNamed(context, '/chat'),
-                        backgroundColor: AppTheme.accent,
+                        backgroundColor: AppTheme.accentColor(context),
                         iconColor: Colors.black,
                       ),
                       const SizedBox(width: 8),
@@ -46,7 +42,11 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Stack(
                         children: [
-                          _IconBubble(icon: Icons.notifications_none, onTap: () => Navigator.pushNamed(context, '/notifications')),
+                          _IconBubble(
+                            icon: Icons.notifications_none,
+                            onTap: () =>
+                                Navigator.pushNamed(context, '/notifications'),
+                          ),
                           Positioned(
                             right: 0,
                             top: 0,
@@ -54,11 +54,17 @@ class HomeScreen extends StatelessWidget {
                               width: 16,
                               height: 16,
                               decoration: BoxDecoration(
-                                color: AppTheme.accent,
+                                color: AppTheme.accentColor(context),
                                 shape: BoxShape.circle,
                               ),
                               child: const Center(
-                                child: Text('0', style: TextStyle(color: Colors.black, fontSize: 10)),
+                                child: Text(
+                                  '0',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 10,
+                                  ),
+                                ),
                               ),
                             ),
                           )
@@ -68,13 +74,15 @@ class HomeScreen extends StatelessWidget {
                       InkWell(
                         onTap: () => Navigator.pushNamed(context, '/profile'),
                         borderRadius: BorderRadius.circular(999),
-                        child: const CircleAvatar(
+                        child: CircleAvatar(
                           radius: 18,
-                          backgroundColor: Color(0xFF2A2B2F),
+                          backgroundColor: AppTheme.isDark(context)
+                              ? const Color(0xFF2A2B2F)
+                              : Colors.black12,
                           child: Text(
                             'М',
                             style: TextStyle(
-                              color: AppTheme.accent,
+                              color: AppTheme.accentColor(context),
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -90,7 +98,10 @@ class HomeScreen extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .labelSmall
-                    ?.copyWith(letterSpacing: 2.6, color: AppTheme.muted),
+                    ?.copyWith(
+                      letterSpacing: 2.6,
+                      color: AppTheme.mutedColor(context),
+                    ),
               ),
               const SizedBox(height: 6),
               Row(
@@ -104,7 +115,8 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(999),
                       color: Colors.white10,
@@ -130,14 +142,20 @@ class HomeScreen extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .labelSmall
-                        ?.copyWith(letterSpacing: 2.4, color: AppTheme.muted),
+                        ?.copyWith(
+                          letterSpacing: 2.4,
+                          color: AppTheme.mutedColor(context),
+                        ),
                   ),
                   Text(
                     'ПОДРОБНЕЕ',
                     style: Theme.of(context)
                         .textTheme
                         .labelSmall
-                        ?.copyWith(letterSpacing: 2.0, color: AppTheme.muted),
+                        ?.copyWith(
+                          letterSpacing: 2.0,
+                          color: AppTheme.mutedColor(context),
+                        ),
                   )
                 ],
               ),
@@ -149,7 +167,10 @@ class HomeScreen extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .labelSmall
-                    ?.copyWith(letterSpacing: 2.4, color: AppTheme.muted),
+                    ?.copyWith(
+                      letterSpacing: 2.4,
+                      color: AppTheme.mutedColor(context),
+                    ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -228,7 +249,7 @@ class _StatsCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
-        color: AppTheme.accent,
+        color: AppTheme.accentColor(context),
         boxShadow: const [
           BoxShadow(
             color: Colors.black45,
@@ -331,7 +352,7 @@ class _MetricsCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        color: const Color(0xFF1B1B1F),
+        color: AppTheme.cardColor(context),
         border: Border.all(color: Colors.white10),
       ),
       child: Column(
@@ -355,7 +376,7 @@ class _MetricsCard extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(color: AppTheme.muted),
+                    ?.copyWith(color: AppTheme.mutedColor(context)),
               ),
             ],
           ),
@@ -386,7 +407,7 @@ class _MetricRow extends StatelessWidget {
           style: Theme.of(context)
               .textTheme
               .bodySmall
-              ?.copyWith(color: AppTheme.muted),
+              ?.copyWith(color: AppTheme.mutedColor(context)),
         ),
       ],
     );
@@ -404,7 +425,7 @@ class _Toggle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: active ? AppTheme.accent : Colors.white10,
+        color: active ? AppTheme.accentColor(context) : Colors.white10,
       ),
       child: Text(
         label,
@@ -423,14 +444,20 @@ class _BottomBar extends StatelessWidget {
   final VoidCallback onDiary;
   final VoidCallback onMetrics;
   final VoidCallback onProfile;
-  const _BottomBar({required this.onHome, required this.onPrograms, required this.onDiary, required this.onMetrics, required this.onProfile});
+  const _BottomBar({
+    required this.onHome,
+    required this.onPrograms,
+    required this.onDiary,
+    required this.onMetrics,
+    required this.onProfile,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF15161A),
+        color: AppTheme.bgSoftColor(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: Colors.white10),
       ),
@@ -438,7 +465,11 @@ class _BottomBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _BottomItem(icon: Icons.home, active: true, onTap: onHome),
-          _BottomItem(icon: Icons.fitness_center, active: false, onTap: onPrograms),
+          _BottomItem(
+            icon: Icons.fitness_center,
+            active: false,
+            onTap: onPrograms,
+          ),
           _BottomItem(icon: Icons.bar_chart, active: false, onTap: onMetrics),
           _BottomItem(icon: Icons.person, active: false, onTap: onProfile),
         ],
@@ -469,7 +500,9 @@ class _QuickCard extends StatelessWidget {
         height: 120,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: highlight ? AppTheme.accent : const Color(0xFF1B1B1F),
+          color: highlight
+              ? AppTheme.accentColor(context)
+              : AppTheme.cardColor(context),
           border: Border.all(
             color: highlight ? Colors.transparent : Colors.white10,
           ),
@@ -488,7 +521,9 @@ class _QuickCard extends StatelessWidget {
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: highlight ? Colors.black87 : AppTheme.muted,
+                    color: highlight
+                        ? Colors.black87
+                        : AppTheme.mutedColor(context),
                   ),
             ),
             const Spacer(),
@@ -522,7 +557,7 @@ class _InfoCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: const Color(0xFF1B1B1F),
+        color: AppTheme.cardColor(context),
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
@@ -544,7 +579,7 @@ class _InfoCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
-                      ?.copyWith(color: AppTheme.muted),
+                      ?.copyWith(color: AppTheme.mutedColor(context)),
                 ),
               ],
             ),
@@ -553,7 +588,7 @@ class _InfoCard extends StatelessWidget {
             width: 56,
             height: 64,
             decoration: BoxDecoration(
-              color: AppTheme.accent,
+              color: AppTheme.accentColor(context),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.article, color: Colors.black),
@@ -568,7 +603,11 @@ class _BottomItem extends StatelessWidget {
   final IconData icon;
   final bool active;
   final VoidCallback onTap;
-  const _BottomItem({required this.icon, required this.active, required this.onTap});
+  const _BottomItem({
+    required this.icon,
+    required this.active,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -579,7 +618,7 @@ class _BottomItem extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: active ? AppTheme.accent : Colors.transparent,
+          color: active ? AppTheme.accentColor(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon, color: active ? Colors.black : Colors.white70),

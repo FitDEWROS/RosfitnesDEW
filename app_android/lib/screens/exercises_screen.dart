@@ -14,11 +14,11 @@ class ExercisesScreen extends StatelessWidget {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppTheme.bg, Color(0xFF151518), Color(0xFF0C0C0D)],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -44,7 +44,7 @@ class ExercisesScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
-                      color: const Color(0xFF1B1B1F),
+                      color: AppTheme.cardColor(context),
                       border: Border.all(color: Colors.white10),
                     ),
                     child: Row(
@@ -55,7 +55,7 @@ class ExercisesScreen extends StatelessWidget {
                           children: [
                             Text(item['title']!, style: Theme.of(context).textTheme.titleMedium),
                             const SizedBox(height: 4),
-                            Text(item['tag']!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+                            Text(item['tag']!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.mutedColor(context))),
                           ],
                         ),
                         const Icon(Icons.chevron_right, color: Colors.white54),

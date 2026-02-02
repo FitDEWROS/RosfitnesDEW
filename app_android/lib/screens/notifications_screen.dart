@@ -8,11 +8,11 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppTheme.bg, Color(0xFF151518), Color(0xFF0C0C0D)],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -30,8 +30,14 @@ class NotificationsScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              _Notice(title: 'Новая тренировка', text: 'Ваш план обновлен. Проверьте расписание.'),
-              _Notice(title: 'Напоминание', text: 'Сегодня запланирована тренировка.'),
+              _Notice(
+                title: 'Новая тренировка',
+                text: 'Ваш план обновлен. Проверьте расписание.',
+              ),
+              _Notice(
+                title: 'Напоминание',
+                text: 'Сегодня запланирована тренировка.',
+              ),
             ],
           ),
         ),
@@ -52,7 +58,7 @@ class _Notice extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: const Color(0xFF1B1B1F),
+        color: AppTheme.cardColor(context),
         border: Border.all(color: Colors.white10),
       ),
       child: Column(
@@ -60,7 +66,7 @@ class _Notice extends StatelessWidget {
         children: [
           Text(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
-          Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted)),
+          Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.mutedColor(context))),
         ],
       ),
     );

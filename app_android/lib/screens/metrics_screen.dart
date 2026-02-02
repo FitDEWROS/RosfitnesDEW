@@ -8,11 +8,11 @@ class MetricsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppTheme.bg, Color(0xFF151518), Color(0xFF0C0C0D)],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -21,7 +21,10 @@ class MetricsScreen extends StatelessWidget {
             children: [
               Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
-              _Header(title: 'Показатели', subtitle: 'Отслеживай прогресс и историю.'),
+              _Header(
+                title: 'Показатели',
+                subtitle: 'Отслеживай прогресс и историю.',
+              ),
               const SizedBox(height: 16),
               _MetricTile(title: 'Вес', value: '91 кг'),
               _MetricTile(title: 'Жир', value: '0 %'),
@@ -46,7 +49,9 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(colors: [Color(0xFF1F1F22), Color(0xFF121214)]),
+        gradient: AppTheme.isDark(context)
+            ? const LinearGradient(colors: [Color(0xFF1F1F22), Color(0xFF121214)])
+            : const LinearGradient(colors: [Color(0xFFFFFFFF), Color(0xFFF3EBDD)]),
         border: Border.all(color: Colors.white12),
       ),
       child: Column(
@@ -54,7 +59,7 @@ class _Header extends StatelessWidget {
         children: [
           Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(letterSpacing: 1.2)),
           const SizedBox(height: 6),
-          Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.muted)),
+          Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.mutedColor(context))),
         ],
       ),
     );
@@ -73,14 +78,14 @@ class _MetricTile extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: const Color(0xFF1B1B1F),
+        color: AppTheme.cardColor(context),
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: Theme.of(context).textTheme.titleMedium),
-          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.muted)),
+          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.mutedColor(context))),
         ],
       ),
     );
@@ -96,7 +101,7 @@ class _BottomBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF15161A),
+        color: AppTheme.bgSoftColor(context),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: Colors.white10),
       ),
@@ -128,7 +133,7 @@ class _NavItem extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: active ? AppTheme.accent : Colors.transparent,
+          color: active ? AppTheme.accentColor(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Icon(icon, color: active ? Colors.black : Colors.white70),

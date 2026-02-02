@@ -21,15 +21,11 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppTheme.bg,
-              Color(0xFF141417),
-              Color(0xFF0C0C0D),
-            ],
+            colors: AppTheme.backgroundGradient(context),
           ),
         ),
         child: SafeArea(
@@ -57,7 +53,7 @@ class LoginScreen extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
-                      ?.copyWith(color: AppTheme.muted),
+                      ?.copyWith(color: AppTheme.mutedColor(context)),
                 ),
                 const Spacer(),
                 Container(
@@ -66,7 +62,7 @@ class LoginScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white12),
-                    color: const Color(0xFF1A1A1D),
+                    color: AppTheme.cardColor(context),
                     boxShadow: const [
                       BoxShadow(
                         color: Colors.black54,
@@ -91,14 +87,14 @@ class LoginScreen extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .bodySmall
-                            ?.copyWith(color: AppTheme.muted),
+                            ?.copyWith(color: AppTheme.mutedColor(context)),
                       ),
                       const SizedBox(height: 18),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.accent,
+                            backgroundColor: AppTheme.accentColor(context),
                             foregroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(
                               vertical: 14,
