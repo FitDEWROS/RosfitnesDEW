@@ -26,7 +26,9 @@ class FitDewApp extends StatefulWidget {
 class _FitDewAppState extends State<FitDewApp> {
   final _auth = AuthService();
   final _navigatorKey = GlobalKey<NavigatorState>();
-  String _initialRoute = '/login';
+  final _themeController = ThemeController();
+  bool _ready = false;
+  bool _isAuthed = false;
   static const _channel = MethodChannel('app.links');
 
   @override
@@ -46,7 +48,7 @@ class _FitDewAppState extends State<FitDewApp> {
   Future<void> _bootstrap() async {
     final token = await _auth.getToken();
     if (token != null && token.isNotEmpty) {
-      setState(() => _initialRoute = '/home');
+      _isAuthed = true;
     }
     try {
       final link = await _channel.invokeMethod<String>('getInitialLink');
@@ -54,6 +56,9 @@ class _FitDewAppState extends State<FitDewApp> {
         await _handleLink(link);
       }
     } catch (_) {}
+    if (mounted) {
+      setState(() => _ready = true);
+    }
   }
 
   Future<void> _handleLink(String link) async {
@@ -62,32 +67,78 @@ class _FitDewAppState extends State<FitDewApp> {
     if (uri.scheme == AppConfig.authScheme) {
       final token = await _auth.handleAuthUri(uri);
       if (token != null) {
-        _navigatorKey.currentState?.pushReplacementNamed('/home');
+        setState(() => _isAuthed = true);
+        _navigatorKey.currentState?.pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme(),
-      initialRoute: _initialRoute,
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/programs': (context) => const ProgramsScreen(),
-        '/program': (context) => const ProgramDetailScreen(),
-        '/workout': (context) => const WorkoutScreen(),
-        '/diary': (context) => const DiaryScreen(),
-        '/metrics': (context) => const MetricsScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/chat': (context) => const ChatScreen(),
-        '/notifications': (context) => const NotificationsScreen(),
-        '/exercises': (context) => const ExercisesScreen(),
-        '/exercise': (context) => const ExerciseDetailScreen(),
-      },
+    return AppScope(
+      controller: _themeController,
+      child: AnimatedBuilder(
+        animation: _themeController,
+        builder: (context, _) {
+          return MaterialApp(
+            navigatorKey: _navigatorKey,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme(),
+            darkTheme: AppTheme.darkTheme(),
+            themeMode: _themeController.mode,
+            home: _ready
+                ? (_isAuthed ? const HomeScreen() : const LoginScreen())
+                : const _SplashScreen(),
+            routes: {
+              '/login': (context) => const LoginScreen(),
+              '/home': (context) => const HomeScreen(),
+              '/programs': (context) => const ProgramsScreen(),
+              '/program': (context) => const ProgramDetailScreen(),
+              '/workout': (context) => const WorkoutScreen(),
+              '/diary': (context) => const DiaryScreen(),
+              '/metrics': (context) => const MetricsScreen(),
+              '/profile': (context) => const ProfileScreen(),
+              '/chat': (context) => const ChatScreen(),
+              '/notifications': (context) => const NotificationsScreen(),
+              '/exercises': (context) => const ExercisesScreen(),
+              '/exercise': (context) => const ExerciseDetailScreen(),
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ThemeController extends ChangeNotifier {
+  ThemeMode mode = ThemeMode.dark;
+
+  void toggle() {
+    mode = mode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    notifyListeners();
+  }
+}
+
+class AppScope extends InheritedNotifier<ThemeController> {
+  const AppScope({super.key, required ThemeController controller, required Widget child})
+      : super(notifier: controller, child: child);
+
+  static ThemeController of(BuildContext context) {
+    final scope = context.dependOnInheritedWidgetOfExactType<AppScope>();
+    return scope!.notifier!;
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.bg,
+      body: const Center(child: CircularProgressIndicator()),
     );
   }
 }

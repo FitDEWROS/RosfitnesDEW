@@ -40,4 +40,34 @@ class AppTheme {
       useMaterial3: true,
     );
   }
+
+  static ThemeData lightTheme() {
+    final textTheme = GoogleFonts.manropeTextTheme(
+      const TextTheme(),
+    ).apply(
+      bodyColor: Colors.black,
+      displayColor: Colors.black,
+    );
+
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: const Color(0xFFF6F1E4),
+      colorScheme: const ColorScheme.light(
+        primary: accent,
+        secondary: accentStrong,
+        surface: Color(0xFFF0E9D7),
+      ),
+      textTheme: textTheme.copyWith(
+        titleLarge: GoogleFonts.exo2(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+        ),
+        titleMedium: GoogleFonts.exo2(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+      useMaterial3: true,
+    );
+  }
 }

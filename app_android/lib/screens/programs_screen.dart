@@ -93,22 +93,6 @@ class _HeaderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              color: AppTheme.accent,
-            ),
-            child: Text(
-              'Назад',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Colors.black,
-                    letterSpacing: 1.6,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ),
-          const SizedBox(height: 12),
           Text(
             'Программы',
             style: Theme.of(context)

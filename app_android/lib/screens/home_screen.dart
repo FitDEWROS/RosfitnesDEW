@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../app.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -36,7 +37,12 @@ class HomeScreen extends StatelessWidget {
                         iconColor: Colors.black,
                       ),
                       const SizedBox(width: 8),
-                      _IconBubble(icon: Icons.nights_stay_outlined, onTap: () {}),
+                      _IconBubble(
+                        icon: AppScope.of(context).mode == ThemeMode.dark
+                            ? Icons.nights_stay_outlined
+                            : Icons.wb_sunny_outlined,
+                        onTap: () => AppScope.of(context).toggle(),
+                      ),
                       const SizedBox(width: 8),
                       Stack(
                         children: [
@@ -59,10 +65,21 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(width: 8),
-                      const CircleAvatar(
-                        radius: 18,
-                        backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=5'),
-                      )
+                      InkWell(
+                        onTap: () => Navigator.pushNamed(context, '/profile'),
+                        borderRadius: BorderRadius.circular(999),
+                        child: const CircleAvatar(
+                          radius: 18,
+                          backgroundColor: Color(0xFF2A2B2F),
+                          child: Text(
+                            'М',
+                            style: TextStyle(
+                              color: AppTheme.accent,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   )
                 ],
@@ -126,6 +143,38 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _MetricsCard(),
+              const SizedBox(height: 18),
+              Text(
+                'УПРАЖНЕНИЯ',
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(letterSpacing: 2.4, color: AppTheme.muted),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickCard(
+                      title: 'УПРАЖНЕНИЯ',
+                      subtitle: 'База упражнений для кроссфита',
+                      highlight: true,
+                      onTap: () => Navigator.pushNamed(context, '/exercises'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _QuickCard(
+                      title: 'ПРОГРАММЫ',
+                      subtitle: 'Готовые планы и прогрессии',
+                      highlight: false,
+                      onTap: () => Navigator.pushNamed(context, '/programs'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _InfoCard(),
               const SizedBox(height: 90),
             ],
           ),
@@ -285,43 +334,61 @@ class _MetricsCard extends StatelessWidget {
         color: const Color(0xFF1B1B1F),
         border: Border.all(color: Colors.white10),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppTheme.accent,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.monitor_weight, color: Colors.black),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Вес', style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 6),
-                Row(
+          Row(
+            children: [
+              const SizedBox(width: 6),
+              Text('Вес', style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Row(
                   children: [
                     _Toggle(label: 'ЗАЛ', active: false),
                     const SizedBox(width: 6),
                     _Toggle(label: 'КРОССФИТ', active: true),
                   ],
                 ),
-              ],
-            ),
+              ),
+              Text(
+                '91 кг',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(color: AppTheme.muted),
+              ),
+            ],
           ),
-          Text(
-            '91 кг',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(color: AppTheme.muted),
-          ),
+          const SizedBox(height: 10),
+          _MetricRow(label: 'Вода', value: '0 л'),
+          const SizedBox(height: 10),
+          _MetricRow(label: 'Приемы пищи', value: '0 раз'),
         ],
       ),
+    );
+  }
+}
+
+class _MetricRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _MetricRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const SizedBox(width: 6),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        const Spacer(),
+        Text(
+          value,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: AppTheme.muted),
+        ),
+      ],
     );
   }
 }
@@ -374,6 +441,123 @@ class _BottomBar extends StatelessWidget {
           _BottomItem(icon: Icons.fitness_center, active: false, onTap: onPrograms),
           _BottomItem(icon: Icons.bar_chart, active: false, onTap: onMetrics),
           _BottomItem(icon: Icons.person, active: false, onTap: onProfile),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool highlight;
+  final VoidCallback onTap;
+  const _QuickCard({
+    required this.title,
+    required this.subtitle,
+    required this.highlight,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        height: 120,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: highlight ? AppTheme.accent : const Color(0xFF1B1B1F),
+          border: Border.all(
+            color: highlight ? Colors.transparent : Colors.white10,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: highlight ? Colors.black : Colors.white,
+                    letterSpacing: 1.4,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: highlight ? Colors.black87 : AppTheme.muted,
+                  ),
+            ),
+            const Spacer(),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: highlight ? Colors.black12 : Colors.white10,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.arrow_forward,
+                  size: 16,
+                  color: highlight ? Colors.black : Colors.white70,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFF1B1B1F),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ПОЛЕЗНАЯ\nИНФОРМАЦИЯ',
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelLarge
+                      ?.copyWith(letterSpacing: 1.6),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Питание, техника и новости.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppTheme.muted),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 56,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppTheme.accent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.article, color: Colors.black),
+          ),
         ],
       ),
     );

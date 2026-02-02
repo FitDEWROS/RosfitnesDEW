@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
+import '../services/auth_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _logout(BuildContext context) async {
+    final auth = AuthService();
+    await auth.clearToken();
+    if (context.mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +32,18 @@ class ProfileScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const CircleAvatar(radius: 28, backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=5')),
+                  const CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Color(0xFF2A2B2F),
+                    child: Text(
+                      'М',
+                      style: TextStyle(
+                        color: AppTheme.accent,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,6 +58,22 @@ class ProfileScreen extends StatelessWidget {
               _Tile(title: 'Цель', value: 'Рельеф'),
               _Tile(title: 'Программа', value: 'Код Атлета'),
               _Tile(title: 'Подписка', value: 'Активна'),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white24),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  onPressed: () => _logout(context),
+                  child: const Text('Выйти'),
+                ),
+              ),
             ],
           ),
         ),

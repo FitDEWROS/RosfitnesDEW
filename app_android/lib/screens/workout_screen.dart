@@ -25,38 +25,15 @@ class WorkoutScreen extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           children: [
             Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: AppTheme.accent,
-                  ),
-                  child: Text(
-                    'Назад',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(
-                          color: Colors.black,
-                          letterSpacing: 1.6,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'День 1',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(letterSpacing: 2),
-                ),
-              ],
+            const SizedBox(height: 8),
+            Text(
+              'День 1',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(letterSpacing: 2),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Text(
               'Неделя 1 | Код атлета | Базовый ★ ★',
               style: Theme.of(context)
