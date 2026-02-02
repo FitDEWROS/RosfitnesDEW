@@ -36,7 +36,7 @@ class LoginScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: 16),
                 Text(
-                  'Fit dew',
+                  '',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 10),

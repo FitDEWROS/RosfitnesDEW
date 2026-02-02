@@ -122,14 +122,54 @@ class _HomeScreenState extends State<HomeScreen> {
             controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 140),
             children: [
+              const SizedBox(height: 18),
+              Text(
+                'ПРИВЕТ',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      letterSpacing: 2.6,
+                      color: AppTheme.mutedColor(context),
+                    ),
+              ),
+              const SizedBox(height: 6),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'МАКСИМ',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(letterSpacing: 1.2),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 6, horizontal: 12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: isDark ? Colors.white10 : Colors.black12,
+                          ),
+                          child: Text(
+                            'ВЛАДЕЛЕЦ',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(letterSpacing: 1.2),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                   Image.asset(
                     'assets/emblem.png',
-                    width: 34,
-                    height: 34,
+                    width: 72,
+                    height: 72,
                   ),
+                  const SizedBox(width: 12),
                   Row(
                     children: [
                       if (_chatAllowed) ...[
@@ -196,43 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ],
-                  )
-                ],
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'ПРИВЕТ',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      letterSpacing: 2.6,
-                      color: AppTheme.mutedColor(context),
-                    ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Text(
-                    'МАКСИМ',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(letterSpacing: 1.2),
                   ),
-                  const SizedBox(width: 10),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      color: isDark ? Colors.white10 : Colors.black12,
-                    ),
-                    child: Text(
-                      'ВЛАДЕЛЕЦ',
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelSmall
-                          ?.copyWith(letterSpacing: 1.2),
-                    ),
-                  )
                 ],
               ),
               const SizedBox(height: 16),
@@ -306,7 +310,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         title: 'УПРАЖНЕНИЯ',
                         subtitle: 'База упражнений: зал и кроссфит.',
                         accent: true,
-                        onTap: () => Navigator.pushNamed(context, '/exercises'),
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          _mode == TrainingMode.crossfit
+                              ? '/exercises_crossfit'
+                              : '/exercises',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -338,15 +347,25 @@ class _HomeScreenState extends State<HomeScreen> {
         child: _BottomBar(
           activeIndex: _activeNav,
           onHome: () {
+            setState(() => _activeNav = 0);
             _scrollController.animateTo(
               0,
               duration: const Duration(milliseconds: 420),
               curve: Curves.easeOutCubic,
             );
           },
-          onWorkouts: () => _scrollTo(_workoutsKey),
-          onMetrics: () => _scrollTo(_metricsKey),
-          onProfile: () => Navigator.of(context).pushNamed('/profile'),
+          onWorkouts: () {
+            setState(() => _activeNav = 2);
+            _scrollTo(_workoutsKey);
+          },
+          onMetrics: () {
+            setState(() => _activeNav = 1);
+            _scrollTo(_metricsKey);
+          },
+          onProfile: () {
+            setState(() => _activeNav = 3);
+            Navigator.of(context).pushNamed('/profile');
+          },
         ),
       ),
     );
@@ -418,9 +437,9 @@ class _StatsCard extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 8,
+            bottom: -10,
             child: SizedBox(
-              height: 26,
+              height: 28,
               child: CustomPaint(
                 painter: _WavePainter(
                   color: Colors.black.withOpacity(0.15),
@@ -457,18 +476,23 @@ class _StatsCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  color: Colors.black.withOpacity(0.15),
-                ),
-                child: Text(
-                  'ДНЕВНИК ПИТАНИЯ',
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelSmall
-                      ?.copyWith(letterSpacing: 1.6, color: Colors.black87),
+              InkWell(
+                onTap: () => Navigator.pushNamed(context, '/diary'),
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    color: Colors.black.withOpacity(0.15),
+                  ),
+                  child: Text(
+                    'ДНЕВНИК ПИТАНИЯ',
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelSmall
+                        ?.copyWith(letterSpacing: 1.6, color: Colors.black87),
+                  ),
                 ),
               )
             ],
@@ -487,8 +511,8 @@ class _SmallStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 70,
-      padding: const EdgeInsets.all(12),
+      width: 86,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Colors.black.withOpacity(0.12),

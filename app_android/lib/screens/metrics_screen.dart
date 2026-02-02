@@ -19,7 +19,7 @@ class MetricsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(18),
             children: [
-              Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox.shrink(),
               const SizedBox(height: 12),
               _Header(
                 title: 'Показатели',

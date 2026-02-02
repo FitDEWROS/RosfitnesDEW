@@ -13,6 +13,7 @@ import 'screens/profile_screen.dart';
 import 'screens/chat_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/exercises_screen.dart';
+import 'screens/crossfit_exercises_screen.dart';
 import 'screens/exercise_detail_screen.dart';
 import 'theme.dart';
 
@@ -103,6 +104,7 @@ class _FitDewAppState extends State<FitDewApp> {
               '/chat': (context) => const ChatScreen(),
               '/notifications': (context) => const NotificationsScreen(),
               '/exercises': (context) => const ExercisesScreen(),
+              '/exercises_crossfit': (context) => const CrossfitExercisesScreen(),
               '/exercise': (context) => const ExerciseDetailScreen(),
             },
           );

@@ -69,6 +69,7 @@ class AppTheme {
     return ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: bgDark,
+      fontFamilyFallback: const ['Roboto', 'Noto Sans', 'Arial'],
       colorScheme: const ColorScheme.dark(
         primary: accentDark,
         secondary: accentStrongDark,
@@ -99,6 +100,7 @@ class AppTheme {
     return ThemeData(
       brightness: Brightness.light,
       scaffoldBackgroundColor: bgLight,
+      fontFamilyFallback: const ['Roboto', 'Noto Sans', 'Arial'],
       colorScheme: const ColorScheme.light(
         primary: accentLight,
         secondary: accentStrongLight,

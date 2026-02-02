@@ -39,7 +39,7 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
               return ListView(
                 padding: const EdgeInsets.all(18),
                 children: [
-                  Text('Fit dew', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox.shrink(),
                   const SizedBox(height: 12),
                   _HeaderCard(),
                   const SizedBox(height: 20),
