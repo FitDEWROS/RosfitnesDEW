@@ -13,6 +13,69 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   TrainingMode _mode = TrainingMode.crossfit;
+  final ScrollController _scrollController = ScrollController();
+  final _metricsKey = GlobalKey();
+  final _workoutsKey = GlobalKey();
+  int _activeNav = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    final metrics = _sectionOffset(_metricsKey);
+    final workouts = _sectionOffset(_workoutsKey);
+    final offset = _scrollController.offset;
+
+    int next = 0;
+    if (workouts != null && offset >= workouts - 120) {
+      next = 2;
+    } else if (metrics != null && offset >= metrics - 120) {
+      next = 1;
+    }
+
+    if (next != _activeNav) {
+      setState(() => _activeNav = next);
+    }
+  }
+
+  double? _sectionOffset(GlobalKey key) {
+    final context = key.currentContext;
+    if (context == null) return null;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return null;
+    final position = box.localToGlobal(Offset.zero);
+    final top = position.dy + _scrollController.offset;
+    return top;
+  }
+
+  Future<void> _scrollTo(GlobalKey key) async {
+    final target = _sectionOffset(key);
+    if (target == null) return;
+    await _scrollController.animateTo(
+      target - 90,
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _openChat(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _ChatSheet(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: SafeArea(
           child: ListView(
+            controller: _scrollController,
             padding: const EdgeInsets.all(18),
             children: [
               Row(
@@ -39,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       _IconBubble(
                         icon: Icons.chat_bubble_outline,
-                        onTap: () => Navigator.pushNamed(context, '/chat'),
+                        onTap: () => _openChat(context),
                         backgroundColor: AppTheme.accentColor(context),
                         iconColor: Colors.black,
                       ),
@@ -162,28 +226,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              _MetricPill(
-                title: 'Вес',
-                value: '91',
-                unit: 'кг',
-                status: 'ПРОФИЛЬ',
-                color: const Color(0xFFCBE7BA),
-              ),
-              const SizedBox(height: 10),
-              _MetricPill(
-                title: 'Вода',
-                value: '0',
-                unit: 'л',
-                status: 'НЕТ ДАННЫХ',
-                color: const Color(0xFFC7E7F7),
-              ),
-              const SizedBox(height: 10),
-              _MetricPill(
-                title: 'Приемы пищи',
-                value: '0',
-                unit: 'раз',
-                status: 'НЕТ ДАННЫХ',
-                color: const Color(0xFFF2D88D),
+              KeyedSubtree(
+                key: _metricsKey,
+                child: Column(
+                  children: [
+                    _MetricPill(
+                      title: 'Вес',
+                      value: '91',
+                      unit: 'кг',
+                      status: 'ПРОФИЛЬ',
+                      color: const Color(0xFFCBE7BA),
+                    ),
+                    const SizedBox(height: 10),
+                    _MetricPill(
+                      title: 'Вода',
+                      value: '0',
+                      unit: 'л',
+                      status: 'НЕТ ДАННЫХ',
+                      color: const Color(0xFFC7E7F7),
+                    ),
+                    const SizedBox(height: 10),
+                    _MetricPill(
+                      title: 'Приемы пищи',
+                      value: '0',
+                      unit: 'раз',
+                      status: 'НЕТ ДАННЫХ',
+                      color: const Color(0xFFF2D88D),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               Text(
@@ -194,26 +265,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'УПРАЖНЕНИЯ',
-                      subtitle: 'База упражнений: зал и кроссфит.',
-                      accent: true,
-                      onTap: () => Navigator.pushNamed(context, '/exercises'),
+              KeyedSubtree(
+                key: _workoutsKey,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ActionCard(
+                        title: 'УПРАЖНЕНИЯ',
+                        subtitle: 'База упражнений: зал и кроссфит.',
+                        accent: true,
+                        onTap: () => Navigator.pushNamed(context, '/exercises'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'ПРОГРАММЫ',
-                      subtitle: 'Готовые планы и расписания.',
-                      accent: false,
-                      onTap: () => Navigator.pushNamed(context, '/programs'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ActionCard(
+                        title: 'ПРОГРАММЫ',
+                        subtitle: 'Готовые планы и расписания.',
+                        accent: false,
+                        onTap: () => Navigator.pushNamed(context, '/programs'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
               _UsefulCard(
@@ -234,10 +308,16 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: _BottomBar(
-        onHome: () {},
-        onPrograms: () => Navigator.of(context).pushNamed('/programs'),
-        onDiary: () => Navigator.of(context).pushNamed('/diary'),
-        onMetrics: () => Navigator.of(context).pushNamed('/metrics'),
+        activeIndex: _activeNav,
+        onHome: () {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 420),
+            curve: Curves.easeOutCubic,
+          );
+        },
+        onWorkouts: () => _scrollTo(_workoutsKey),
+        onMetrics: () => _scrollTo(_metricsKey),
         onProfile: () => Navigator.of(context).pushNamed('/profile'),
       ),
     );
@@ -776,16 +856,16 @@ class _ModeToggle extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
+  final int activeIndex;
   final VoidCallback onHome;
-  final VoidCallback onPrograms;
-  final VoidCallback onDiary;
+  final VoidCallback onWorkouts;
   final VoidCallback onMetrics;
   final VoidCallback onProfile;
   const _BottomBar({
+    required this.activeIndex,
     required this.onHome,
-    required this.onPrograms,
-    required this.onDiary,
     required this.onMetrics,
+    required this.onWorkouts,
     required this.onProfile,
   });
 
@@ -801,13 +881,17 @@ class _BottomBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _BottomItem(icon: Icons.home, active: true, onTap: onHome),
+          _BottomItem(icon: Icons.home, active: activeIndex == 0, onTap: onHome),
           _BottomItem(
             icon: Icons.fitness_center,
-            active: false,
-            onTap: onPrograms,
+            active: activeIndex == 2,
+            onTap: onWorkouts,
           ),
-          _BottomItem(icon: Icons.bar_chart, active: false, onTap: onMetrics),
+          _BottomItem(
+            icon: Icons.bar_chart,
+            active: activeIndex == 1,
+            onTap: onMetrics,
+          ),
           _BottomItem(icon: Icons.person, active: false, onTap: onProfile),
         ],
       ),
@@ -839,6 +923,173 @@ class _BottomItem extends StatelessWidget {
         ),
         child: Icon(icon, color: active ? Colors.black : Colors.white70),
       ),
+    );
+  }
+}
+
+class _ChatSheet extends StatefulWidget {
+  const _ChatSheet();
+
+  @override
+  State<_ChatSheet> createState() => _ChatSheetState();
+}
+
+class _ChatSheetState extends State<_ChatSheet> {
+  final List<String> _messages = [
+    'Привет! Я куратор, чем помочь?',
+    'Хочу план на неделю.',
+  ];
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _messages.add(text));
+    _controller.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+    final sheetColor = AppTheme.cardColor(context);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.82,
+      minChildSize: 0.55,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            color: sheetColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Чат с куратором',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Онлайн консультация',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppTheme.mutedColor(context)),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    final mine = index % 2 == 1;
+                    final bubbleColor = mine
+                        ? LinearGradient(
+                            colors: [
+                              AppTheme.accentColor(context),
+                              AppTheme.accentStrongColor(context),
+                            ],
+                          )
+                        : null;
+                    return Align(
+                      alignment:
+                          mine ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        constraints: const BoxConstraints(maxWidth: 280),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: mine ? null : (isDark ? Colors.white10 : Colors.black12),
+                          gradient: bubbleColor,
+                        ),
+                        child: Text(
+                          _messages[index],
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: mine ? Colors.black : AppTheme.textColor(context),
+                              ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: const Icon(Icons.attach_file, size: 18),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        hintText: 'Напишите сообщение...',
+                        hintStyle:
+                            TextStyle(color: AppTheme.mutedColor(context)),
+                        filled: true,
+                        fillColor: isDark ? Colors.white10 : Colors.black12,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      onSubmitted: (_) => _send(),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: _send,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.accentColor(context),
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: const Text('Отправить'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
