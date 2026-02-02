@@ -956,6 +956,7 @@ class _BottomShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
     return SafeArea(
       top: false,
       child: Container(
@@ -979,7 +980,24 @@ class _BottomShell extends StatelessWidget {
           children: [
             _ModeToggle(value: mode, onChanged: onModeChanged),
             const SizedBox(height: 10),
-            child,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF17181B) : Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isDark ? Colors.white10 : Colors.black12,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: child,
+            ),
           ],
         ),
       ),
@@ -1040,15 +1058,27 @@ class _BottomItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        width: 42,
-        height: 42,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: active ? AppTheme.accentColor(context) : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
+          shape: BoxShape.circle,
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: AppTheme.accentColor(context).withOpacity(0.45),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  )
+                ]
+              : null,
         ),
         child: Icon(
           icon,
-          color: active ? Colors.black : (isDark ? Colors.white70 : Colors.black54),
+          color: active
+              ? Colors.black
+              : (isDark ? Colors.white70 : Colors.black54),
+          size: 20,
         ),
       ),
     );
