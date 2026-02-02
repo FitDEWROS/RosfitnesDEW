@@ -2,11 +2,22 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../app.dart';
 
-class HomeScreen extends StatelessWidget {
+enum TrainingMode { gym, crossfit }
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  TrainingMode _mode = TrainingMode.crossfit;
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -76,7 +87,7 @@ class HomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(999),
                         child: CircleAvatar(
                           radius: 18,
-                          backgroundColor: AppTheme.isDark(context)
+                          backgroundColor: isDark
                               ? const Color(0xFF2A2B2F)
                               : Colors.black12,
                           child: Text(
@@ -95,10 +106,7 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 18),
               Text(
                 'ПРИВЕТ',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       letterSpacing: 2.6,
                       color: AppTheme.mutedColor(context),
                     ),
@@ -139,20 +147,14 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text(
                     'ПОКАЗАТЕЛИ',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           letterSpacing: 2.4,
                           color: AppTheme.mutedColor(context),
                         ),
                   ),
                   Text(
                     'ПОДРОБНЕЕ',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           letterSpacing: 2.0,
                           color: AppTheme.mutedColor(context),
                         ),
@@ -160,14 +162,33 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              _MetricsCard(),
-              const SizedBox(height: 18),
+              _MetricPill(
+                title: 'Вес',
+                value: '91',
+                unit: 'кг',
+                status: 'ПРОФИЛЬ',
+                color: const Color(0xFFCBE7BA),
+              ),
+              const SizedBox(height: 10),
+              _MetricPill(
+                title: 'Вода',
+                value: '0',
+                unit: 'л',
+                status: 'НЕТ ДАННЫХ',
+                color: const Color(0xFFC7E7F7),
+              ),
+              const SizedBox(height: 10),
+              _MetricPill(
+                title: 'Приемы пищи',
+                value: '0',
+                unit: 'раз',
+                status: 'НЕТ ДАННЫХ',
+                color: const Color(0xFFF2D88D),
+              ),
+              const SizedBox(height: 20),
               Text(
                 'УПРАЖНЕНИЯ',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       letterSpacing: 2.4,
                       color: AppTheme.mutedColor(context),
                     ),
@@ -176,26 +197,37 @@ class HomeScreen extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _QuickCard(
+                    child: _ActionCard(
                       title: 'УПРАЖНЕНИЯ',
-                      subtitle: 'База упражнений для кроссфита',
-                      highlight: true,
+                      subtitle: 'База упражнений: зал и кроссфит.',
+                      accent: true,
                       onTap: () => Navigator.pushNamed(context, '/exercises'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _QuickCard(
+                    child: _ActionCard(
                       title: 'ПРОГРАММЫ',
-                      subtitle: 'Готовые планы и прогрессии',
-                      highlight: false,
+                      subtitle: 'Готовые планы и расписания.',
+                      accent: false,
                       onTap: () => Navigator.pushNamed(context, '/programs'),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              _InfoCard(),
+              const SizedBox(height: 14),
+              _UsefulCard(
+                onTap: () => Navigator.pushNamed(context, '/programs'),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: _ModeToggle(
+                  value: _mode,
+                  onChanged: (value) {
+                    setState(() => _mode = value);
+                  },
+                ),
+              ),
               const SizedBox(height: 90),
             ],
           ),
@@ -278,11 +310,11 @@ class _StatsCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Row(
-            children: [
+            children: const [
               _SmallStat(title: 'Б', value: '0'),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               _SmallStat(title: 'Ж', value: '0'),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               _SmallStat(title: 'У', value: '0'),
             ],
           ),
@@ -345,94 +377,399 @@ class _SmallStat extends StatelessWidget {
   }
 }
 
-class _MetricsCard extends StatelessWidget {
+class _MetricPill extends StatelessWidget {
+  final String title;
+  final String value;
+  final String unit;
+  final String status;
+  final Color color;
+  const _MetricPill({
+    required this.title,
+    required this.value,
+    required this.unit,
+    required this.status,
+    required this.color,
+  });
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        color: AppTheme.cardColor(context),
-        border: Border.all(color: Colors.white10),
+        borderRadius: BorderRadius.circular(24),
+        color: color,
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(color: Colors.black)),
+                const SizedBox(height: 10),
+                Text(
+                  status,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.black.withOpacity(0.6),
+                        letterSpacing: 1.8,
+                      ),
+                )
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const SizedBox(width: 6),
-              Text('Вес', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  children: [
-                    _Toggle(label: 'ЗАЛ', active: false),
-                    const SizedBox(width: 6),
-                    _Toggle(label: 'КРОССФИТ', active: true),
-                  ],
-                ),
-              ),
-              Text(
-                '91 кг',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(color: AppTheme.mutedColor(context)),
+              Row(
+                children: [
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    unit,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Colors.black.withOpacity(0.65),
+                          letterSpacing: 1.2,
+                        ),
+                  ),
+                ],
               ),
             ],
-          ),
-          const SizedBox(height: 10),
-          _MetricRow(label: 'Вода', value: '0 л'),
-          const SizedBox(height: 10),
-          _MetricRow(label: 'Приемы пищи', value: '0 раз'),
+          )
         ],
       ),
     );
   }
 }
 
-class _MetricRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _MetricRow({required this.label, required this.value});
+class _ActionCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool accent;
+  final VoidCallback onTap;
+  const _ActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-        const Spacer(),
-        Text(
-          value,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: AppTheme.mutedColor(context)),
+    final cardColor =
+        accent ? AppTheme.accentColor(context) : AppTheme.cardColor(context);
+    final titleColor = accent ? Colors.black : Colors.white;
+    final subColor = accent
+        ? Colors.black.withOpacity(0.65)
+        : AppTheme.mutedColor(context);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 170,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          color: cardColor,
+          border: Border.all(color: Colors.white10),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            )
+          ],
         ),
-      ],
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 18,
+              child: SizedBox(
+                height: 24,
+                child: CustomPaint(
+                  painter: _WavePainter(
+                    color: accent
+                        ? Colors.black.withOpacity(0.15)
+                        : Colors.white12,
+                  ),
+                ),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(letterSpacing: 1.6, color: titleColor),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: subColor),
+                ),
+              ],
+            ),
+            Positioned(
+              right: 6,
+              bottom: 6,
+              child: _ArrowButton(accent: accent),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _Toggle extends StatelessWidget {
-  final String label;
-  final bool active;
-  const _Toggle({required this.label, required this.active});
+class _UsefulCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _UsefulCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 150,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          color: AppTheme.cardColor(context),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ПОЛЕЗНАЯ\nИНФОРМАЦИЯ',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(letterSpacing: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Гайды, подсказки и ответы на вопросы.',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: AppTheme.mutedColor(context)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              width: 120,
+              decoration: BoxDecoration(
+                color: AppTheme.accentColor(context),
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(24),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 18,
+                    child: SizedBox(
+                      height: 22,
+                      child: CustomPaint(
+                        painter: _WavePainter(
+                          color: Colors.black.withOpacity(0.18),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 18,
+                    bottom: 18,
+                    child: _ArrowButton(accent: true),
+                  ),
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ArrowButton extends StatelessWidget {
+  final bool accent;
+  const _ArrowButton({required this.accent});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: accent ? Colors.black : Colors.white10,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.arrow_forward,
+        size: 18,
+        color: accent ? Colors.white : Colors.white70,
+      ),
+    );
+  }
+}
+
+class _WavePainter extends CustomPainter {
+  final Color color;
+  _WavePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    final path = Path();
+    path.moveTo(0, size.height * 0.7);
+    path.cubicTo(
+      size.width * 0.25,
+      size.height * 0.2,
+      size.width * 0.45,
+      size.height * 1.0,
+      size.width * 0.7,
+      size.height * 0.55,
+    );
+    path.cubicTo(
+      size.width * 0.85,
+      size.height * 0.3,
+      size.width * 0.95,
+      size.height * 0.6,
+      size.width,
+      size.height * 0.45,
+    );
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ModeToggle extends StatelessWidget {
+  final TrainingMode value;
+  final ValueChanged<TrainingMode> onChanged;
+  const _ModeToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+    final isGym = value == TrainingMode.gym;
+
+    return Container(
+      width: 220,
+      height: 40,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: active ? AppTheme.accentColor(context) : Colors.white10,
+        color: isDark ? const Color(0xFF1A1A1D) : Colors.white,
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black12,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: active ? Colors.black : Colors.white70,
-              letterSpacing: 1.2,
+      child: Stack(
+        children: [
+          AnimatedAlign(
+            alignment: isGym ? Alignment.centerLeft : Alignment.centerRight,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            child: Container(
+              width: 100,
+              height: 28,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.accentColor(context),
+                    AppTheme.accentStrongColor(context),
+                  ],
+                ),
+              ),
             ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: () => onChanged(TrainingMode.gym),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Center(
+                    child: Text(
+                      'ЗАЛ',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            letterSpacing: 2.0,
+                            color: isGym
+                                ? Colors.black
+                                : (isDark
+                                    ? Colors.white70
+                                    : Colors.black54),
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: InkWell(
+                  onTap: () => onChanged(TrainingMode.crossfit),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Center(
+                    child: Text(
+                      'КРОССФИТ',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            letterSpacing: 2.0,
+                            color: !isGym
+                                ? Colors.black
+                                : (isDark
+                                    ? Colors.white70
+                                    : Colors.black54),
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -472,127 +809,6 @@ class _BottomBar extends StatelessWidget {
           ),
           _BottomItem(icon: Icons.bar_chart, active: false, onTap: onMetrics),
           _BottomItem(icon: Icons.person, active: false, onTap: onProfile),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final bool highlight;
-  final VoidCallback onTap;
-  const _QuickCard({
-    required this.title,
-    required this.subtitle,
-    required this.highlight,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        height: 120,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          color: highlight
-              ? AppTheme.accentColor(context)
-              : AppTheme.cardColor(context),
-          border: Border.all(
-            color: highlight ? Colors.transparent : Colors.white10,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: highlight ? Colors.black : Colors.white,
-                    letterSpacing: 1.4,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: highlight
-                        ? Colors.black87
-                        : AppTheme.mutedColor(context),
-                  ),
-            ),
-            const Spacer(),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: highlight ? Colors.black12 : Colors.white10,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.arrow_forward,
-                  size: 16,
-                  color: highlight ? Colors.black : Colors.white70,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: AppTheme.cardColor(context),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ПОЛЕЗНАЯ\nИНФОРМАЦИЯ',
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelLarge
-                      ?.copyWith(letterSpacing: 1.6),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Питание, техника и новости.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: AppTheme.mutedColor(context)),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 56,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppTheme.accentColor(context),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.article, color: Colors.black),
-          ),
         ],
       ),
     );
