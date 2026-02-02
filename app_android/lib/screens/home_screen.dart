@@ -961,26 +961,30 @@ class _BottomShell extends StatelessWidget {
       top: false,
       child: Container(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
-        decoration: BoxDecoration(
-          color: AppTheme.bgSoftColor(context),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
-          border: Border.all(
-            color: AppTheme.isDark(context) ? Colors.white10 : Colors.black12,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 18,
-              offset: Offset(0, -6),
-            )
-          ],
-        ),
+        decoration: const BoxDecoration(color: Colors.transparent),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _ModeToggle(value: mode, onChanged: onModeChanged),
             const SizedBox(height: 10),
-            child,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF17181B) : Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: isDark ? Colors.white10 : Colors.black12,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: child,
+            ),
           ],
         ),
       ),
