@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../theme.dart';
 import '../models/nutrition.dart';
@@ -245,22 +246,20 @@ class _Header extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              '\u0414\u043d\u0435\u0432\u043d\u0438\u043a \u043f\u0438\u0442\u0430\u043d\u0438\u044f',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    letterSpacing: 1.1,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
+          Text(
+            '\u0414\u043d\u0435\u0432\u043d\u0438\u043a \u043f\u0438\u0442\u0430\u043d\u0438\u044f',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.w700,
+                ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(height: 8),
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               _NavButton(icon: Icons.chevron_left, onTap: onPrev),
               const SizedBox(width: 6),
@@ -568,31 +567,55 @@ class _FoodSearchSheet extends StatefulWidget {
 class _FoodSearchSheetState extends State<_FoodSearchSheet> {
   final ApiService _api = ApiService();
   final TextEditingController _controller = TextEditingController();
+  Timer? _debounce;
+  final Map<String, List<NutritionProduct>> _cache = {};
   bool _loading = false;
   List<NutritionProduct> _results = const [];
   String? _error;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _search() async {
-    final query = _controller.text.trim();
-    if (query.isEmpty) return;
+  Future<void> _search([String? raw]) async {
+    final query = (raw ?? _controller.text).trim();
+    if (query.length < 2) return;
+    if (_cache.containsKey(query)) {
+      setState(() {
+        _results = _cache[query]!;
+        _error = null;
+      });
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final items = await _api.searchFood(query: query);
+      final items = await _api.searchFood(query: query, limit: 15);
+      _cache[query] = items;
       setState(() => _results = items);
     } catch (_) {
-      setState(() => _error = 'Не удалось найти продукты');
+      setState(() => _error = '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043d\u0430\u0439\u0442\u0438 \u043f\u0440\u043e\u0434\u0443\u043a\u0442\u044b');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _onQueryChanged(String value) {
+    final query = value.trim();
+    _debounce?.cancel();
+    if (query.length < 2) {
+      setState(() {
+        _results = const [];
+        _error = null;
+      });
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 400), () => _search(query));
   }
 
   Future<void> _searchBarcode() async {
@@ -610,15 +633,113 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
     try {
       final product = await _api.fetchFoodByBarcode(code);
       if (product == null) {
-        setState(() => _error = '??? ?? ??');
+        setState(() => _error = '\u041f\u0440\u043e\u0434\u0443\u043a\u0442 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d');
         return;
       }
       await _pickProduct(product);
     } catch (_) {
-      setState(() => _error = '?? ??? ??? ???');
+      setState(() => _error = '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043d\u0430\u0439\u0442\u0438 \u043f\u0440\u043e\u0434\u0443\u043a\u0442');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _manualAdd() async {
+    final result = await showDialog<_ManualAddData>(
+      context: context,
+      builder: (context) {
+        final nameCtrl = TextEditingController();
+        final gramsCtrl = TextEditingController(text: '100');
+        final proteinCtrl = TextEditingController();
+        final fatCtrl = TextEditingController();
+        final carbCtrl = TextEditingController();
+        return AlertDialog(
+          title: const Text('\u0420\u0443\u0447\u043d\u043e\u0439 \u0432\u0432\u043e\u0434'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(hintText: '\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0434\u0443\u043a\u0442\u0430'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: gramsCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: '\u0413\u0440\u0430\u043c\u043c\u044b'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: proteinCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: '\u0411\u0435\u043b\u043a\u0438 \u043d\u0430 100\u0433'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: fatCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: '\u0416\u0438\u0440\u044b \u043d\u0430 100\u0433'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: carbCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(hintText: '\u0423\u0433\u043b\u0435\u0432\u043e\u0434\u044b \u043d\u0430 100\u0433'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('\u041e\u0442\u043c\u0435\u043d\u0430'),
+            ),
+            TextButton(
+              onPressed: () {
+                final title = nameCtrl.text.trim();
+                if (title.isEmpty) {
+                  Navigator.pop(context);
+                  return;
+                }
+                double? parseNum(String v) {
+                  final cleaned = v.replaceAll(',', '.');
+                  return double.tryParse(cleaned);
+                }
+                final grams = parseNum(gramsCtrl.text) ?? 0;
+                final protein = parseNum(proteinCtrl.text) ?? 0;
+                final fat = parseNum(fatCtrl.text) ?? 0;
+                final carb = parseNum(carbCtrl.text) ?? 0;
+                final kcal100 = protein * 4 + carb * 4 + fat * 9;
+                Navigator.pop(context, _ManualAddData(
+                  title: title,
+                  grams: grams,
+                  protein100: protein,
+                  fat100: fat,
+                  carb100: carb,
+                  kcal100: kcal100,
+                ));
+              },
+              child: const Text('\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result == null) return;
+    final product = NutritionProduct(
+      title: result.title,
+      kcal100: result.kcal100,
+      protein100: result.protein100,
+      fat100: result.fat100,
+      carb100: result.carb100,
+    );
+    if (!mounted) return;
+    Navigator.pop(context, _AddItemResult(
+      meal: widget.meal,
+      grams: result.grams,
+      product: product,
+    ));
   }
 
   Future<void> _pickProduct(NutritionProduct product) async {
@@ -653,6 +774,7 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
                 child: TextField(
                   controller: _controller,
                   textInputAction: TextInputAction.search,
+                  onChanged: _onQueryChanged,
                   onSubmitted: (_) => _search(),
                   decoration: InputDecoration(
                     hintText: 'Поиск продукта',
@@ -667,6 +789,10 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
               IconButton(
                 onPressed: _searchBarcode,
                 icon: const Icon(Icons.qr_code),
+              ),
+              IconButton(
+                onPressed: _manualAdd,
+                icon: const Icon(Icons.edit),
               ),
             ],
           ),
@@ -745,6 +871,24 @@ class _AddItemResult {
     this.product,
     this.customTitle,
     this.customBrand,
+  });
+}
+
+class _ManualAddData {
+  final String title;
+  final double grams;
+  final double protein100;
+  final double fat100;
+  final double carb100;
+  final double kcal100;
+
+  _ManualAddData({
+    required this.title,
+    required this.grams,
+    required this.protein100,
+    required this.fat100,
+    required this.carb100,
+    required this.kcal100,
   });
 }
 

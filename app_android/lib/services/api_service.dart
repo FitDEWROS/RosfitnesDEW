@@ -15,13 +15,18 @@ class ApiService {
     return {'Authorization': 'Bearer $token'};
   }
 
+  Map<String, dynamic> _decodeJson(http.Response res) {
+    final body = utf8.decode(res.bodyBytes);
+    return jsonDecode(body) as Map<String, dynamic>;
+  }
+
   Future<List<Program>> fetchPrograms() async {
     final uri = Uri.parse('${AppConfig.apiBase}/api/programs');
     final res = await http.get(uri);
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception('HTTP ${res.statusCode}');
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = _decodeJson(res);
     final list = (data['programs'] as List? ?? const [])
         .map((e) => Program.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -45,7 +50,7 @@ class ApiService {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception('HTTP ${res.statusCode}');
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = _decodeJson(res);
     final list = (data['exercises'] as List? ?? const [])
         .map((e) => Exercise.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -61,7 +66,7 @@ class ApiService {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception('HTTP ${res.statusCode}');
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = _decodeJson(res);
     if (data['ok'] != true) {
       throw Exception('bad_response');
     }
@@ -83,7 +88,7 @@ class ApiService {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception('HTTP ${res.statusCode}');
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = _decodeJson(res);
     final list = (data['entries'] as List? ?? const [])
         .map((e) => NutritionHistoryDay.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -106,7 +111,7 @@ class ApiService {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception('HTTP ${res.statusCode}');
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = _decodeJson(res);
     final list = (data['items'] as List? ?? const [])
         .map((e) => NutritionProduct.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -121,7 +126,7 @@ class ApiService {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception('HTTP ${res.statusCode}');
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = _decodeJson(res);
     if (data['product'] == null) return null;
     return NutritionProduct.fromJson(data['product'] as Map<String, dynamic>);
   }
@@ -164,7 +169,7 @@ class ApiService {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception('HTTP ${res.statusCode}');
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data = _decodeJson(res);
     return NutritionItem.fromJson(data['item'] as Map<String, dynamic>);
   }
 
