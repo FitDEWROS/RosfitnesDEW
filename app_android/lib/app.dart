@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/auth_service.dart';
 import 'package:flutter/services.dart';
 import 'config.dart';
@@ -90,6 +91,15 @@ class _FitDewAppState extends State<FitDewApp> {
             theme: AppTheme.lightTheme(),
             darkTheme: AppTheme.darkTheme(),
             themeMode: _themeController.mode,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('ru'),
+              Locale('en'),
+            ],
             builder: (context, child) {
               return Stack(
                 children: [
