@@ -7,6 +7,7 @@ class Exercise {
   final String type;
   final List<String> muscles;
   final bool guestAccess;
+  final String? crossfitType;
 
   Exercise({
     required this.id,
@@ -17,6 +18,7 @@ class Exercise {
     required this.guestAccess,
     this.details,
     this.videoUrl,
+    this.crossfitType,
   });
 
   factory Exercise.fromJson(Map<String, dynamic> json) {
@@ -42,6 +44,7 @@ class Exercise {
       type: (json['type'] ?? 'gym').toString(),
       muscles: list,
       guestAccess: json['guestAccess'] == true,
+      crossfitType: json['crossfitType']?.toString(),
     );
   }
 }

@@ -12,8 +12,8 @@ class AppTheme {
 
   static const Color bgLight = Color(0xFFF4F1E6);
   static const Color bgSoftLight = Color(0xFFFFFFFF);
-  static const Color textLight = Color(0xFF1B1B1B);
-  static const Color mutedLight = Color(0xFF6F6A60);
+  static const Color textLight = Color(0xFF191919);
+  static const Color mutedLight = Color(0xFF4F4A40);
   static const Color cardLight = Color(0xFFFFFFFF);
   static const Color accentLight = Color(0xFFE8C86A);
   static const Color accentStrongLight = Color(0xFFDDB24D);
@@ -51,11 +51,38 @@ class AppTheme {
     return isDark(context) ? accentStrongDark : accentStrongLight;
   }
 
+  static Color accentGlow(BuildContext context) {
+    return isDark(context) ? const Color(0xFFF7E6AA) : const Color(0xFFECCB6E);
+  }
+
+  static LinearGradient headerGradient(BuildContext context) {
+    if (isDark(context)) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF2A2621), Color(0xFF1B1B1F)],
+      );
+    }
+    return const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [Color(0xFFF7EED7), Color(0xFFF4E7C3)],
+    );
+  }
+
   static List<Color> backgroundGradient(BuildContext context) {
     if (isDark(context)) {
-      return [bgDark, const Color(0xFF151518), const Color(0xFF0C0C0D)];
+      return [
+        bgDark.withOpacity(0.92),
+        const Color(0xFF151518).withOpacity(0.92),
+        const Color(0xFF0C0C0D).withOpacity(0.92),
+      ];
     }
-    return [bgLight, const Color(0xFFF8F3E8), const Color(0xFFF1E9D6)];
+    return [
+      bgLight.withOpacity(0.94),
+      const Color(0xFFF8F3E8).withOpacity(0.94),
+      const Color(0xFFF1E9D6).withOpacity(0.94),
+    ];
   }
 
   static ThemeData darkTheme() {

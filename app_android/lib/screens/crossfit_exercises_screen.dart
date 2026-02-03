@@ -17,25 +17,120 @@ class CrossfitExercisesScreen extends StatefulWidget {
   State<CrossfitExercisesScreen> createState() => _CrossfitExercisesScreenState();
 }
 
-class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen> {
+class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen>
+    with SingleTickerProviderStateMixin {
   final _api = ApiService();
   final TextEditingController _searchController = TextEditingController();
+  static const List<String> _filterKeys = [
+    'dumbbells',
+    'barbell',
+    'kettlebells',
+    'free',
+  ];
+  static const Map<String, String> _filterLabels = {
+    'dumbbells': 'Гантели',
+    'barbell': 'Штанга',
+    'kettlebells': 'Гири',
+    'free': 'Свободные',
+  };
   int _cols = 2;
   List<Exercise> _all = [];
   List<Exercise> _filtered = [];
   bool _loading = true;
+  bool _showFilters = false;
+  late Set<String> _activeFilters;
+  late final AnimationController _headerController;
+  late final Animation<double> _headerShift;
 
   @override
   void initState() {
     super.initState();
+    _activeFilters = _filterKeys.toSet();
+    _headerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 5200),
+    )..repeat(reverse: true);
+    _headerShift =
+        CurvedAnimation(parent: _headerController, curve: Curves.easeInOut);
     _load();
     _searchController.addListener(_applyFilter);
   }
 
   @override
   void dispose() {
+    _headerController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Widget _buildHeaderCard(BuildContext context, Widget child) {
+    final radius = BorderRadius.circular(20);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: Colors.white10),
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Container(color: AppTheme.cardColor(context)),
+            ),
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _headerShift,
+                builder: (context, _) {
+                  final t = _headerShift.value;
+                  final isLight =
+                      Theme.of(context).brightness == Brightness.light;
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(-1.1 + 2.2 * t, -0.7),
+                        end: Alignment(1.1 - 2.2 * t, 0.85),
+                        colors: [
+                          const Color(0xFFC9A76A)
+                              .withOpacity(isLight ? 0.24 : 0.18),
+                          AppTheme.accentColor(context)
+                              .withOpacity(isLight ? 0.18 : 0.12),
+                          const Color(0xFF6A5B3D)
+                              .withOpacity(isLight ? 0.18 : 0.14),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _headerShift,
+                builder: (context, _) {
+                  final t = _headerShift.value;
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment(0.3 + 0.5 * t, 1.1),
+                        radius: 1.1,
+                        colors: [
+                          AppTheme.accentColor(context).withOpacity(0.16),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: child,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -44,9 +139,9 @@ class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen> {
       if (!mounted) return;
       setState(() {
         _all = data;
-        _filtered = data;
         _loading = false;
       });
+      _applyFilter();
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -54,17 +149,36 @@ class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen> {
   }
 
   void _applyFilter() {
+    if (!mounted) return;
     final query = _searchController.text.toLowerCase().trim();
+    final showAll = _activeFilters.isEmpty ||
+        _activeFilters.length == _filterKeys.length;
+    final filteredByType = showAll
+        ? _all
+        : _all
+            .where((ex) =>
+                ex.crossfitType != null &&
+                _activeFilters.contains(ex.crossfitType))
+            .toList();
     if (query.isEmpty) {
-      setState(() => _filtered = _all);
+      setState(() => _filtered = filteredByType);
       return;
     }
     setState(() {
-      _filtered = _all.where((ex) {
+      _filtered = filteredByType.where((ex) {
         final hay = '${ex.title} ${ex.description} ${ex.details ?? ''}'.toLowerCase();
         return hay.contains(query);
       }).toList();
     });
+  }
+
+  void _toggleFilter(String key) {
+    if (_activeFilters.contains(key)) {
+      _activeFilters.remove(key);
+    } else {
+      _activeFilters.add(key);
+    }
+    _applyFilter();
   }
 
   @override
@@ -93,18 +207,11 @@ class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: AppTheme.cardColor(context),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: Row(
-                      children: [                        Expanded(
+                  child: _buildHeaderCard(
+                    context,
+                    Row(
+                      children: [
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -137,55 +244,85 @@ class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-                  child: Row(
+                  child: Column(
                     children: [
-                      _CircleIcon(
-                        icon: Icons.tune,
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          height: 46,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: AppTheme.cardColor(context),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white10),
+                      Row(
+                        children: [
+                          _CircleIcon(
+                            icon: Icons.tune,
+                            onTap: () =>
+                                setState(() => _showFilters = !_showFilters),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.search,
-                                  size: 18,
-                                  color: AppTheme.mutedColor(context)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextField(
-                                  controller: _searchController,
-                                  decoration: InputDecoration(
-                                    hintText: 'Поиск упражнения',
-                                    hintStyle: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: AppTheme.mutedColor(context),
-                                        ),
-                                    border: InputBorder.none,
-                                  ),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(color: AppTheme.textColor(context)),
-                                ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              height: 46,
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              decoration: BoxDecoration(
+                                color: AppTheme.cardColor(context),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white10),
                               ),
-                            ],
+                              child: Row(
+                                children: [
+                                  Icon(Icons.search,
+                                      size: 18,
+                                      color: AppTheme.mutedColor(context)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _searchController,
+                                      decoration: InputDecoration(
+                                        hintText: 'Поиск упражнения',
+                                        hintStyle: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: AppTheme.mutedColor(context),
+                                            ),
+                                        border: InputBorder.none,
+                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                              color: AppTheme.textColor(context)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          _CircleBadge(
+                            value: '$_cols',
+                            onTap: () =>
+                                setState(() => _cols = _cols == 2 ? 1 : 2),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      _CircleBadge(
-                        value: '$_cols',
-                        onTap: () => setState(() => _cols = _cols == 2 ? 1 : 2),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut,
+                        child: _showFilters
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: _filterKeys.map((key) {
+                                      return _FilterChip(
+                                        label: _filterLabels[key] ?? key,
+                                        isActive: _activeFilters.contains(key),
+                                        onTap: () => _toggleFilter(key),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
                       ),
                     ],
                   ),
@@ -196,6 +333,48 @@ class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen> {
                   child: Padding(
                     padding: EdgeInsets.all(24),
                     child: Center(child: CircularProgressIndicator()),
+                  ),
+                )
+              else if (_cols == 1)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final item = _filtered[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 520),
+                              child: _ExerciseCard(
+                                title: item.title,
+                                subtitle:
+                                    '\u041E\u0422\u041A\u0420\u042B\u0422\u042C\n\u041E\u041F\u0418\u0421\u0410\u041D\u0418\u0415',
+                                hasVideo: (item.videoUrl ?? '').isNotEmpty,
+                                videoUrl: item.videoUrl,
+                                thumbMaxWidth: thumbMaxWidth,
+                                previewHeight: 190,
+                                onTap: () => showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (_) => ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(24)),
+                                    child: ExerciseDetailScreen(
+                                      exercise: item,
+                                      asModal: true,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: _filtered.length,
+                    ),
                   ),
                 )
               else
@@ -233,7 +412,7 @@ class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen> {
                       crossAxisCount: _cols,
                       mainAxisSpacing: 14,
                       crossAxisSpacing: 14,
-                      childAspectRatio: _cols == 1 ? 0.9 : 0.6,
+                      childAspectRatio: 0.6,
                     ),
                   ),
                 ),
@@ -301,6 +480,53 @@ class _CircleBadge extends StatelessWidget {
                 .titleMedium
                 ?.copyWith(color: Colors.black, fontWeight: FontWeight.w700),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+  const _FilterChip({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = AppTheme.accentColor(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? accent : AppTheme.cardColor(context),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isActive ? accent.withOpacity(0.8) : Colors.white10,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: accent.withOpacity(0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w700,
+                color: isActive ? Colors.black : AppTheme.mutedColor(context),
+              ),
         ),
       ),
     );

@@ -563,6 +563,100 @@ const getMonthStartKeyWithOffset = (date, offsetMin) => {
   return getMonthStartKey(localKey);
 };
 
+const OFF_BASE = 'https://world.openfoodfacts.org';
+
+const buildOffSearchUrl = (query, page = 1, limit = 20) => {
+  const params = new URLSearchParams({
+    search_terms: query,
+    search_simple: '1',
+    action: 'process',
+    json: '1',
+    page_size: String(limit),
+    page: String(page),
+    fields: 'code,product_name,product_name_ru,brands,image_url,nutriments'
+  });
+  return `${OFF_BASE}/cgi/search.pl?${params.toString()}`;
+};
+
+const buildOffBarcodeUrl = (barcode) => {
+  const fields = 'code,product_name,product_name_ru,brands,image_url,nutriments';
+  return `${OFF_BASE}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${encodeURIComponent(fields)}`;
+};
+
+const normalizeOffProduct = (raw) => {
+  if (!raw) return null;
+  const nutr = raw.nutriments || {};
+  return {
+    source: 'off',
+    sourceId: raw.code ? String(raw.code) : null,
+    barcode: raw.code ? String(raw.code) : null,
+    title: cleanString(raw.product_name_ru) || cleanString(raw.product_name) || 'Продукт',
+    brand: cleanString(raw.brands) || null,
+    imageUrl: raw.image_url || null,
+    kcal100: toFloat(nutr['energy-kcal_100g'] ?? nutr['energy-kcal']),
+    protein100: toFloat(nutr['proteins_100g'] ?? nutr['proteins']),
+    fat100: toFloat(nutr['fat_100g'] ?? nutr['fat']),
+    carb100: toFloat(nutr['carbohydrates_100g'] ?? nutr['carbohydrates'])
+  };
+};
+
+const calcMacrosFromProduct = (product, grams) => {
+  const g = Math.max(0, Number(grams) || 0);
+  const k = (product.kcal100 || 0) * g / 100;
+  const p = (product.protein100 || 0) * g / 100;
+  const f = (product.fat100 || 0) * g / 100;
+  const c = (product.carb100 || 0) * g / 100;
+  return {
+    grams: g,
+    kcal: Math.round(k),
+    protein: Math.round(p * 10) / 10,
+    fat: Math.round(f * 10) / 10,
+    carb: Math.round(c * 10) / 10
+  };
+};
+
+const upsertNutritionProduct = async (raw) => {
+  if (!raw) return null;
+  const data = normalizeOffProduct(raw);
+  if (!data) return null;
+  if (data.barcode) {
+    return prisma.nutritionProduct.upsert({
+      where: { barcode: data.barcode },
+      update: data,
+      create: data
+    });
+  }
+  return prisma.nutritionProduct.create({ data });
+};
+
+const recalcNutritionEntryTotals = async (entryId) => {
+  const items = await prisma.nutritionItem.findMany({
+    where: { entryId },
+    select: { kcal: true, protein: true, fat: true, carb: true, meal: true }
+  });
+  const totals = items.reduce(
+    (acc, item) => {
+      acc.kcal += item.kcal || 0;
+      acc.protein += item.protein || 0;
+      acc.fat += item.fat || 0;
+      acc.carb += item.carb || 0;
+      acc.meals.add(item.meal);
+      return acc;
+    },
+    { kcal: 0, protein: 0, fat: 0, carb: 0, meals: new Set() }
+  );
+  return prisma.nutritionEntry.update({
+    where: { id: entryId },
+    data: {
+      kcal: Math.round(totals.kcal),
+      protein: Math.round(totals.protein * 10) / 10,
+      fat: Math.round(totals.fat * 10) / 10,
+      carb: Math.round(totals.carb * 10) / 10,
+      mealsCount: totals.meals.size
+    }
+  });
+};
+
 const getWeightLockUntil = (entry) => {
   const updatedAt = entry?.updatedAt ? new Date(entry.updatedAt) : null;
   if (!updatedAt || Number.isNaN(updatedAt.getTime())) return null;
@@ -615,6 +709,44 @@ function parseInitData(initData) {
   if (!tg_id) return { ok: false, status: 400, error: 'no_tg_id' };
 
   return { ok: true, user, tg_id };
+}
+
+function parseMobileToken(token) {
+  if (!token || typeof token !== 'string') {
+    return { ok: false, status: 401, error: 'no_token' };
+  }
+  const parts = token.split('.');
+  if (parts.length !== 2) return { ok: false, status: 401, error: 'bad_token' };
+  if (!MOBILE_TOKEN_SECRET) return { ok: false, status: 500, error: 'no_mobile_secret' };
+  const [body, sig] = parts;
+  const calc = crypto
+    .createHmac('sha256', MOBILE_TOKEN_SECRET)
+    .update(body)
+    .digest('base64url');
+  if (calc !== sig) return { ok: false, status: 401, error: 'bad_token' };
+  try {
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    const tg_id = payload?.tg_id ? Number(payload.tg_id) : null;
+    if (!Number.isFinite(tg_id)) return { ok: false, status: 401, error: 'bad_tg_id' };
+    return { ok: true, tg_id, payload };
+  } catch (_) {
+    return { ok: false, status: 401, error: 'bad_token_body' };
+  }
+}
+
+function getAuthFromRequest(req) {
+  const header = req.headers?.authorization || '';
+  const bearer = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  const token = bearer || req.query?.token || req.body?.token || null;
+  if (token) {
+    const parsed = parseMobileToken(token);
+    if (!parsed.ok) return parsed;
+    return { ok: true, tg_id: parsed.tg_id, source: 'token' };
+  }
+  const initData = req.body?.initData || req.query?.initData || null;
+  const parsed = parseInitData(initData);
+  if (!parsed.ok) return parsed;
+  return { ok: true, tg_id: parsed.tg_id, user: parsed.user, source: 'initData' };
 }
 
 const ensureUserRecord = async (parsed) => {
@@ -2057,8 +2189,8 @@ app.post('/api/measurements/delete', async (req, res) => {
 // === История питания (GET) ===
 app.get('/api/nutrition/history', async (req, res) => {
   try {
-    const parsed = parseInitData(req.query.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
 
     const daysRaw = Number(req.query.days || 7);
     const days = Number.isFinite(daysRaw) ? Math.max(1, Math.min(daysRaw, 31)) : 7;
@@ -2078,12 +2210,12 @@ app.get('/api/nutrition/history', async (req, res) => {
     }
 
     const dbUser = await prisma.user.upsert({
-      where: { tg_id: Number(parsed.tg_id) },
+      where: { tg_id: Number(auth.tg_id) },
       update: {},
       create: {
-        tg_id: Number(parsed.tg_id),
-        username: parsed.user?.username || null,
-        first_name: parsed.user?.first_name || null
+        tg_id: Number(auth.tg_id),
+        username: auth.user?.username || null,
+        first_name: auth.user?.first_name || null
       }
     });
 
@@ -2124,19 +2256,19 @@ app.get('/api/nutrition/history', async (req, res) => {
 // === Дневник питания (GET / POST) ===
 app.get('/api/nutrition', async (req, res) => {
   try {
-    const parsed = parseInitData(req.query.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
 
     const date = getDateKey(req.query.date);
-    const tg_id = parsed.tg_id;
+    const tg_id = auth.tg_id;
 
     const dbUser = await prisma.user.upsert({
       where: { tg_id: Number(tg_id) },
       update: {},
       create: {
         tg_id: Number(tg_id),
-        username: parsed.user?.username || null,
-        first_name: parsed.user?.first_name || null
+        username: auth.user?.username || null,
+        first_name: auth.user?.first_name || null
       }
     });
 
@@ -2144,12 +2276,19 @@ app.get('/api/nutrition', async (req, res) => {
       where: { userId_date: { userId: dbUser.id, date } }
     });
 
+    const items = entry
+      ? await prisma.nutritionItem.findMany({
+          where: { entryId: entry.id },
+          orderBy: { createdAt: 'desc' }
+        })
+      : [];
+
     const comment = await prisma.nutritionComment.findUnique({
       where: { userId_date: { userId: dbUser.id, date } },
       select: { text: true }
     });
 
-    res.json({ ok: true, date, entry, comment: comment?.text || null });
+    res.json({ ok: true, date, entry, items, comment: comment?.text || null });
   } catch (e) {
     console.error('[api/nutrition:get] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -2158,20 +2297,20 @@ app.get('/api/nutrition', async (req, res) => {
 
 app.post('/api/nutrition', async (req, res) => {
   try {
-    const { initData, date: rawDate } = req.body || {};
-    const parsed = parseInitData(initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const { date: rawDate } = req.body || {};
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
 
     const date = getDateKey(rawDate);
-    const tg_id = parsed.tg_id;
+    const tg_id = auth.tg_id;
 
     const dbUser = await prisma.user.upsert({
       where: { tg_id: Number(tg_id) },
       update: {},
       create: {
         tg_id: Number(tg_id),
-        username: parsed.user?.username || null,
-        first_name: parsed.user?.first_name || null
+        username: auth.user?.username || null,
+        first_name: auth.user?.first_name || null
       }
     });
 
@@ -2191,6 +2330,229 @@ app.post('/api/nutrition', async (req, res) => {
     res.json({ ok: true, date, entry });
   } catch (e) {
     console.error('[api/nutrition:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Food search (OpenFoodFacts) ===
+app.get('/api/food/search', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+
+    const query = cleanString(req.query.query);
+    if (!query) return res.status(400).json({ ok: false, error: 'no_query' });
+    const pageRaw = Number(req.query.page || 1);
+    const limitRaw = Number(req.query.limit || 20);
+    const page = Number.isFinite(pageRaw) ? Math.max(1, Math.min(pageRaw, 50)) : 1;
+    const limit = Number.isFinite(limitRaw) ? Math.max(5, Math.min(limitRaw, 50)) : 20;
+
+    const url = buildOffSearchUrl(query, page, limit);
+    const data = await fetchJson(url);
+    const products = Array.isArray(data?.products) ? data.products : [];
+    const items = products
+      .map(normalizeOffProduct)
+      .filter(Boolean)
+      .map((p) => ({
+        barcode: p.barcode,
+        title: p.title,
+        brand: p.brand,
+        imageUrl: p.imageUrl,
+        kcal100: p.kcal100,
+        protein100: p.protein100,
+        fat100: p.fat100,
+        carb100: p.carb100
+      }));
+
+    res.json({ ok: true, items });
+  } catch (e) {
+    console.error('[api/food:search] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.get('/api/food/barcode', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+
+    const barcode = cleanString(req.query.barcode);
+    if (!barcode) return res.status(400).json({ ok: false, error: 'no_barcode' });
+
+    let product = await prisma.nutritionProduct.findUnique({
+      where: { barcode }
+    });
+    if (!product) {
+      const data = await fetchJson(buildOffBarcodeUrl(barcode));
+      if (!data || data.status !== 1) {
+        return res.status(404).json({ ok: false, error: 'not_found' });
+      }
+      product = await upsertNutritionProduct(data.product);
+    }
+
+    if (!product) return res.status(404).json({ ok: false, error: 'not_found' });
+    res.json({
+      ok: true,
+      product: {
+        id: product.id,
+        barcode: product.barcode,
+        title: product.title,
+        brand: product.brand,
+        imageUrl: product.imageUrl,
+        kcal100: product.kcal100,
+        protein100: product.protein100,
+        fat100: product.fat100,
+        carb100: product.carb100
+      }
+    });
+  } catch (e) {
+    console.error('[api/food:barcode] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Nutrition items ===
+app.post('/api/nutrition/item', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+
+    const date = getDateKey(req.body?.date);
+    const meal = cleanString(req.body?.meal) || 'other';
+    const grams = toFloat(req.body?.grams);
+    if (!grams || grams <= 0) return res.status(400).json({ ok: false, error: 'bad_grams' });
+
+    const tg_id = auth.tg_id;
+    const dbUser = await prisma.user.upsert({
+      where: { tg_id: Number(tg_id) },
+      update: {},
+      create: {
+        tg_id: Number(tg_id),
+        username: auth.user?.username || null,
+        first_name: auth.user?.first_name || null
+      }
+    });
+
+    const entry = await prisma.nutritionEntry.upsert({
+      where: { userId_date: { userId: dbUser.id, date } },
+      update: {},
+      create: { userId: dbUser.id, date }
+    });
+
+    let product = null;
+    const productId = Number(req.body?.productId);
+    const barcode = cleanString(req.body?.barcode);
+    if (Number.isFinite(productId) && productId > 0) {
+      product = await prisma.nutritionProduct.findUnique({ where: { id: productId } });
+    } else if (barcode) {
+      product = await prisma.nutritionProduct.findUnique({ where: { barcode } });
+      if (!product) {
+        const data = await fetchJson(buildOffBarcodeUrl(barcode));
+        if (data && data.status === 1) {
+          product = await upsertNutritionProduct(data.product);
+        }
+      }
+    }
+
+    let title = cleanString(req.body?.title);
+    let brand = cleanString(req.body?.brand) || null;
+    let kcal100 = toFloat(req.body?.kcal100);
+    let protein100 = toFloat(req.body?.protein100);
+    let fat100 = toFloat(req.body?.fat100);
+    let carb100 = toFloat(req.body?.carb100);
+
+    if (product) {
+      title = product.title;
+      brand = product.brand;
+      kcal100 = product.kcal100;
+      protein100 = product.protein100;
+      fat100 = product.fat100;
+      carb100 = product.carb100;
+    } else if (title) {
+      const created = await prisma.nutritionProduct.create({
+        data: {
+          source: 'custom',
+          title,
+          brand,
+          kcal100,
+          protein100,
+          fat100,
+          carb100
+        }
+      });
+      product = created;
+    } else {
+      return res.status(400).json({ ok: false, error: 'no_product' });
+    }
+
+    const macros = calcMacrosFromProduct(
+      {
+        kcal100: kcal100 || 0,
+        protein100: protein100 || 0,
+        fat100: fat100 || 0,
+        carb100: carb100 || 0
+      },
+      grams
+    );
+
+    const item = await prisma.nutritionItem.create({
+      data: {
+        entryId: entry.id,
+        productId: product?.id || null,
+        title,
+        brand,
+        meal,
+        grams: macros.grams,
+        kcal: macros.kcal,
+        protein: macros.protein,
+        fat: macros.fat,
+        carb: macros.carb
+      }
+    });
+
+    const updated = await recalcNutritionEntryTotals(entry.id);
+
+    res.json({ ok: true, entry: updated, item });
+  } catch (e) {
+    console.error('[api/nutrition:item] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/nutrition/item/delete', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+
+    const id = Number(req.body?.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ ok: false, error: 'bad_id' });
+
+    const item = await prisma.nutritionItem.findUnique({
+      where: { id },
+      select: { id: true, entryId: true }
+    });
+    if (!item) return res.json({ ok: true, removed: false });
+
+    const entry = await prisma.nutritionEntry.findUnique({
+      where: { id: item.entryId },
+      select: { id: true, userId: true }
+    });
+    if (!entry) return res.json({ ok: true, removed: false });
+
+    const dbUser = await prisma.user.findUnique({
+      where: { tg_id: Number(auth.tg_id) },
+      select: { id: true }
+    });
+    if (!dbUser || dbUser.id !== entry.userId) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
+    await prisma.nutritionItem.delete({ where: { id } });
+    const updated = await recalcNutritionEntryTotals(entry.id);
+
+    res.json({ ok: true, removed: true, entry: updated });
+  } catch (e) {
+    console.error('[api/nutrition:item:delete] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });

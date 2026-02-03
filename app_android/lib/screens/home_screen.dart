@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../app.dart';
@@ -12,18 +13,27 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   TrainingMode _mode = TrainingMode.crossfit;
   bool _chatAllowed = false;
   final ScrollController _scrollController = ScrollController();
   final _metricsKey = GlobalKey();
   final _workoutsKey = GlobalKey();
   int _activeNav = 0;
+  double _scrollOffset = 0;
+  late final AnimationController _glowController;
+  late final Animation<double> _glow;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_handleScroll);
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
+    _glow = CurvedAnimation(parent: _glowController, curve: Curves.easeInOut);
     _loadPrefs();
   }
 
@@ -31,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -73,6 +84,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (next != _activeNav) {
       setState(() => _activeNav = next);
     }
+    if ((offset - _scrollOffset).abs() > 1) {
+      setState(() => _scrollOffset = offset);
+    }
   }
 
   double? _sectionOffset(GlobalKey key) {
@@ -107,21 +121,34 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = AppTheme.isDark(context);
+    final parallax = (_scrollOffset * 0.02).clamp(-4.0, 4.0);
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: AppTheme.backgroundGradient(context),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: AppTheme.backgroundGradient(context),
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: ListView(
-            controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 140),
-            children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  painter: _NoisePainter(opacity: 0.015),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: ListView(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 140),
+              children: [
               const SizedBox(height: 18),
               Text(
                 'ПРИВЕТ',
@@ -164,83 +191,111 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Image.asset(
-                    'assets/emblem.png',
-                    width: 72,
-                    height: 72,
+                  Transform.translate(
+                    offset: Offset(-6, parallax * -0.6),
+                    child: SizedBox(
+                      width: 80,
+                      height: 86,
+                      child: Image.asset(
+                        'assets/emblem.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  Row(
-                    children: [
-                      if (_chatAllowed) ...[
-                        _IconBubble(
-                          icon: Icons.chat_bubble_outline,
-                          onTap: () => _openChat(context),
-                          backgroundColor: AppTheme.accentColor(context),
-                          iconColor: Colors.black,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      _IconBubble(
-                        icon: AppScope.of(context).mode == ThemeMode.dark
-                            ? Icons.nights_stay_outlined
-                            : Icons.wb_sunny_outlined,
-                        onTap: () => AppScope.of(context).toggle(),
+                  if (_chatAllowed) ...[
+                    Transform.translate(
+                      offset: Offset(0, parallax * -0.6),
+                      child: _IconBubble(
+                        icon: Icons.chat_bubble_outline,
+                        onTap: () => _openChat(context),
+                        backgroundColor: AppTheme.accentColor(context),
+                        iconColor: Colors.black,
                       ),
-                      const SizedBox(width: 8),
-                      Stack(
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Transform.translate(
+                    offset: Offset(0, parallax * -0.6),
+                    child: SizedBox(
+                      width: 96,
+                      height: 86,
+                      child: Stack(
+                        clipBehavior: Clip.none,
                         children: [
-                          _IconBubble(
-                            icon: Icons.notifications_none,
-                            onTap: () =>
-                                Navigator.pushNamed(context, '/notifications'),
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentColor(context),
-                                shape: BoxShape.circle,
+                        Positioned(
+                          left: 0,
+                          top: 38,
+                          child: Stack(
+                            children: [
+                              _IconBubble(
+                                icon: Icons.notifications_none,
+                                onTap: () =>
+                                    Navigator.pushNamed(context, '/notifications'),
                               ),
-                              child: const Center(
-                                child: Text(
-                                  '0',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 10,
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentColor(context),
+                                    shape: BoxShape.circle,
                                   ),
+                                  child: const Center(
+                                    child: Text(
+                                      '0',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          left: 30,
+                          top: 0,
+                          child: _IconBubble(
+                            icon: AppScope.of(context).mode == ThemeMode.dark
+                                ? Icons.nights_stay_outlined
+                                : Icons.wb_sunny_outlined,
+                            onTap: () => AppScope.of(context).toggle(),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 38,
+                          child: InkWell(
+                            onTap: () => Navigator.pushNamed(context, '/profile'),
+                            borderRadius: BorderRadius.circular(999),
+                            child: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: isDark
+                                  ? const Color(0xFF2A2B2F)
+                                  : Colors.black12,
+                              child: Text(
+                                'М',
+                                style: TextStyle(
+                                  color: AppTheme.accentColor(context),
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
-                          )
-                        ],
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () => Navigator.pushNamed(context, '/profile'),
-                        borderRadius: BorderRadius.circular(999),
-                        child: CircleAvatar(
-                          radius: 18,
-                          backgroundColor:
-                              isDark ? const Color(0xFF2A2B2F) : Colors.black12,
-                          child: Text(
-                            'М',
-                            style: TextStyle(
-                              color: AppTheme.accentColor(context),
-                              fontWeight: FontWeight.w700,
-                            ),
                           ),
                         ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              const _StatsCard(),
+              _StatsCard(pulse: _glow, sheen: _scrollOffset),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -265,29 +320,36 @@ class _HomeScreenState extends State<HomeScreen> {
               KeyedSubtree(
                 key: _metricsKey,
                 child: Column(
-                  children: const [
+                  children: [
                     _MetricPill(
                       title: 'Вес',
                       value: '91',
                       unit: 'кг',
                       status: 'ПРОФИЛЬ',
                       color: Color(0xFFCBE7BA),
+                      pulse: _glow,
+                      sheen: _scrollOffset,
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     _MetricPill(
                       title: 'Вода',
                       value: '0',
                       unit: 'л',
                       status: 'НЕТ ДАННЫХ',
                       color: Color(0xFFC7E7F7),
+                      pulse: _glow,
+                      sheen: _scrollOffset,
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     _MetricPill(
                       title: 'Приемы пищи',
                       value: '0',
                       unit: 'раз',
                       status: 'НЕТ ДАННЫХ',
                       color: Color(0xFFF2D88D),
+                      pulse: _glow,
+                      sheen: _scrollOffset,
+                      highlightSheen: true,
                     ),
                   ],
                 ),
@@ -337,7 +399,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
+      ],
+    ),
       bottomNavigationBar: _BottomShell(
         mode: _mode,
         onModeChanged: (value) {
@@ -408,97 +471,140 @@ class _IconBubble extends StatelessWidget {
 }
 
 class _StatsCard extends StatelessWidget {
-  const _StatsCard();
+  final Animation<double> pulse;
+  final double sheen;
+  const _StatsCard({required this.pulse, required this.sheen});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.accentColor(context),
-            AppTheme.accentStrongColor(context),
-          ],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black45,
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          )
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: -10,
-            child: SizedBox(
-              height: 28,
-              child: CustomPaint(
-                painter: _WavePainter(
-                  color: Colors.black.withOpacity(0.15),
-                ),
+    final shift = (sheen * 0.002) % 1.0;
+    return AnimatedBuilder(
+      animation: pulse,
+      builder: (context, _) {
+        final glow = 0.22 + 0.08 * pulse.value;
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.accentColor(context).withOpacity(glow),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
               ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '0',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineLarge
-                    ?.copyWith(color: Colors.black, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'ККАЛ',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: Colors.black54, letterSpacing: 2),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: const [
-                  _SmallStat(title: 'Б', value: '0'),
-                  SizedBox(width: 12),
-                  _SmallStat(title: 'Ж', value: '0'),
-                  SizedBox(width: 12),
-                  _SmallStat(title: 'У', value: '0'),
-                ],
-              ),
-              const SizedBox(height: 14),
-              InkWell(
-                onTap: () => Navigator.pushNamed(context, '/diary'),
-                borderRadius: BorderRadius.circular(999),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: Colors.black.withOpacity(0.15),
-                  ),
-                  child: Text(
-                    'ДНЕВНИК ПИТАНИЯ',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(letterSpacing: 1.6, color: Colors.black87),
-                  ),
-                ),
-              )
             ],
           ),
-        ],
-      ),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.accentColor(context),
+                  AppTheme.accentStrongColor(context),
+                ],
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black45,
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                )
+              ],
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Opacity(
+                      opacity: 0.18,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(-1.2 + 2.4 * shift, -1),
+                            end: Alignment(-0.2 + 2.4 * shift, 1),
+                            colors: const [
+                              Color(0x80FFFFFF),
+                              Color(0x00FFFFFF),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: -10,
+                  child: SizedBox(
+                    height: 28,
+                    child: CustomPaint(
+                      painter: _WavePainter(
+                        color: Colors.black.withOpacity(0.15),
+                      ),
+                    ),
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '0',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineLarge
+                          ?.copyWith(
+                              color: Colors.black, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'ККАЛ',
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(color: Colors.black54, letterSpacing: 2),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: const [
+                        _SmallStat(title: 'Б', value: '0'),
+                        SizedBox(width: 12),
+                        _SmallStat(title: 'Ж', value: '0'),
+                        SizedBox(width: 12),
+                        _SmallStat(title: 'У', value: '0'),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    InkWell(
+                      onTap: () => Navigator.pushNamed(context, '/diary'),
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          color: Colors.black.withOpacity(0.15),
+                        ),
+                        child: Text(
+                          'ДНЕВНИК ПИТАНИЯ',
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
+                                  letterSpacing: 1.6, color: Colors.black87),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -547,79 +653,138 @@ class _MetricPill extends StatelessWidget {
   final String unit;
   final String status;
   final Color color;
+  final Animation<double> pulse;
+  final double sheen;
+  final bool highlightSheen;
   const _MetricPill({
     required this.title,
     required this.value,
     required this.unit,
     required this.status,
     required this.color,
+    required this.pulse,
+    required this.sheen,
+    this.highlightSheen = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color,
-            Color.lerp(color, Colors.white, 0.2)!,
-          ],
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final shift = (sheen * 0.002) % 1.0;
+    return AnimatedBuilder(
+      animation: pulse,
+      builder: (context, _) {
+        final glow = 0.16 + 0.06 * pulse.value;
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(glow),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: Colors.black),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  status,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.black.withOpacity(0.6),
-                        letterSpacing: 1.8,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        color,
+                        Color.lerp(color, Colors.white, 0.2)!,
+                      ],
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(color: Colors.black),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              status,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: Colors.black.withOpacity(0.6),
+                                    letterSpacing: 1.8,
+                                  ),
+                            )
+                          ],
+                        ),
                       ),
-                )
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                value,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                unit,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(
+                                      color: Colors.black.withOpacity(0.65),
+                                      letterSpacing: 1.2,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+                if (highlightSheen)
+                  Positioned.fill(
+                    child: Opacity(
+                      opacity: 0.18,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment(-1.2 + 2.4 * shift, -1),
+                            end: Alignment(-0.2 + 2.4 * shift, 1),
+                            colors: const [
+                              Color(0x80FFFFFF),
+                              Color(0x00FFFFFF),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    unit,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Colors.black.withOpacity(0.65),
-                          letterSpacing: 1.2,
-                        ),
-                  ),
-                ],
-              ),
-            ],
-          )
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -872,6 +1037,32 @@ class _WavePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+class _NoisePainter extends CustomPainter {
+  final double opacity;
+  final int seed;
+  const _NoisePainter({this.opacity = 0.015, this.seed = 1337});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rand = math.Random(seed);
+    final light = Paint()..color = Colors.white.withOpacity(opacity);
+    final dark = Paint()..color = Colors.black.withOpacity(opacity * 0.7);
+    const step = 6.0;
+    for (double y = 0; y < size.height; y += step) {
+      for (double x = 0; x < size.width; x += step) {
+        final r = rand.nextDouble();
+        if (r < 0.35) {
+          final paint = r < 0.17 ? dark : light;
+          canvas.drawRect(Rect.fromLTWH(x, y, 1.2, 1.2), paint);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NoisePainter oldDelegate) => false;
+}
+
 class _ModeToggle extends StatelessWidget {
   final TrainingMode value;
   final ValueChanged<TrainingMode> onChanged;
@@ -906,17 +1097,53 @@ class _ModeToggle extends StatelessWidget {
             alignment: isGym ? Alignment.centerLeft : Alignment.centerRight,
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOut,
-            child: Container(
-              width: 100,
+            child: SizedBox(
+              width: 104,
               height: 28,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.accentColor(context),
-                    AppTheme.accentStrongColor(context),
-                  ],
-                ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.accentColor(context),
+                            AppTheme.accentStrongColor(context),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentColor(context).withOpacity(0.45),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: isGym ? -8 : null,
+                    left: isGym ? null : -8,
+                    top: 10,
+                    child: Container(
+                      width: 14,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        gradient: LinearGradient(
+                          begin: isGym ? Alignment.centerLeft : Alignment.centerRight,
+                          end: isGym ? Alignment.centerRight : Alignment.centerLeft,
+                          colors: [
+                            AppTheme.accentStrongColor(context).withOpacity(0.9),
+                            AppTheme.accentStrongColor(context).withOpacity(0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

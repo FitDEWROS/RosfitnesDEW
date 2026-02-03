@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'services/auth_service.dart';
 import 'package:flutter/services.dart';
@@ -89,6 +90,14 @@ class _FitDewAppState extends State<FitDewApp> {
             theme: AppTheme.lightTheme(),
             darkTheme: AppTheme.darkTheme(),
             themeMode: _themeController.mode,
+            builder: (context, child) {
+              return Stack(
+                children: [
+                  const _AnimatedBackdrop(),
+                  if (child != null) child,
+                ],
+              );
+            },
             home: _ready
                 ? (_isAuthed ? const HomeScreen() : const LoginScreen())
                 : const _SplashScreen(),
@@ -143,4 +152,132 @@ class _SplashScreen extends StatelessWidget {
       body: const Center(child: CircularProgressIndicator()),
     );
   }
+}
+
+class _AnimatedBackdrop extends StatefulWidget {
+  const _AnimatedBackdrop();
+
+  @override
+  State<_AnimatedBackdrop> createState() => _AnimatedBackdropState();
+}
+
+class _AnimatedBackdropState extends State<_AnimatedBackdrop>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 9000),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _anim,
+        builder: (context, _) {
+          final t = _anim.value;
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment(-1 + 2 * t, -1),
+                      end: Alignment(1 - 2 * t, 1),
+                      colors: isDark
+                          ? const [
+                              Color(0xFF0F0F10),
+                              Color(0xFF151518),
+                              Color(0xFF0C0C0D),
+                            ]
+                          : const [
+                              Color(0xFFF4F1E6),
+                              Color(0xFFF8F3E8),
+                              Color(0xFFF1E9D6),
+                            ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(0.3 + 0.4 * t, -0.2),
+                      radius: 1.2,
+                      colors: [
+                        AppTheme.accentColor(context)
+                            .withOpacity(isDark ? 0.12 : 0.16),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(-0.4 + 0.3 * t, 1.1),
+                      radius: 1.1,
+                      colors: [
+                        AppTheme.accentStrongColor(context)
+                            .withOpacity(isDark ? 0.10 : 0.14),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const Positioned.fill(
+                child: CustomPaint(
+                  painter: _GlobalNoisePainter(opacity: 0.012),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _GlobalNoisePainter extends CustomPainter {
+  final double opacity;
+  final int seed;
+  const _GlobalNoisePainter({this.opacity = 0.012, this.seed = 1337});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rand = math.Random(seed);
+    final light = Paint()..color = Colors.white.withOpacity(opacity);
+    final dark = Paint()..color = Colors.black.withOpacity(opacity * 0.7);
+    const step = 7.0;
+    for (double y = 0; y < size.height; y += step) {
+      for (double x = 0; x < size.width; x += step) {
+        final r = rand.nextDouble();
+        if (r < 0.28) {
+          final paint = r < 0.14 ? dark : light;
+          canvas.drawRect(Rect.fromLTWH(x, y, 1.2, 1.2), paint);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlobalNoisePainter oldDelegate) => false;
 }

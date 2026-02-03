@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -10,6 +11,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:crypto/crypto.dart';
 import 'package:xml/xml.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../models/exercise.dart';
 import '../services/api_service.dart';
@@ -25,7 +27,8 @@ class ExercisesScreen extends StatefulWidget {
   State<ExercisesScreen> createState() => _ExercisesScreenState();
 }
 
-class _ExercisesScreenState extends State<ExercisesScreen> {
+class _ExercisesScreenState extends State<ExercisesScreen>
+    with TickerProviderStateMixin {
   final _api = ApiService();
   GymViewMode _mode = GymViewMode.list;
   BodySide _side = BodySide.front;
@@ -34,6 +37,10 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
   List<Exercise> _all = [];
   List<Exercise> _filtered = [];
   bool _loading = true;
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulse;
+  late final AnimationController _headerController;
+  late final Animation<double> _headerShift;
 
   SvgMuscleData? _frontData;
   SvgMuscleData? _backData;
@@ -43,6 +50,18 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut);
+    _headerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 5200),
+    )..repeat(reverse: true);
+    _headerShift =
+        CurvedAnimation(parent: _headerController, curve: Curves.easeInOut);
+    _loadPrefs();
     _load();
     _loadSvg();
     _searchController.addListener(_applyFilter);
@@ -50,8 +69,80 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
 
   @override
   void dispose() {
+    _pulseController.dispose();
+    _headerController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Widget _buildHeaderCard(BuildContext context, Widget child) {
+    final radius = BorderRadius.circular(20);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: Colors.white10),
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Container(color: AppTheme.cardColor(context)),
+            ),
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _headerShift,
+                builder: (context, _) {
+                  final t = _headerShift.value;
+                  final isLight =
+                      Theme.of(context).brightness == Brightness.light;
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(-1.1 + 2.2 * t, -0.7),
+                        end: Alignment(1.1 - 2.2 * t, 0.85),
+                        colors: [
+                          const Color(0xFFC9A76A)
+                              .withOpacity(isLight ? 0.24 : 0.18),
+                          AppTheme.accentColor(context)
+                              .withOpacity(isLight ? 0.18 : 0.12),
+                          const Color(0xFF6A5B3D)
+                              .withOpacity(isLight ? 0.18 : 0.14),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: _headerShift,
+                builder: (context, _) {
+                  final t = _headerShift.value;
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment(0.3 + 0.5 * t, 1.1),
+                        radius: 1.1,
+                        colors: [
+                          AppTheme.accentColor(context).withOpacity(0.16),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: child,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -70,6 +161,59 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
     }
   }
 
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      final mode = prefs.getString('gym_view_mode');
+      if (mode == 'silhouette') _mode = GymViewMode.silhouette;
+      if (mode == 'list') _mode = GymViewMode.list;
+      final side = prefs.getString('gym_body_side');
+      if (side == 'back') _side = BodySide.back;
+      if (side == 'front') _side = BodySide.front;
+      final cols = prefs.getInt('gym_cols');
+      if (cols == 1 || cols == 2) _cols = cols ?? _cols;
+    });
+  }
+
+  Future<void> _persistView({
+    GymViewMode? mode,
+    BodySide? side,
+    int? cols,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mode != null) {
+      await prefs.setString(
+        'gym_view_mode',
+        mode == GymViewMode.silhouette ? 'silhouette' : 'list',
+      );
+    }
+    if (side != null) {
+      await prefs.setString(
+        'gym_body_side',
+        side == BodySide.back ? 'back' : 'front',
+      );
+    }
+    if (cols != null) {
+      await prefs.setInt('gym_cols', cols);
+    }
+  }
+
+  void _setMode(GymViewMode mode) {
+    setState(() => _mode = mode);
+    _persistView(mode: mode);
+  }
+
+  void _setSide(BodySide side) {
+    setState(() => _side = side);
+    _persistView(side: side);
+  }
+
+  void _setCols(int cols) {
+    setState(() => _cols = cols);
+    _persistView(cols: cols);
+  }
+
   Future<void> _loadSvg() async {
     final front = await _parseSvg('assets/front.svg');
     final back = await _parseSvg('assets/back.svg');
@@ -81,38 +225,74 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
   }
 
   Future<SvgMuscleData?> _parseSvg(String assetPath) async {
+    final raw = await rootBundle.loadString(assetPath);
     try {
-      final raw = await rootBundle.loadString(assetPath);
-      final doc = XmlDocument.parse(raw);
-      final svg = doc.rootElement;
-      final viewBox = svg.getAttribute('viewBox') ?? '';
-      final parts = viewBox.split(RegExp(r'[ ,]+')).where((e) => e.isNotEmpty).toList();
-      if (parts.length < 4) return null;
-      final vbX = double.tryParse(parts[0]) ?? 0;
-      final vbY = double.tryParse(parts[1]) ?? 0;
-      final vbW = double.tryParse(parts[2]) ?? 1;
-      final vbH = double.tryParse(parts[3]) ?? 1;
-
-      final paths = <MusclePath>[];
-      for (final node in svg.descendants.whereType<XmlElement>()) {
-        if (node.name.local != 'path') continue;
-        final cls = node.getAttribute('class') ?? '';
-        if (!cls.split(' ').contains('muscle')) continue;
-        final id = node.getAttribute('id') ?? '';
-        final d = node.getAttribute('d') ?? '';
-        if (d.isEmpty) continue;
-        final path = parseSvgPathData(d);
-        final group = findGroup(id) ?? id;
-        paths.add(MusclePath(id: id, group: group, path: path));
-      }
-
-      return SvgMuscleData(
-        viewBox: Rect.fromLTWH(vbX, vbY, vbW, vbH),
-        paths: paths,
-      );
+      return _parseSvgXml(raw);
     } catch (_) {
-      return null;
+      // Fallback to regex parser if XML parsing fails.
+      return _parseSvgRegex(raw);
     }
+  }
+
+  SvgMuscleData? _parseSvgXml(String raw) {
+    final doc = XmlDocument.parse(raw);
+    final svg = doc.rootElement;
+    final viewBox = svg.getAttribute('viewBox') ?? '';
+    final parts = viewBox.split(RegExp(r'[ ,]+')).where((e) => e.isNotEmpty).toList();
+    if (parts.length < 4) return null;
+    final vbX = double.tryParse(parts[0]) ?? 0;
+    final vbY = double.tryParse(parts[1]) ?? 0;
+    final vbW = double.tryParse(parts[2]) ?? 1;
+    final vbH = double.tryParse(parts[3]) ?? 1;
+
+    final paths = <MusclePath>[];
+    for (final node in svg.descendants.whereType<XmlElement>()) {
+      if (node.name.local != 'path') continue;
+      final cls = node.getAttribute('class') ?? '';
+      if (!cls.split(' ').contains('muscle')) continue;
+      final id = node.getAttribute('id') ?? '';
+      final d = node.getAttribute('d') ?? '';
+      if (d.isEmpty) continue;
+      final path = parseSvgPathData(d);
+      final group = findGroup(id) ?? id;
+      paths.add(MusclePath(id: id, group: group, path: path));
+    }
+
+    return SvgMuscleData(
+      viewBox: Rect.fromLTWH(vbX, vbY, vbW, vbH),
+      paths: paths,
+    );
+  }
+
+  SvgMuscleData? _parseSvgRegex(String raw) {
+    final vbMatch = RegExp(r'viewBox="([^"]+)"').firstMatch(raw);
+    final vb = vbMatch?.group(1) ?? '0 0 915.2 1759.1';
+    final parts = vb.split(RegExp(r'[ ,]+')).where((e) => e.isNotEmpty).toList();
+    final vbX = double.tryParse(parts.isNotEmpty ? parts[0] : '0') ?? 0;
+    final vbY = double.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;
+    final vbW = double.tryParse(parts.length > 2 ? parts[2] : '915.2') ?? 915.2;
+    final vbH = double.tryParse(parts.length > 3 ? parts[3] : '1759.1') ?? 1759.1;
+
+    final pathRe = RegExp(r'<path[^>]*class="[^"]*muscle[^"]*"[^>]*>', dotAll: true);
+    final dRe = RegExp(r'd="([^"]+)"', dotAll: true);
+    final idRe = RegExp(r'id="([^"]+)"');
+    final paths = <MusclePath>[];
+    for (final match in pathRe.allMatches(raw)) {
+      final tag = match.group(0) ?? '';
+      final dMatch = dRe.firstMatch(tag);
+      final d = dMatch?.group(1) ?? '';
+      if (d.isEmpty) continue;
+      final idMatch = idRe.firstMatch(tag);
+      final id = idMatch?.group(1) ?? '';
+      final path = parseSvgPathData(d);
+      final group = findGroup(id) ?? id;
+      paths.add(MusclePath(id: id, group: group, path: path));
+    }
+
+    return SvgMuscleData(
+      viewBox: Rect.fromLTWH(vbX, vbY, vbW, vbH),
+      paths: paths,
+    );
   }
 
   void _applyFilter() {
@@ -175,6 +355,24 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
         return;
       }
     }
+    if (_selectedGroup != null) {
+      setState(() {
+        _selectedGroup = null;
+        _groupExercises = [];
+      });
+    }
+  }
+
+  void _openExercise(Exercise ex) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: ExerciseDetailScreen(exercise: ex, asModal: true),
+      ),
+    );
   }
 
   @override
@@ -189,39 +387,43 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
     final previewHeight = _cols == 1 ? 150.0 : 160.0;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: AppTheme.backgroundGradient(context),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: AppTheme.backgroundGradient(context),
+              ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  painter: NoisePainter(opacity: 0.015),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: CustomScrollView(
+              slivers: [
               const SliverToBoxAdapter(child: SizedBox.shrink()),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: AppTheme.cardColor(context),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: Row(
+                  child: _buildHeaderCard(
+                    context,
+                    Row(
                       children: [
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '',
+                                '\u0423\u041f\u0420\u0410\u0416\u041d\u0415\u041d\u0418\u042f',
                                 style: Theme.of(context)
                                     .textTheme
                                     .labelSmall
@@ -232,7 +434,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '',
+                                '\u0417\u0410\u041b',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleLarge
@@ -240,7 +442,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                ' ',
+                                '\u041a\u0410\u0422\u0410\u041b\u041e\u0413 \u0423\u041f\u0420\u0410\u0416\u041d\u0415\u041d\u0418\u0419',
                                 style: Theme.of(context)
                                     .textTheme
                                     .labelSmall
@@ -253,11 +455,11 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                           ),
                         ),
                         _TogglePill(
-                          left: '',
-                          right: '',
+                          left: '\u0421\u0418\u041b\u0423\u042d\u0422',
+                          right: '\u0421\u041f\u0418\u0421\u041e\u041a',
                           isRightActive: _mode == GymViewMode.list,
-                          onLeft: () => setState(() => _mode = GymViewMode.silhouette),
-                          onRight: () => setState(() => _mode = GymViewMode.list),
+                          onLeft: () => _setMode(GymViewMode.silhouette),
+                          onRight: () => _setMode(GymViewMode.list),
                         ),
                       ],
                     ),
@@ -289,7 +491,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                                   child: TextField(
                                     controller: _searchController,
                                     decoration: InputDecoration(
-                                      hintText: ' ',
+                                      hintText: '\u041f\u043e\u0438\u0441\u043a \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u044f',
                                       hintStyle: Theme.of(context)
                                           .textTheme
                                           .bodyMedium
@@ -311,7 +513,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                         const SizedBox(width: 12),
                         _CircleBadge(
                           value: '$_cols',
-                          onTap: () => setState(() => _cols = _cols == 2 ? 1 : 2),
+                          onTap: () => _setCols(_cols == 2 ? 1 : 2),
                         ),
                       ],
                     ),
@@ -322,6 +524,36 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                     child: Padding(
                       padding: EdgeInsets.all(24),
                       child: Center(child: CircularProgressIndicator()),
+                    ),
+                  )
+                else if (_cols == 1)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final item = _filtered[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 520),
+                                child: _ExerciseCard(
+                                  title: item.title,
+                                  subtitle:
+                                      '\u041E\u0422\u041A\u0420\u042B\u0422\u042C\n\u041E\u041F\u0418\u0421\u0410\u041D\u0418\u0415',
+                                  hasVideo: (item.videoUrl ?? '').isNotEmpty,
+                                  videoUrl: item.videoUrl,
+                                  thumbMaxWidth: thumbMaxWidth,
+                                  previewHeight: 190,
+                                  onTap: () => _openExercise(item),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        childCount: _filtered.length,
+                      ),
                     ),
                   )
                 else
@@ -338,15 +570,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                             videoUrl: item.videoUrl,
                             thumbMaxWidth: thumbMaxWidth,
                             previewHeight: previewHeight,
-                            onTap: () => showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (_) => ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                                child: ExerciseDetailScreen(exercise: item, asModal: true),
-                              ),
-                            ),
+                            onTap: () => _openExercise(item),
                           );
                         },
                         childCount: _filtered.length,
@@ -355,7 +579,7 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                         crossAxisCount: _cols,
                         mainAxisSpacing: 14,
                         crossAxisSpacing: 14,
-                        childAspectRatio: _cols == 1 ? 0.9 : 0.6,
+                        childAspectRatio: 0.6,
                       ),
                     ),
                   ),
@@ -364,11 +588,12 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
                     child: _TogglePill(
-                      left: ' ',
-                      right: ' ',
+                      left: '\u0412\u0418\u0414 \u0421\u041f\u0415\u0420\u0415\u0414\u0418',
+                      right: '\u0412\u0418\u0414 \u0421\u0417\u0410\u0414\u0418',
                       isRightActive: _side == BodySide.back,
-                      onLeft: () => setState(() => _side = BodySide.front),
-                      onRight: () => setState(() => _side = BodySide.back),
+                      onLeft: () => _setSide(BodySide.front),
+                      onRight: () => _setSide(BodySide.back),
+                      expand: true,
                     ),
                   ),
                 ),
@@ -384,6 +609,30 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                               _handleTap(details.localPosition, boxSize),
                           child: Stack(
                             children: [
+                              Positioned.fill(
+                                child: AnimatedBuilder(
+                                  animation: _pulse,
+                                  builder: (context, child) {
+                                    final t = _pulse.value;
+                                    final glow =
+                                        AppTheme.accentColor(context).withOpacity(
+                                      0.06 + 0.04 * t,
+                                    );
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        gradient: RadialGradient(
+                                          center: const Alignment(0, -0.15),
+                                          radius: 0.9,
+                                          colors: [
+                                            glow,
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
                               SizedBox(
                                 height: boxSize.height,
                                 width: boxSize.width,
@@ -396,17 +645,57 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                                         fit: BoxFit.contain,
                                       ),
                               ),
-                              if (data != null && _selectedGroup != null)
+                              if (data != null)
                                 Positioned.fill(
                                   child: IgnorePointer(
-                                    child: CustomPaint(
-                                      painter: MuscleHighlightPainter(
-                                        data: data,
-                                        selectedGroup: _selectedGroup!,
+                                    child: AnimatedBuilder(
+                                      animation: _pulse,
+                                      builder: (context, child) {
+                                        return CustomPaint(
+                                          painter: MuscleHighlightPainter(
+                                            data: data,
+                                            selectedGroup: _selectedGroup,
+                                            pulse: _pulse.value,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              Positioned(
+                                top: 44,
+                                left: 0,
+                                right: 0,
+                                child: AnimatedOpacity(
+                                  opacity: _selectedGroup == null ? 1 : 0,
+                                  duration: const Duration(milliseconds: 200),
+                                  child: Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black26,
+                                        borderRadius: BorderRadius.circular(999),
+                                        border:
+                                            Border.all(color: Colors.white10),
+                                      ),
+                                      child: Text(
+                                        '\u0412\u044b\u0431\u0435\u0440\u0438 \u043c\u044b\u0448\u0446\u0443',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              letterSpacing: 1.4,
+                                              color:
+                                                  AppTheme.mutedColor(context),
+                                            ),
                                       ),
                                     ),
                                   ),
                                 ),
+                              ),
                             ],
                           ),
                         );
@@ -414,78 +703,109 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
                     ),
                   ),
                 ),
+                if (_selectedGroup != null)
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        color: AppTheme.cardColor(context),
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _selectedGroup != null
-                                ? humanName(_selectedGroup!)
-                                : ' ',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(letterSpacing: 1.1),
-                          ),
-                          const SizedBox(height: 10),
-                          if (_selectedGroup == null)
-                            Text(
-                              '   ,   .',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: AppTheme.mutedColor(context)),
-                            )
-                          else if (_groupExercises.isEmpty)
-                            Text(
-                              '    .',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: AppTheme.mutedColor(context)),
-                            )
-                          else
-                            Column(
-                              children: _groupExercises.take(3).map((ex) {
-                                return Container(
-                                  width: double.infinity,
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(14),
-                                    color: Colors.black12,
-                                  ),
-                                  child: Text(
-                                    ex.title,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    reverseDuration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) {
+                      final curved = CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      );
+                      return FadeTransition(
+                        opacity: curved,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.08),
+                            end: Offset.zero,
+                          ).animate(curved),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _selectedGroup == null
+                        ? const SizedBox.shrink(key: ValueKey('empty'))
+                        : Padding(
+                            key: ValueKey(_selectedGroup),
+                            padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                color: AppTheme.cardColor(context),
+                                border: Border.all(color: Colors.white10),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    humanName(_selectedGroup!),
                                     style: Theme.of(context)
                                         .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: Colors.white70),
+                                        .titleMedium
+                                        ?.copyWith(letterSpacing: 1.1),
                                   ),
-                                );
-                              }).toList(),
-                            )
-                        ],
-                      ),
-                    ),
+                                  const SizedBox(height: 10),
+                                  if (_groupExercises.isEmpty)
+                                    Text(
+                                      '    .',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(color: AppTheme.mutedColor(context)),
+                                    )
+                                  else
+                                    Column(
+                                      children: _groupExercises.take(6).map((ex) {
+                                        return InkWell(
+                                          onTap: () => _openExercise(ex),
+                                          borderRadius: BorderRadius.circular(14),
+                                          child: Container(
+                                            width: double.infinity,
+                                            margin: const EdgeInsets.only(bottom: 10),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(14),
+                                              color: Colors.black12,
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    ex.title,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodyMedium
+                                                        ?.copyWith(color: Colors.white70),
+                                                  ),
+                                                ),
+                                                const Icon(
+                                                  Icons.chevron_right,
+                                                  color: Colors.white54,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    )
+                                ],
+                              ),
+                            ),
+                          ),
                   ),
                 ),
               ]
             ],
           ),
         ),
-      ),
-    );
+      ],
+    ),
+  );
   }
 }
 
@@ -504,8 +824,13 @@ class SvgMuscleData {
 
 class MuscleHighlightPainter extends CustomPainter {
   final SvgMuscleData data;
-  final String selectedGroup;
-  MuscleHighlightPainter({required this.data, required this.selectedGroup});
+  final String? selectedGroup;
+  final double pulse;
+  MuscleHighlightPainter({
+    required this.data,
+    required this.selectedGroup,
+    required this.pulse,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -516,16 +841,27 @@ class MuscleHighlightPainter extends CustomPainter {
     canvas.save();
     canvas.translate(dx, dy);
     canvas.scale(scale, scale);
-    final paint = Paint()
-      ..color = const Color(0xCC8B5CF6)
-      ..style = PaintingStyle.fill;
-    final stroke = Paint()
-      ..color = const Color(0xFFB993FF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4 / scale;
-    for (final p in data.paths.where((p) => p.group == selectedGroup)) {
-      canvas.drawPath(p.path, paint);
-      canvas.drawPath(p.path, stroke);
+    if (selectedGroup != null) {
+      final glow = Paint()
+        ..color = const Color(0xFF8B5CF6).withOpacity(0.15 + 0.1 * pulse)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (18 + 8 * pulse) / scale
+        ..maskFilter = ui.MaskFilter.blur(
+          ui.BlurStyle.normal,
+          (16 + 8 * pulse) / scale,
+        );
+      final paint = Paint()
+        ..color = const Color(0xB38B5CF6)
+        ..style = PaintingStyle.fill;
+      final stroke = Paint()
+        ..color = const Color(0xFF8B5CF6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3 / scale;
+      for (final p in data.paths.where((p) => p.group == selectedGroup)) {
+        canvas.drawPath(p.path, glow);
+        canvas.drawPath(p.path, paint);
+        canvas.drawPath(p.path, stroke);
+      }
     }
     canvas.restore();
   }
@@ -606,41 +942,41 @@ final Map<String, List<String>> muscleGroups = {
 };
 
 final Map<String, String> muscleNames = {
-  'traps': ' ',
-  'chest': '  ',
-  'delts': ' ',
-  'biceps': '   ()',
-  'forearm': ' ',
-  'abs': '  ',
-  'quads': ' ',
-  'adductors': ' ',
-  'tibialis': '   ',
-  'upperBack': '  ',
-  'triceps': '   ()',
-  'lats': '  ',
-  'erectors': '  ',
-  'glutes': '  ',
-  'hams': ' (  )',
-  'calves': ' ',
+  'traps': '\u0422\u0440\u0430\u043f\u0435\u0446\u0438\u0438',
+  'chest': '\u0413\u0440\u0443\u0434\u043d\u044b\u0435',
+  'delts': '\u0414\u0435\u043b\u044c\u0442\u044b',
+  'biceps': '\u0411\u0438\u0446\u0435\u043f\u0441',
+  'forearm': '\u041f\u0440\u0435\u0434\u043f\u043b\u0435\u0447\u044c\u044f',
+  'abs': '\u041f\u0440\u0435\u0441\u0441',
+  'quads': '\u041a\u0432\u0430\u0434\u0440\u0438\u0446\u0435\u043f\u0441',
+  'adductors': '\u041f\u0440\u0438\u0432\u043e\u0434\u044f\u0449\u0438\u0435',
+  'tibialis': '\u041f\u0435\u0440\u0435\u0434\u043d\u044f\u044f \u0433\u043e\u043b\u0435\u043d\u044c',
+  'upperBack': '\u0412\u0435\u0440\u0445 \u0441\u043f\u0438\u043d\u044b',
+  'triceps': '\u0422\u0440\u0438\u0446\u0435\u043f\u0441',
+  'lats': '\u0428\u0438\u0440\u043e\u0447\u0430\u0439\u0448\u0438\u0435',
+  'erectors': '\u041f\u043e\u044f\u0441\u043d\u0438\u0446\u0430',
+  'glutes': '\u042f\u0433\u043e\u0434\u0438\u0446\u044b',
+  'hams': '\u0411\u0438\u0446\u0435\u043f\u0441 \u0431\u0435\u0434\u0440\u0430',
+  'calves': '\u0418\u043a\u0440\u044b',
 };
 
 final Map<String, List<String>> muscleKeywords = {
-  'traps': ['', '', ''],
-  'chest': ['', '', '', ''],
-  'delts': ['', '', '', ''],
-  'biceps': ['', '', '', ''],
-  'forearm': ['', '', ''],
-  'abs': ['', '', '', ''],
-  'quads': ['', '', '', ' '],
-  'adductors': ['', '', ''],
-  'tibialis': ['', '', ''],
-  'upperBack': [' ', '', '', ' ', ' '],
-  'triceps': ['', '', ''],
-  'lats': ['', '', ' ', '  '],
-  'erectors': ['', ' ', '', ''],
-  'glutes': ['', '', ''],
-  'hams': ['', ' ', '', ''],
-  'calves': ['', ''],
+  'traps': ['\u0442\u0440\u0430\u043f\u0435\u0446', '\u0448\u0440\u0430\u0433'],
+  'chest': ['\u0433\u0440\u0443\u0434', '\u0436\u0438\u043c', '\u043e\u0442\u0436\u0438\u043c'],
+  'delts': ['\u0434\u0435\u043b\u044c\u0442', '\u043f\u043b\u0435\u0447'],
+  'biceps': ['\u0431\u0438\u0446\u0435\u043f', '\u0441\u0433\u0438\u0431'],
+  'forearm': ['\u043f\u0440\u0435\u0434\u043f\u043b\u0435\u0447', '\u043a\u0438\u0441\u0442', '\u0445\u0432\u0430\u0442'],
+  'abs': ['\u043f\u0440\u0435\u0441\u0441', '\u0441\u043a\u0440\u0443\u0447', '\u043a\u043e\u0440'],
+  'quads': ['\u043a\u0432\u0430\u0434\u0440\u0438\u0446', '\u043f\u0440\u0438\u0441\u0435\u0434', '\u0432\u044b\u043f\u0430\u0434'],
+  'adductors': ['\u043f\u0440\u0438\u0432\u043e\u0434', '\u0432\u043d\u0443\u0442\u0440\u0435\u043d'],
+  'tibialis': ['\u0433\u043e\u043b\u0435\u043d', '\u0442\u0438\u0431\u0438\u0430\u043b'],
+  'upperBack': ['\u0432\u0435\u0440\u0445 \u0441\u043f\u0438\u043d\u044b', '\u0440\u043e\u043c\u0431', '\u043b\u043e\u043f\u0430\u0442'],
+  'triceps': ['\u0442\u0440\u0438\u0446\u0435\u043f', '\u0440\u0430\u0437\u0433\u0438\u0431'],
+  'lats': ['\u0448\u0438\u0440\u043e\u0447', '\u0442\u044f\u0433\u0430', '\u043f\u043e\u0434\u0442\u044f\u0433'],
+  'erectors': ['\u043f\u043e\u044f\u0441\u043d\u0438\u0446', '\u0440\u0430\u0437\u0433\u0438\u0431\u0430\u0442', '\u0441\u043f\u0438\u043d\u044b'],
+  'glutes': ['\u044f\u0433\u043e\u0434', '\u0433\u043b\u044e\u0442'],
+  'hams': ['\u0431\u0438\u0446\u0435\u043f\u0441 \u0431\u0435\u0434\u0440\u0430', '\u0445\u0430\u043c\u0441\u0442\u0440', '\u0437\u0430\u0434\u043d'],
+  'calves': ['\u0438\u043a\u0440', '\u043a\u0430\u043c\u0431\u0430\u043b'],
 };
 
 class _TogglePill extends StatelessWidget {
@@ -649,65 +985,76 @@ class _TogglePill extends StatelessWidget {
   final bool isRightActive;
   final VoidCallback onLeft;
   final VoidCallback onRight;
+  final bool expand;
   const _TogglePill({
     required this.left,
     required this.right,
     required this.isRightActive,
     required this.onLeft,
     required this.onRight,
+    this.expand = false,
   });
+
+  Widget _buildItem({
+    required BuildContext context,
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+    required bool expand,
+  }) {
+    final isDark = AppTheme.isDark(context);
+    final content = Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: active ? AppTheme.accentColor(context) : Colors.transparent,
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              letterSpacing: 1.6,
+              color: active
+                  ? Colors.black
+                  : (isDark ? Colors.white70 : Colors.black54),
+            ),
+      ),
+    );
+    final ink = InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: content,
+    );
+    return expand ? Expanded(child: ink) : ink;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
     return Container(
+      width: expand ? double.infinity : null,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
         color: AppTheme.cardColor(context),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
         children: [
-          InkWell(
+          _buildItem(
+            context: context,
+            label: left,
+            active: !isRightActive,
             onTap: onLeft,
-            borderRadius: BorderRadius.circular(999),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                color: isRightActive
-                    ? Colors.transparent
-                    : AppTheme.accentColor(context),
-              ),
-              child: Text(
-                left,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      letterSpacing: 1.6,
-                      color: isRightActive ? Colors.white70 : Colors.black,
-                    ),
-              ),
-            ),
+            expand: expand,
           ),
-          InkWell(
+          _buildItem(
+            context: context,
+            label: right,
+            active: isRightActive,
             onTap: onRight,
-            borderRadius: BorderRadius.circular(999),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                color: isRightActive
-                    ? AppTheme.accentColor(context)
-                    : Colors.transparent,
-              ),
-              child: Text(
-                right,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      letterSpacing: 1.6,
-                      color: isRightActive ? Colors.black : Colors.white70,
-                    ),
-              ),
-            ),
+            expand: expand,
           ),
         ],
       ),
@@ -751,6 +1098,32 @@ class _CircleBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+class NoisePainter extends CustomPainter {
+  final double opacity;
+  final int seed;
+  const NoisePainter({this.opacity = 0.015, this.seed = 1337});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rand = math.Random(seed);
+    final light = Paint()..color = Colors.white.withOpacity(opacity);
+    final dark = Paint()..color = Colors.black.withOpacity(opacity * 0.7);
+    const step = 6.0;
+    for (double y = 0; y < size.height; y += step) {
+      for (double x = 0; x < size.width; x += step) {
+        final r = rand.nextDouble();
+        if (r < 0.35) {
+          final paint = r < 0.17 ? dark : light;
+          canvas.drawRect(Rect.fromLTWH(x, y, 1.2, 1.2), paint);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant NoisePainter oldDelegate) => false;
 }
 
 class _ExerciseCard extends StatelessWidget {

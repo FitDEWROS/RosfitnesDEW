@@ -76,6 +76,7 @@ model NutritionEntry {
   carb       Float?
   waterLiters Float?
   mealsCount Int?
+  items      NutritionItem[]
   reviewedAt DateTime?
   reviewedBy User?    @relation("NutritionEntryReviewer", fields: [reviewedById], references: [id])
   reviewedById Int?
@@ -83,6 +84,46 @@ model NutritionEntry {
   updatedAt  DateTime @updatedAt
 
   @@unique([userId, date])
+}
+
+model NutritionProduct {
+  id        Int      @id @default(autoincrement())
+  source    String   @default("off")
+  sourceId  String?
+  barcode   String?  @unique
+  title     String
+  brand     String?
+  imageUrl  String?
+  kcal100   Float?
+  protein100 Float?
+  fat100    Float?
+  carb100   Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items     NutritionItem[]
+
+  @@index([source, sourceId])
+}
+
+model NutritionItem {
+  id        Int      @id @default(autoincrement())
+  entry     NutritionEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entryId   Int
+  product   NutritionProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId Int?
+  title     String
+  brand     String?
+  meal      String
+  grams     Float
+  kcal      Float
+  protein   Float
+  fat       Float
+  carb      Float
+  createdAt DateTime @default(now())
+
+  @@index([entryId])
+  @@index([productId])
 }
 
 model NutritionComment {
