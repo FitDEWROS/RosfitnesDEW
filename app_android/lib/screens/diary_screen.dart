@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../theme.dart';
 import '../models/nutrition.dart';
 import '../services/api_service.dart';
@@ -119,6 +120,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
                   dateLabel: _formatDate(_date),
                   onPrev: () => _shiftDay(-1),
                   onNext: () => _shiftDay(1),
+                  onPick: _pickDate,
                 ),
                 const SizedBox(height: 16),
                 _TotalsCard(
@@ -181,34 +183,50 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'января',
-      'февраля',
-      'марта',
-      'апреля',
-      'мая',
-      'июня',
-      'июля',
-      'августа',
-      'сентября',
-      'октября',
-      'ноября',
-      'декабря',
+      '\u044f\u043d\u0432\u0430\u0440\u044f',
+      '\u0444\u0435\u0432\u0440\u0430\u043b\u044f',
+      '\u043c\u0430\u0440\u0442\u0430',
+      '\u0430\u043f\u0440\u0435\u043b\u044f',
+      '\u043c\u0430\u044f',
+      '\u0438\u044e\u043d\u044f',
+      '\u0438\u044e\u043b\u044f',
+      '\u0430\u0432\u0433\u0443\u0441\u0442\u0430',
+      '\u0441\u0435\u043d\u0442\u044f\u0431\u0440\u044f',
+      '\u043e\u043a\u0442\u044f\u0431\u0440\u044f',
+      '\u043d\u043e\u044f\u0431\u0440\u044f',
+      '\u0434\u0435\u043a\u0430\u0431\u0440\u044f',
     ];
     final d = date.day;
     final m = months[date.month - 1];
     return '$d $m';
   }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2022),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      locale: const Locale('ru', 'RU'),
+    );
+    if (picked == null) return;
+    setState(() => _date = picked);
+    await _loadDay();
+  }
+
 }
 
 class _Header extends StatelessWidget {
   final String dateLabel;
   final VoidCallback onPrev;
   final VoidCallback onNext;
+  final VoidCallback onPick;
 
   const _Header({
     required this.dateLabel,
     required this.onPrev,
     required this.onNext,
+    required this.onPick,
   });
 
   @override
@@ -229,24 +247,45 @@ class _Header extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(
-            'Дневник питания',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w700,
-                ),
+          Expanded(
+            child: Text(
+              '\u0414\u043d\u0435\u0432\u043d\u0438\u043a \u043f\u0438\u0442\u0430\u043d\u0438\u044f',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
           ),
-          const Spacer(),
-          _NavButton(icon: Icons.chevron_left, onTap: onPrev),
-          const SizedBox(width: 6),
-          Text(
-            dateLabel,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.mutedColor(context),
+          const SizedBox(width: 8),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _NavButton(icon: Icons.chevron_left, onTap: onPrev),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: onPick,
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Text(
+                    dateLabel,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.mutedColor(context),
+                        ),
+                  ),
                 ),
+              ),
+              const SizedBox(width: 6),
+              _NavButton(icon: Icons.chevron_right, onTap: onNext),
+            ],
           ),
-          const SizedBox(width: 6),
-          _NavButton(icon: Icons.chevron_right, onTap: onNext),
         ],
       ),
     );
@@ -557,29 +596,12 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
   }
 
   Future<void> _searchBarcode() async {
-    final controller = TextEditingController();
-    final code = await showDialog<String>(
+    final code = await showModalBottomSheet<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Штрих-код'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(hintText: 'Введите штрих-код'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Найти'),
-          ),
-        ],
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _BarcodeScannerSheet(),
     );
-    controller.dispose();
     if (code == null || code.isEmpty) return;
     setState(() {
       _loading = true;
@@ -588,12 +610,12 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
     try {
       final product = await _api.fetchFoodByBarcode(code);
       if (product == null) {
-        setState(() => _error = 'Продукт не найден');
+        setState(() => _error = '??? ?? ??');
         return;
       }
       await _pickProduct(product);
     } catch (_) {
-      setState(() => _error = 'Не удалось найти продукт');
+      setState(() => _error = '?? ??? ??? ???');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -724,4 +746,124 @@ class _AddItemResult {
     this.customTitle,
     this.customBrand,
   });
+}
+
+class _BarcodeScannerSheet extends StatefulWidget {
+  const _BarcodeScannerSheet();
+
+  @override
+  State<_BarcodeScannerSheet> createState() => _BarcodeScannerSheetState();
+}
+
+class _BarcodeScannerSheetState extends State<_BarcodeScannerSheet> {
+  final MobileScannerController _controller = MobileScannerController();
+  bool _locked = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _manualEntry() async {
+    final controller = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Штрих-код'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: 'Введите штрих-код'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Найти'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted) return;
+    if (code != null && code.isNotEmpty) {
+      Navigator.pop(context, code);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            MobileScanner(
+              controller: _controller,
+              onDetect: (capture) {
+                if (_locked) return;
+                final code = capture.barcodes
+                    .map((e) => e.rawValue ?? '')
+                    .firstWhere((e) => e.isNotEmpty, orElse: () => '');
+                if (code.isEmpty) return;
+                _locked = true;
+                Navigator.pop(context, code);
+              },
+            ),
+            Positioned(
+              top: 16,
+              left: 16,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: IconButton(
+                onPressed: _controller.toggleTorch,
+                icon: const Icon(Icons.flashlight_on, color: Colors.white),
+              ),
+            ),
+            Positioned(
+              bottom: 24,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text(
+                      'Наведите камеру на штрих‑код',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _manualEntry,
+                    child: const Text('Ввести вручную'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
