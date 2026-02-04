@@ -40,7 +40,9 @@ class AppTheme {
   }
 
   static Color cardColor(BuildContext context) {
-    return isDark(context) ? cardDark : cardLight;
+    return isDark(context)
+        ? cardDark.withOpacity(0.55)
+        : cardLight.withOpacity(0.7);
   }
 
   static Color accentColor(BuildContext context) {
@@ -73,15 +75,15 @@ class AppTheme {
   static List<Color> backgroundGradient(BuildContext context) {
     if (isDark(context)) {
       return [
-        bgDark.withOpacity(0.92),
-        const Color(0xFF151518).withOpacity(0.92),
-        const Color(0xFF0C0C0D).withOpacity(0.92),
+        const Color(0xFF0B0B0C).withOpacity(0.96),
+        const Color(0xFF2C2418).withOpacity(0.94),
+        const Color(0xFF3A2E1D).withOpacity(0.92),
       ];
     }
     return [
-      bgLight.withOpacity(0.94),
-      const Color(0xFFF8F3E8).withOpacity(0.94),
-      const Color(0xFFF1E9D6).withOpacity(0.94),
+      const Color(0xFFF9F0D6).withOpacity(0.97),
+      const Color(0xFFF2E0C2).withOpacity(0.95),
+      const Color(0xFFE8CDA6).withOpacity(0.93),
     ];
   }
 
@@ -95,7 +97,7 @@ class AppTheme {
 
     return ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: bgDark,
+      scaffoldBackgroundColor: Colors.transparent,
       fontFamilyFallback: const ['Roboto', 'Noto Sans', 'Arial'],
       colorScheme: const ColorScheme.dark(
         primary: accentDark,
@@ -126,7 +128,7 @@ class AppTheme {
 
     return ThemeData(
       brightness: Brightness.light,
-      scaffoldBackgroundColor: bgLight,
+      scaffoldBackgroundColor: Colors.transparent,
       fontFamilyFallback: const ['Roboto', 'Noto Sans', 'Arial'],
       colorScheme: const ColorScheme.light(
         primary: accentLight,

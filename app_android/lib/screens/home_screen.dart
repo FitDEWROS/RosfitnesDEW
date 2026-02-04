@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../app.dart';
+import '../services/auth_service.dart';
 
 enum TrainingMode { gym, crossfit }
 
@@ -17,6 +18,8 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   TrainingMode _mode = TrainingMode.crossfit;
   bool _chatAllowed = false;
+  String? _avatarUrl;
+  String? _firstName;
   final ScrollController _scrollController = ScrollController();
   final _metricsKey = GlobalKey();
   final _workoutsKey = GlobalKey();
@@ -49,10 +52,15 @@ class _HomeScreenState extends State<HomeScreen>
     final prefs = await SharedPreferences.getInstance();
     final modeRaw = prefs.getString('training_mode');
     final hasCurator = prefs.getBool('has_curator') ?? false;
+    final auth = AuthService();
+    final avatarUrl = await auth.getProfilePhotoUrl();
+    final firstName = await auth.getFirstName();
 
     if (!mounted) return;
     setState(() {
       _chatAllowed = hasCurator;
+      _avatarUrl = avatarUrl;
+      _firstName = firstName;
       if (modeRaw == 'gym') {
         _mode = TrainingMode.gym;
       } else {
@@ -126,31 +134,13 @@ class _HomeScreenState extends State<HomeScreen>
     return Scaffold(
       body: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppTheme.backgroundGradient(context),
-              ),
-            ),
-          ),
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: RepaintBoundary(
-                child: CustomPaint(
-                  painter: _NoisePainter(opacity: 0.015),
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             child: ListView(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 140),
               cacheExtent: 800,
               children: [
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Text(
                 'ПРИВЕТ',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -158,142 +148,168 @@ class _HomeScreenState extends State<HomeScreen>
                       color: AppTheme.mutedColor(context),
                     ),
               ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'МАКСИМ',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(letterSpacing: 1.2),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 6, horizontal: 12),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            color: isDark ? Colors.white10 : Colors.black12,
-                          ),
-                          child: Text(
-                            'ВЛАДЕЛЕЦ',
+              const SizedBox(height: 2),
+              SizedBox(
+                height: 118,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (_firstName ?? 'МАКСИМ').toUpperCase(),
                             style: Theme.of(context)
                                 .textTheme
-                                .labelSmall
+                                .titleLarge
                                 ?.copyWith(letterSpacing: 1.2),
                           ),
-                        )
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Transform.translate(
-                    offset: Offset(-6, parallax * -0.6),
-                    child: SizedBox(
-                      width: 80,
-                      height: 86,
-                      child: Image.asset(
-                        'assets/emblem.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  if (_chatAllowed) ...[
-                    Transform.translate(
-                      offset: Offset(0, parallax * -0.6),
-                      child: _IconBubble(
-                        icon: Icons.chat_bubble_outline,
-                        onTap: () => _openChat(context),
-                        backgroundColor: AppTheme.accentColor(context),
-                        iconColor: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Transform.translate(
-                    offset: Offset(0, parallax * -0.6),
-                    child: SizedBox(
-                      width: 96,
-                      height: 86,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                        Positioned(
-                          left: 0,
-                          top: 38,
-                          child: Stack(
-                            children: [
-                              _IconBubble(
-                                icon: Icons.notifications_none,
-                                onTap: () =>
-                                    Navigator.pushNamed(context, '/notifications'),
-                              ),
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  width: 16,
-                                  height: 16,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.accentColor(context),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Center(
-                                    child: Text(
-                                      '0',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                            ],
-                          ),
-                        ),
-                        Positioned(
-                          left: 30,
-                          top: 0,
-                          child: _IconBubble(
-                            icon: AppScope.of(context).mode == ThemeMode.dark
-                                ? Icons.nights_stay_outlined
-                                : Icons.wb_sunny_outlined,
-                            onTap: () => AppScope.of(context).toggle(),
-                          ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 38,
-                          child: InkWell(
-                            onTap: () => Navigator.pushNamed(context, '/profile'),
-                            borderRadius: BorderRadius.circular(999),
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundColor: isDark
-                                  ? const Color(0xFF2A2B2F)
-                                  : Colors.black12,
-                              child: Text(
-                                'М',
-                                style: TextStyle(
-                                  color: AppTheme.accentColor(context),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 6, horizontal: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              color: isDark ? Colors.white10 : Colors.black12,
                             ),
-                          ),
-                        ),
+                            child: Text(
+                              'ВЛАДЕЛЕЦ',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(letterSpacing: 1.2),
+                            ),
+                          )
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: Transform.translate(
+                          offset: Offset(0, parallax * -0.6),
+                          child: SizedBox(
+                            width: 110,
+                            height: 118,
+                            child: Image.asset(
+                              'assets/emblem.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Transform.translate(
+                        offset: Offset(0, parallax * -0.6),
+                        child: SizedBox(
+                          width: 96,
+                          height: 86,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              if (_chatAllowed)
+                                Positioned(
+                                  right: 58,
+                                  top: 0,
+                                  child: _IconBubble(
+                                    icon: Icons.chat_bubble_outline,
+                                    onTap: () => _openChat(context),
+                                    backgroundColor: AppTheme.accentColor(context),
+                                    iconColor: Colors.black,
+                                  ),
+                                ),
+                              Positioned(
+                                left: 0,
+                                top: 38,
+                                child: Stack(
+                                  children: [
+                                    _IconBubble(
+                                      icon: Icons.notifications_none,
+                                      onTap: () => Navigator.pushNamed(
+                                        context,
+                                        '/notifications',
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      child: Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.accentColor(context),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Center(
+                                          child: Text(
+                                            '0',
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              Positioned(
+                                left: 30,
+                                top: 0,
+                                child: _IconBubble(
+                                  icon: AppScope.of(context).mode == ThemeMode.dark
+                                      ? Icons.nights_stay_outlined
+                                      : Icons.wb_sunny_outlined,
+                                  onTap: () => AppScope.of(context).toggle(),
+                                ),
+                              ),
+                              Positioned(
+                                right: 0,
+                                top: 38,
+                                child: InkWell(
+                                  onTap: () => Navigator.pushNamed(
+                                    context,
+                                    '/profile',
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: isDark
+                                        ? const Color(0xFF2A2B2F)
+                                        : Colors.black12,
+                                    backgroundImage: (_avatarUrl != null &&
+                                            _avatarUrl!.isNotEmpty)
+                                        ? NetworkImage(_avatarUrl!)
+                                        : null,
+                                    child: (_avatarUrl == null ||
+                                            _avatarUrl!.isEmpty)
+                                        ? Text(
+                                            _firstName != null &&
+                                                    _firstName!.trim().isNotEmpty
+                                                ? _firstName!.trim()[0].toUpperCase()
+                                                : 'М',
+                                            style: TextStyle(
+                                              color: AppTheme.accentColor(context),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               _StatsCard(pulse: _glow, sheen: _scrollOffset),
@@ -820,7 +836,7 @@ class _ActionCard extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          color: cardColor,
+          color: accent ? null : Colors.transparent,
           gradient: accent
               ? LinearGradient(
                   begin: Alignment.topLeft,
@@ -834,9 +850,9 @@ class _ActionCard extends StatelessWidget {
           border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
           boxShadow: const [
             BoxShadow(
-              color: Colors.black26,
-              blurRadius: 16,
-              offset: Offset(0, 8),
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, 6),
             )
           ],
         ),
@@ -906,7 +922,7 @@ class _UsefulCard extends StatelessWidget {
         height: 150,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          color: AppTheme.cardColor(context),
+          color: Colors.transparent,
           border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
         ),
         child: Row(
@@ -1121,26 +1137,6 @@ class _ModeToggle extends StatelessWidget {
                             offset: const Offset(0, 6),
                           ),
                         ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: isGym ? -8 : null,
-                    left: isGym ? null : -8,
-                    top: 10,
-                    child: Container(
-                      width: 14,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        gradient: LinearGradient(
-                          begin: isGym ? Alignment.centerLeft : Alignment.centerRight,
-                          end: isGym ? Alignment.centerRight : Alignment.centerLeft,
-                          colors: [
-                            AppTheme.accentStrongColor(context).withOpacity(0.9),
-                            AppTheme.accentStrongColor(context).withOpacity(0.0),
-                          ],
-                        ),
                       ),
                     ),
                   ),

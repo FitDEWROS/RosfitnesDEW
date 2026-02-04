@@ -178,12 +178,37 @@ app.get('/auth/telegram/callback', (req, res) => {
   if (!check.ok) return res.status(401).send(check.error);
   const tgId = Number(params.id);
   if (!Number.isFinite(tgId)) return res.status(400).send('bad_id');
+  const photoUrl = typeof params.photo_url === 'string' ? params.photo_url : null;
+  const firstName = typeof params.first_name === 'string' ? params.first_name : null;
+  const lastName = typeof params.last_name === 'string' ? params.last_name : null;
+  const username = typeof params.username === 'string' ? params.username : null;
+
+  prisma.user.upsert({
+    where: { tg_id: tgId },
+    update: {
+      first_name: firstName || undefined,
+      last_name: lastName || undefined,
+      username: username || undefined,
+      photo_url: photoUrl || undefined
+    },
+    create: {
+      tg_id: tgId,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      username: username || null,
+      photo_url: photoUrl || null
+    }
+  }).catch(() => {});
+
   const token = signMobileToken({
     tg_id: tgId,
     auth_date: Number(params.auth_date) || 0
   });
   if (!token) return res.status(500).send('token_disabled');
-  const redirectUrl = `${APP_AUTH_SCHEME}://${APP_AUTH_HOST}?token=${encodeURIComponent(token)}`;
+  const redirectParams = new URLSearchParams({ token });
+  if (photoUrl) redirectParams.set('photo_url', photoUrl);
+  if (firstName) redirectParams.set('first_name', firstName);
+  const redirectUrl = `${APP_AUTH_SCHEME}://${APP_AUTH_HOST}?${redirectParams.toString()}`;
   const html = `<!doctype html>
 <html lang="ru">
 <head>

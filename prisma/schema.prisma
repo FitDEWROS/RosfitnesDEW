@@ -19,6 +19,7 @@ model User {
   username        String?
   first_name      String?
   last_name       String?
+  photo_url       String?
   heightCm        Int?      @db.Integer
   weightKg        Float?    @db.DoublePrecision
   age             Int?      @db.SmallInt

@@ -210,14 +210,14 @@ class _AnimatedBackdropState extends State<_AnimatedBackdrop>
                       end: Alignment(1 - 2 * t, 1),
                       colors: isDark
                           ? const [
-                              Color(0xFF0F0F10),
-                              Color(0xFF151518),
-                              Color(0xFF0C0C0D),
+                              Color(0xFF0B0B0C),
+                              Color(0xFF2A1F12),
+                              Color(0xFF3E2F1B),
                             ]
                           : const [
-                              Color(0xFFF4F1E6),
-                              Color(0xFFF8F3E8),
-                              Color(0xFFF1E9D6),
+                              Color(0xFFF9EFD2),
+                              Color(0xFFF1DDB8),
+                              Color(0xFFE6C997),
                             ],
                     ),
                   ),
@@ -231,7 +231,66 @@ class _AnimatedBackdropState extends State<_AnimatedBackdrop>
                       radius: 1.2,
                       colors: [
                         AppTheme.accentColor(context)
-                            .withOpacity(isDark ? 0.12 : 0.16),
+                            .withOpacity(isDark ? 0.18 : 0.24),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(-0.2, 0.75 + 0.05 * t),
+                      radius: 1.1,
+                      colors: [
+                        const Color(0xFFF6C96A)
+                            .withOpacity(isDark ? 0.18 : 0.28),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(0.75, 0.15),
+                      radius: 0.9,
+                      colors: [
+                        const Color(0xFFC39BF5)
+                            .withOpacity(isDark ? 0.14 : 0.2),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(-0.55 + 0.25 * t, 0.55),
+                      radius: 1.0,
+                      colors: [
+                        AppTheme.accentStrongColor(context)
+                            .withOpacity(isDark ? 0.22 : 0.28),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(0.8, -0.5),
+                      radius: 0.9,
+                      colors: [
+                        const Color(0xFFF7B17C).withOpacity(isDark ? 0.12 : 0.18),
                         Colors.transparent,
                       ],
                     ),
