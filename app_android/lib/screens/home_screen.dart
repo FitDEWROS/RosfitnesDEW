@@ -148,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: ListView(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 140),
+              cacheExtent: 800,
               children: [
               const SizedBox(height: 18),
               Text(

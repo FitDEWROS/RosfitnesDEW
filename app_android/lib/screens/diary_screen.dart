@@ -115,6 +115,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
             onRefresh: _loadDay,
             child: ListView(
               padding: const EdgeInsets.all(18),
+              cacheExtent: 800,
               children: [
                 const SizedBox(height: 4),
                 _Header(
@@ -808,6 +809,7 @@ class _FoodSearchSheetState extends State<_FoodSearchSheet> {
             SizedBox(
               height: 320,
               child: ListView.builder(
+                cacheExtent: 400,
                 itemCount: _results.length,
                 itemBuilder: (context, index) {
                   final item = _results[index];

@@ -143,7 +143,9 @@ function verifyTelegramLoginPayload(params) {
 app.get('/auth/telegram', (req, res) => {
   const bot = TELEGRAM_BOT_USERNAME;
   const host = req.get('host');
-  const authUrl = `${req.protocol}://${host}/auth/telegram/callback`;
+  const proto = (req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0];
+  const safeProto = proto === 'http' ? 'https' : proto;
+  const authUrl = `${safeProto}://${host}/auth/telegram/callback`;
   const html = `<!doctype html>
 <html lang="ru">
 <head>

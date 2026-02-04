@@ -202,6 +202,7 @@ class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen>
         ),
         child: SafeArea(
           child: CustomScrollView(
+            cacheExtent: 800,
             slivers: [
               const SliverToBoxAdapter(child: SizedBox.shrink()),
               SliverToBoxAdapter(
@@ -555,89 +556,92 @@ class _ExerciseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final previewHeightPx =
         (previewHeight * MediaQuery.of(context).devicePixelRatio).round();
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: AppTheme.cardColor(context),
-          border: Border.all(color: Colors.white10),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black26,
-              blurRadius: 16,
-              offset: Offset(0, 8),
-            )
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: previewHeight,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (hasVideo && (videoUrl ?? '').isNotEmpty)
-                      _VideoThumb(
-                        key: ValueKey('${videoUrl}_${thumbMaxWidth}_${previewHeightPx}'),
-                        url: videoUrl!,
-                        maxWidth: thumbMaxWidth,
-                        maxHeight: previewHeightPx,
-                      )
-                    else
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFF2B2B2F),
-                              Color(0xFF111214),
-                            ],
+    return RepaintBoundary(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: AppTheme.cardColor(context),
+            border: Border.all(color: Colors.white10),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 16,
+                offset: Offset(0, 8),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: previewHeight,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                  clipBehavior: Clip.hardEdge,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (hasVideo && (videoUrl ?? '').isNotEmpty)
+                        _VideoThumb(
+                          key: ValueKey('${videoUrl}_${thumbMaxWidth}_${previewHeightPx}'),
+                          url: videoUrl!,
+                          maxWidth: thumbMaxWidth,
+                          maxHeight: previewHeightPx,
+                        )
+                      else
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF2B2B2F),
+                                Color(0xFF111214),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(letterSpacing: 1.2),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(
+                            letterSpacing: 1.6,
+                            color: AppTheme.mutedColor(context),
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(letterSpacing: 1.2),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(
-                          letterSpacing: 1.6,
-                          color: AppTheme.mutedColor(context),
-                        ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -762,6 +766,11 @@ class _VideoThumbState extends State<_VideoThumb> {
         ),
       );
     }
-    return Image.memory(_bytes!, fit: BoxFit.cover);
+    return Image.memory(
+      _bytes!,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.low,
+      gaplessPlayback: true,
+    );
   }
 }
