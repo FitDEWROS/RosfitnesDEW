@@ -392,37 +392,10 @@ process.on('SIGINT',  () => process.exit(0));
 // /api/user
 app.get('/api/user', async (req, res) => {
   try {
-    const initData = req.query.initData;
-    console.log('\n[api/user] initData raw:', initData);
-
-    if (!initData || typeof initData !== 'string') {
-      return res.status(400).json({ ok: false, error: 'no_initData' });
-    }
-
-    const params = new URLSearchParams(initData);
-    console.log('[api/user] params:', Object.fromEntries(params.entries()));
-
-    const hash = params.get('hash');
-    if (!hash) return res.status(400).json({ ok: false, error: 'no_hash' });
-
-    const pairs = [];
-    for (const [k, v] of params.entries()) if (k !== 'hash') pairs.push(`${k}=${v}`);
-    pairs.sort();
-    const dataCheckString = pairs.join('\n');
-
-    const botToken = process.env.BOT_TOKEN;
-    if (!botToken) return res.status(500).json({ ok: false, error: 'no_bot_token' });
-
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-    const calcHash  = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-
-    console.log('[api/user] calcHash=', calcHash, 'givenHash=', hash);
-
-    if (calcHash !== hash) return res.status(401).json({ ok: false, error: 'bad_hash' });
-
-    const userStr = params.get('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const tg_id = user?.id ? Number(user.id) : null;
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const tg_id = auth.tg_id ? Number(auth.tg_id) : null;
+    const user = auth.user || null;
     console.log("[api/user] tg_id =", tg_id);
 
     if (!tg_id) return res.status(400).json({ ok: false, error: 'no_tg_id' });
@@ -1849,8 +1822,9 @@ app.post('/api/profile', async (req, res) => {
 // === Вес (GET / POST) ===
 app.get('/api/weight/history', async (req, res) => {
   try {
-    const parsed = parseInitData(req.query.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
 
     const monthsRaw = Number(req.query.months);
     const weeksRaw = Number(req.query.weeks ?? (Number.isFinite(monthsRaw) ? monthsRaw * 4 : 12));
@@ -1872,8 +1846,9 @@ app.get('/api/weight/history', async (req, res) => {
 
 app.post('/api/weight', async (req, res) => {
   try {
-    const parsed = parseInitData(req.body?.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
 
     const weightKg = toFloat(req.body?.weightKg);
     if (weightKg === null) {
@@ -1926,8 +1901,9 @@ app.post('/api/weight', async (req, res) => {
 // === Замеры (GET / POST) ===
 app.get('/api/measurements/history', async (req, res) => {
   try {
-    const parsed = parseInitData(req.query.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
 
     const monthsRaw = Number(req.query.months ?? req.query.weeks ?? 12);
     const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(monthsRaw, 36)) : 12;
@@ -1964,8 +1940,9 @@ app.get('/api/measurements/history', async (req, res) => {
 
 app.post('/api/measurements/upload-url', async (req, res) => {
   try {
-    const parsed = parseInitData(req.body?.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
 
     const side = cleanString(req.body?.side);
     if (!['front', 'back', 'side'].includes(side)) {
@@ -2044,8 +2021,9 @@ app.post('/api/measurements/upload-url', async (req, res) => {
 
 app.post('/api/measurements', async (req, res) => {
   try {
-    const parsed = parseInitData(req.body?.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
 
     const side = cleanString(req.body?.side);
     if (!['front', 'back', 'side'].includes(side)) {
@@ -2099,8 +2077,9 @@ app.post('/api/measurements', async (req, res) => {
 
 app.post('/api/measurements/metrics', async (req, res) => {
   try {
-    const parsed = parseInitData(req.body?.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
 
     const hasWaist = Object.prototype.hasOwnProperty.call(req.body || {}, 'waistCm');
     const hasChest = Object.prototype.hasOwnProperty.call(req.body || {}, 'chestCm');
@@ -2162,8 +2141,9 @@ app.post('/api/measurements/metrics', async (req, res) => {
 
 app.post('/api/measurements/delete', async (req, res) => {
   try {
-    const parsed = parseInitData(req.body?.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
 
     const side = cleanString(req.body?.side);
     if (!['front', 'back', 'side'].includes(side)) {

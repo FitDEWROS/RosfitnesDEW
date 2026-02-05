@@ -73,6 +73,21 @@ class ApiService {
     return NutritionDay.fromJson(data);
   }
 
+  Future<Map<String, dynamic>?> fetchUserProfile() async {
+    final token = await _auth.getToken();
+    if (token == null || token.isEmpty) return null;
+    final uri = Uri.parse('${AppConfig.apiBase}/api/user')
+        .replace(queryParameters: {'token': token});
+    final res = await http.get(uri);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      return null;
+    }
+    final data = _decodeJson(res);
+    if (data['ok'] != true) return null;
+    final profile = data['profile'];
+    return profile is Map<String, dynamic> ? profile : null;
+  }
+
   Future<List<NutritionHistoryDay>> fetchNutritionHistory({
     String? from,
     String? to,

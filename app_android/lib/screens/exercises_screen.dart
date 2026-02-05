@@ -30,9 +30,12 @@ class ExercisesScreen extends StatefulWidget {
 class _ExercisesScreenState extends State<ExercisesScreen>
     with TickerProviderStateMixin {
   final _api = ApiService();
+  static const double _bodyOffset = 64;
   GymViewMode _mode = GymViewMode.list;
   BodySide _side = BodySide.front;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _groupListKey = GlobalKey();
   int _cols = 2;
   List<Exercise> _all = [];
   List<Exercise> _filtered = [];
@@ -72,76 +75,14 @@ class _ExercisesScreenState extends State<ExercisesScreen>
     _pulseController.dispose();
     _headerController.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   Widget _buildHeaderCard(BuildContext context, Widget child) {
-    final radius = BorderRadius.circular(20);
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        border: Border.all(color: Colors.white10),
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Container(color: AppTheme.cardColor(context)),
-            ),
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _headerShift,
-                builder: (context, _) {
-                  final t = _headerShift.value;
-                  final isLight =
-                      Theme.of(context).brightness == Brightness.light;
-                  return Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(-1.1 + 2.2 * t, -0.7),
-                        end: Alignment(1.1 - 2.2 * t, 0.85),
-                        colors: [
-                          const Color(0xFFC9A76A)
-                              .withOpacity(isLight ? 0.24 : 0.18),
-                          AppTheme.accentColor(context)
-                              .withOpacity(isLight ? 0.18 : 0.12),
-                          const Color(0xFF6A5B3D)
-                              .withOpacity(isLight ? 0.18 : 0.14),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _headerShift,
-                builder: (context, _) {
-                  final t = _headerShift.value;
-                  return Container(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: Alignment(0.3 + 0.5 * t, 1.1),
-                        radius: 1.1,
-                        colors: [
-                          AppTheme.accentColor(context).withOpacity(0.16),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: child,
-            ),
-          ],
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: child,
     );
   }
 
@@ -340,18 +281,20 @@ class _ExercisesScreenState extends State<ExercisesScreen>
   void _handleTap(Offset localPos, Size size) {
     final data = _side == BodySide.front ? _frontData : _backData;
     if (data == null) return;
+    final adjusted = localPos.translate(0, -_bodyOffset);
     final vb = data.viewBox;
     final scale = math.min(size.width / vb.width, size.height / vb.height);
     final dx = (size.width - vb.width * scale) / 2;
     final dy = (size.height - vb.height * scale) / 2;
-    final sx = (localPos.dx - dx) / scale + vb.left;
-    final sy = (localPos.dy - dy) / scale + vb.top;
+    final sx = (adjusted.dx - dx) / scale + vb.left;
+    final sy = (adjusted.dy - dy) / scale + vb.top;
     final point = Offset(sx, sy);
 
     for (final p in data.paths) {
       if (p.path.contains(point)) {
         setState(() => _selectedGroup = p.group);
         _refreshGroupExercises();
+        _scrollToGroup();
         return;
       }
     }
@@ -361,6 +304,20 @@ class _ExercisesScreenState extends State<ExercisesScreen>
         _groupExercises = [];
       });
     }
+  }
+
+  void _scrollToGroup() {
+    final ctx = _groupListKey.currentContext;
+    if (ctx == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+        alignment: 0.12,
+      );
+    });
   }
 
   void _openExercise(Exercise ex) {
@@ -387,37 +344,18 @@ class _ExercisesScreenState extends State<ExercisesScreen>
     final previewHeight = _cols == 1 ? 150.0 : 160.0;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppTheme.backgroundGradient(context),
-              ),
-            ),
-          ),
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: RepaintBoundary(
-                child: CustomPaint(
-                  painter: NoisePainter(opacity: 0.015),
-                ),
-              ),
-            ),
-          ),
-          SafeArea(
+      body: SafeArea(
           child: CustomScrollView(
+            controller: _scrollController,
             cacheExtent: 800,
             slivers: [
               const SliverToBoxAdapter(child: SizedBox.shrink()),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
-                  child: _buildHeaderCard(
-                    context,
-                    Row(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
+                    child: _buildHeaderCard(
+                      context,
+                      Row(
                       children: [
                         Expanded(
                           child: Column(
@@ -603,7 +541,8 @@ class _ExercisesScreenState extends State<ExercisesScreen>
                     padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        final boxSize = Size(constraints.maxWidth, 520);
+                        const bodyHeight = 520.0;
+                        final boxSize = Size(constraints.maxWidth, bodyHeight);
                         return GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTapDown: (details) =>
@@ -635,36 +574,54 @@ class _ExercisesScreenState extends State<ExercisesScreen>
                                 ),
                               ),
                               SizedBox(
-                                height: boxSize.height,
+                                height: bodyHeight + _bodyOffset,
                                 width: boxSize.width,
                                 child: data == null
-                                    ? const Center(child: CircularProgressIndicator())
-                                    : SvgPicture.asset(
-                                        _side == BodySide.front
-                                            ? 'assets/front.svg'
-                                            : 'assets/back.svg',
-                                        fit: BoxFit.contain,
+                                    ? const Center(
+                                        child: CircularProgressIndicator())
+                                    : Stack(
+                                        children: [
+                                          Positioned(
+                                            top: _bodyOffset,
+                                            left: 0,
+                                            right: 0,
+                                            child: SizedBox(
+                                              height: bodyHeight,
+                                              child: SvgPicture.asset(
+                                                _side == BodySide.front
+                                                    ? 'assets/front.svg'
+                                                    : 'assets/back.svg',
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            top: _bodyOffset,
+                                            left: 0,
+                                            right: 0,
+                                            child: SizedBox(
+                                              height: bodyHeight,
+                                              child: AnimatedBuilder(
+                                                animation: _pulse,
+                                                builder: (context, child) {
+                                                  return CustomPaint(
+                                                    painter:
+                                                        MuscleHighlightPainter(
+                                                      data: data,
+                                                      selectedGroup:
+                                                          _selectedGroup,
+                                                      pulse: _pulse.value,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                               ),
-                              if (data != null)
-                                Positioned.fill(
-                                  child: IgnorePointer(
-                                    child: AnimatedBuilder(
-                                      animation: _pulse,
-                                      builder: (context, child) {
-                                        return CustomPaint(
-                                          painter: MuscleHighlightPainter(
-                                            data: data,
-                                            selectedGroup: _selectedGroup,
-                                            pulse: _pulse.value,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
                               Positioned(
-                                top: 44,
+                                top: 8,
                                 left: 0,
                                 right: 0,
                                 child: AnimatedOpacity(
@@ -731,6 +688,7 @@ class _ExercisesScreenState extends State<ExercisesScreen>
                             key: ValueKey(_selectedGroup),
                             padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
                             child: Container(
+                              key: _groupListKey,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(18),
@@ -750,7 +708,7 @@ class _ExercisesScreenState extends State<ExercisesScreen>
                                   const SizedBox(height: 10),
                                   if (_groupExercises.isEmpty)
                                     Text(
-                                      '    .',
+                                      '\u041f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0443\u043f\u0440\u0430\u0436\u043d\u0435\u043d\u0438\u0439 \u043d\u0430 \u044d\u0442\u0443 \u043c\u044b\u0448\u0446\u0443.',
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyMedium
@@ -803,10 +761,8 @@ class _ExercisesScreenState extends State<ExercisesScreen>
               ]
             ],
           ),
-        ),
-      ],
-    ),
-  );
+      ),
+    );
   }
 }
 
@@ -836,10 +792,10 @@ class MuscleHighlightPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final vb = data.viewBox;
+    canvas.save();
     final scale = math.min(size.width / vb.width, size.height / vb.height);
     final dx = (size.width - vb.width * scale) / 2;
     final dy = (size.height - vb.height * scale) / 2;
-    canvas.save();
     canvas.translate(dx, dy);
     canvas.scale(scale, scale);
     if (selectedGroup != null) {

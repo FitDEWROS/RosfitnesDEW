@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../app.dart';
 import '../services/auth_service.dart';
+import '../services/api_service.dart';
 
 enum TrainingMode { gym, crossfit }
 
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen>
   bool _chatAllowed = false;
   String? _avatarUrl;
   String? _firstName;
+  String _tariffName = '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
   final ScrollController _scrollController = ScrollController();
   final _metricsKey = GlobalKey();
   final _workoutsKey = GlobalKey();
@@ -52,15 +54,24 @@ class _HomeScreenState extends State<HomeScreen>
     final prefs = await SharedPreferences.getInstance();
     final modeRaw = prefs.getString('training_mode');
     final hasCurator = prefs.getBool('has_curator') ?? false;
+    final tariffName = prefs.getString('tariff_name');
     final auth = AuthService();
     final avatarUrl = await auth.getProfilePhotoUrl();
     final firstName = await auth.getFirstName();
+    final profile = await ApiService().fetchUserProfile();
 
     if (!mounted) return;
     setState(() {
       _chatAllowed = hasCurator;
       _avatarUrl = avatarUrl;
       _firstName = firstName;
+      final profileTariff = profile?['tariffName']?.toString();
+      if (profileTariff != null && profileTariff.trim().isNotEmpty) {
+        _tariffName = profileTariff.trim();
+        prefs.setString('tariff_name', _tariffName);
+      } else if (tariffName != null && tariffName.trim().isNotEmpty) {
+        _tariffName = tariffName.trim();
+      }
       if (modeRaw == 'gym') {
         _mode = TrainingMode.gym;
       } else {
@@ -114,6 +125,27 @@ class _HomeScreenState extends State<HomeScreen>
       target - 90,
       duration: const Duration(milliseconds: 420),
       curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _showStub(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  void _openTariffModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _TariffModal(
+        current: _tariffName,
+        onBuy: () => _showStub(
+          context,
+          '\u041f\u043e\u043a\u0443\u043f\u043a\u0430 \u0441\u043a\u043e\u0440\u043e \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f',
+        ),
+      ),
     );
   }
 
@@ -174,12 +206,20 @@ class _HomeScreenState extends State<HomeScreen>
                               borderRadius: BorderRadius.circular(999),
                               color: isDark ? Colors.white10 : Colors.black12,
                             ),
-                            child: Text(
-                              'ВЛАДЕЛЕЦ',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(letterSpacing: 1.2),
+                            child: InkWell(
+                              onTap: () => _openTariffModal(context),
+                              borderRadius: BorderRadius.circular(999),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: Text(
+                                  _tariffName.toUpperCase(),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(letterSpacing: 1.2),
+                                ),
+                              ),
                             ),
                           )
                         ],
@@ -313,6 +353,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               const SizedBox(height: 16),
               _StatsCard(pulse: _glow, sheen: _scrollOffset),
+              const SizedBox(height: 16),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -659,6 +700,276 @@ class _SmallStat extends StatelessWidget {
                 ?.copyWith(color: Colors.black, fontWeight: FontWeight.w700),
           )
         ],
+      ),
+    );
+  }
+}
+
+class _TariffCard extends StatelessWidget {
+  final String current;
+  final VoidCallback onBuy;
+  const _TariffCard({required this.current, required this.onBuy});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+    return Container(
+      margin: const EdgeInsets.only(top: 2),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        color: AppTheme.cardColor(context),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '\u041d\u0410\u0428 \u0422\u0410\u0420\u0418\u0424',
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(letterSpacing: 2.2, color: AppTheme.mutedColor(context)),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: onBuy,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      current,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(letterSpacing: 1.1),
+                    ),
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentColor(context),
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                onPressed: onBuy,
+                child: const Text('\u0422\u0410\u0420\u0418\u0424\u042b'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _TariffChip(
+                label: '\u0411\u0410\u0417\u041e\u0412\u042b\u0419',
+                active: current.toLowerCase().contains('\u0431\u0430\u0437'),
+              ),
+              const _TariffChip(label: '\u041e\u041f\u0422\u0418\u041c\u0410\u041b\u042c\u041d\u042b\u0419'),
+              _TariffChip(
+                label: '\u041c\u0410\u041a\u0421\u0418\u041c\u0423\u041c',
+                active: current.toLowerCase().contains('\u043c\u0430\u043a\u0441'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0434\u043b\u044f \u043f\u043e\u043a\u0443\u043f\u043a\u0438 \u0441\u043a\u043e\u0440\u043e',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppTheme.mutedColor(context),
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TariffModal extends StatefulWidget {
+  final String current;
+  final VoidCallback onBuy;
+  const _TariffModal({required this.current, required this.onBuy});
+
+  @override
+  State<_TariffModal> createState() => _TariffModalState();
+}
+
+class _TariffModalState extends State<_TariffModal> {
+  int _selected = 0;
+  final List<_TariffOption> _options = const [
+    _TariffOption(
+      name: '\u0411\u0430\u0437\u043e\u0432\u044b\u0439',
+      desc:
+          '\u0414\u043e\u0441\u0442\u0443\u043f \u043a \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0430\u043c \u0438 \u0431\u0430\u0437\u043e\u0432\u044b\u043c \u0440\u0430\u0437\u0434\u0435\u043b\u0430\u043c.',
+    ),
+    _TariffOption(
+      name: '\u041e\u043f\u0442\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439',
+      desc:
+          '\u0422\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0438 \u043f\u043b\u044e\u0441 \u0440\u0430\u0441\u0448\u0438\u0440\u0435\u043d\u043d\u044b\u0435 \u0441\u0446\u0435\u043d\u0430\u0440\u0438\u0438 \u0438 \u043a\u0443\u0440\u0430\u0442\u043e\u0440.',
+    ),
+    _TariffOption(
+      name: '\u041c\u0430\u043a\u0441\u0438\u043c\u0443\u043c',
+      desc:
+          '\u0412\u0435\u0441\u044c \u0444\u0443\u043d\u043a\u0446\u0438\u043e\u043d\u0430\u043b, \u0434\u043e\u043f. \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u0438 \u043f\u0440\u043e\u0434\u0432\u0438\u043d\u0443\u0442\u044b\u0439 \u043f\u043b\u0430\u043d.',
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final idx = _options.indexWhere(
+      (o) => widget.current.toLowerCase().contains(o.name.toLowerCase()),
+    );
+    if (idx >= 0) _selected = idx;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        color: Colors.black.withOpacity(0.72),
+        child: Center(
+          child: GestureDetector(
+            onTap: () {},
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 40),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                color: isDark
+                    ? const Color(0xFF1C1B1E).withOpacity(0.96)
+                    : const Color(0xFFF6EBD3).withOpacity(0.96),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '\u0422\u0410\u0420\u0418\u0424\u042b',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(letterSpacing: 1.4),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => Navigator.pop(context),
+                        borderRadius: BorderRadius.circular(999),
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(Icons.close, size: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ..._options.asMap().entries.map((entry) {
+                    final idx = entry.key;
+                    final opt = entry.value;
+                    final active = idx == _selected;
+                    return InkWell(
+                      onTap: () => setState(() => _selected = idx),
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          color: active
+                              ? AppTheme.accentColor(context)
+                                  .withOpacity(isDark ? 0.28 : 0.22)
+                              : (isDark ? Colors.white10 : Colors.black12),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              opt.name,
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              opt.desc,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: AppTheme.mutedColor(context)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentColor(context),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: widget.onBuy,
+                      child: const Text('\u041a\u0423\u041f\u0418\u0422\u042c'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TariffOption {
+  final String name;
+  final String desc;
+  const _TariffOption({required this.name, required this.desc});
+}
+
+class _TariffChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  const _TariffChip({required this.label, this.active = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        color: active ? AppTheme.accentColor(context) : Colors.transparent,
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              letterSpacing: 1.4,
+              color: active
+                  ? Colors.black
+                  : (isDark ? Colors.white70 : Colors.black54),
+            ),
       ),
     );
   }
