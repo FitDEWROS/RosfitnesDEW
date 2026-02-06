@@ -1,6 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'dart:ui';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme.dart';
@@ -22,9 +26,15 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   TrainingMode _mode = TrainingMode.crossfit;
   bool _chatAllowed = false;
+  String? _trainerName;
   String? _avatarUrl;
   String? _firstName;
   String _tariffName = '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
+  String _tariffLabel = '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
+  bool _isStaffUser = false;
+  static const String _pendingModeKey = 'pending_training_mode';
+  static const String _pendingTariffKey = 'pending_tariff_code';
+  double? _profileWeightKg;
   static const String _pendingPaymentKey = 'pending_payment_id';
   final ApiService _api = ApiService();
   final StepsService _stepsService = StepsService();
@@ -70,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final modeRaw = prefs.getString('training_mode');
-    final hasCurator = prefs.getBool('has_curator') ?? false;
     final tariffName = prefs.getString('tariff_name');
     final auth = AuthService();
     final avatarUrl = await auth.getProfilePhotoUrl();
@@ -79,17 +88,49 @@ class _HomeScreenState extends State<HomeScreen>
 
     if (!mounted) return;
     setState(() {
-      _chatAllowed = hasCurator;
       _avatarUrl = avatarUrl;
       _firstName = firstName;
       final profileTariff = profile?['tariffName']?.toString();
-      if (profileTariff != null && profileTariff.trim().isNotEmpty) {
-        _tariffName = profileTariff.trim();
-        prefs.setString('tariff_name', _tariffName);
-      } else if (tariffName != null && tariffName.trim().isNotEmpty) {
-        _tariffName = tariffName.trim();
+      final role = profile?['role']?.toString() ?? 'user';
+      final isCurator = profile?['isCurator'] == true || role == 'curator';
+      _isStaffUser = role == 'admin' || role == 'sadmin' || isCurator;
+      final weightRaw = profile?['weightKg'];
+      if (weightRaw is num) {
+        _profileWeightKg = weightRaw.toDouble();
+      } else if (weightRaw is String) {
+        _profileWeightKg = double.tryParse(weightRaw.replaceAll(',', '.'));
+      } else {
+        _profileWeightKg = null;
       }
-      if (modeRaw == 'gym') {
+      final rawTariff = (profileTariff != null && profileTariff.trim().isNotEmpty)
+          ? profileTariff.trim()
+          : (tariffName != null ? tariffName.trim() : '');
+      _tariffName = rawTariff;
+      if (rawTariff.isNotEmpty) {
+        prefs.setString('tariff_name', _tariffName);
+      }
+      _tariffLabel = _displayTariff(rawTariff, role, isCurator);
+      final trainer = profile?['trainer'];
+      String? trainerName;
+      bool hasCurator = false;
+      if (trainer is Map) {
+        final name = trainer['name']?.toString().trim();
+        final username = trainer['username']?.toString().trim();
+        if (name != null && name.isNotEmpty) {
+          trainerName = name;
+        } else if (username != null && username.isNotEmpty) {
+          trainerName = username;
+        }
+        hasCurator = trainer['id'] != null;
+      }
+      final chatTariff = _isChatTariff(rawTariff);
+      _chatAllowed = role == 'user' && !isCurator && chatTariff && hasCurator;
+      _trainerName = trainerName;
+      final profileMode = profile?['trainingMode']?.toString();
+      if (profileMode == 'gym' || profileMode == 'crossfit') {
+        _mode = profileMode == 'gym' ? TrainingMode.gym : TrainingMode.crossfit;
+        prefs.setString('training_mode', profileMode);
+      } else if (modeRaw == 'gym') {
         _mode = TrainingMode.gym;
       } else {
         _mode = TrainingMode.crossfit;
@@ -142,7 +183,25 @@ class _HomeScreenState extends State<HomeScreen>
       final res = await _api.confirmPayment(paymentId: paymentId);
       final paid = res['paid'] == true;
       if (paid) {
+        final pendingTariff = prefs.getString(_pendingTariffKey);
+        final pendingMode = prefs.getString(_pendingModeKey);
+        final tariffCode = res['tariff']?.toString();
+        if ((tariffCode == 'base' || pendingTariff == 'base') && pendingMode != null) {
+          try {
+            final modeRes = await _api.updateTrainingMode(mode: pendingMode);
+            if (modeRes['ok'] == true) {
+              await prefs.setString('training_mode', pendingMode);
+              if (mounted) {
+                setState(() {
+                  _mode = pendingMode == 'gym' ? TrainingMode.gym : TrainingMode.crossfit;
+                });
+              }
+            }
+          } catch (_) {}
+        }
         await prefs.remove(_pendingPaymentKey);
+        await prefs.remove(_pendingTariffKey);
+        await prefs.remove(_pendingModeKey);
         if (!mounted) return;
         await _loadPrefs();
         _showStub(context, 'Платеж подтвержден. Тариф активирован.');
@@ -175,6 +234,11 @@ class _HomeScreenState extends State<HomeScreen>
       'training_mode',
       value == TrainingMode.gym ? 'gym' : 'crossfit',
     );
+    try {
+      await _api.updateTrainingMode(
+        mode: value == TrainingMode.gym ? 'gym' : 'crossfit',
+      );
+    } catch (_) {}
   }
 
   void _handleScroll() {
@@ -223,6 +287,37 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  bool _isBasicTariff(String? tariff) {
+    final value = (tariff ?? '').toLowerCase();
+    return value.contains('\u0431\u0430\u0437\u043e\u0432');
+  }
+
+  bool _isGuestTariff(String? tariff) {
+    final value = (tariff ?? '').toLowerCase().trim();
+    return value.isEmpty ||
+        value.contains('\u0431\u0435\u0437 \u0442\u0430\u0440\u0438\u0444\u0430') ||
+        value.contains('\u0433\u043e\u0441\u0442');
+  }
+
+  bool _isChatTariff(String? tariff) {
+    final value = (tariff ?? '').toLowerCase();
+    return value.contains('\u043e\u043f\u0442\u0438\u043c') || value.contains('\u043c\u0430\u043a\u0441');
+  }
+
+  String _displayTariff(String tariff, String? role, bool isCurator) {
+    if (role == 'sadmin') return '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
+    if (role == 'admin') return '\u0410\u0434\u043c\u0438\u043d';
+    if (role == 'curator' || isCurator) return '\u041a\u0443\u0440\u0430\u0442\u043e\u0440';
+    if (_isGuestTariff(tariff)) return '\u0413\u043e\u0441\u0442\u0435\u0432\u043e\u0439';
+    return tariff.isNotEmpty ? tariff : '\u0411\u0435\u0437 \u0442\u0430\u0440\u0438\u0444\u0430';
+  }
+
+  String _formatSimple(num? value) {
+    if (value == null) return '-';
+    final rounded = (value * 10).round() / 10;
+    return rounded % 1 == 0 ? rounded.toStringAsFixed(0) : rounded.toStringAsFixed(1);
+  }
+
   void _openTariffModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -243,12 +338,97 @@ class _HomeScreenState extends State<HomeScreen>
     return null;
   }
 
+  Future<String?> _selectBasicMode(BuildContext context) async {
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final isDark = AppTheme.isDark(sheetContext);
+        return Container(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1C1B1E) : const Color(0xFFF6EBD3),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Выберите режим',
+                style: Theme.of(sheetContext)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(letterSpacing: 1.2),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Для базового тарифа переключение будет недоступно.',
+                textAlign: TextAlign.center,
+                style: Theme.of(sheetContext)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: AppTheme.mutedColor(sheetContext)),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(sheetContext, 'gym'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentColor(sheetContext),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('ЗАЛ'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, 'crossfit'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.textColor(sheetContext),
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : Colors.black26,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('КРОССФИТ'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                child: const Text('Отмена'),
+              )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _startPayment(BuildContext context, String tariffName) async {
     Navigator.pop(context);
     final code = _tariffCodeFromName(tariffName);
     if (code == null) {
       _showStub(context, 'Не удалось определить тариф.');
       return;
+    }
+    String? pendingMode;
+    if (code == 'base') {
+      pendingMode = await _selectBasicMode(context);
+      if (pendingMode == null) return;
     }
     try {
       final res = await _api.createPayment(tariffCode: code);
@@ -260,6 +440,10 @@ class _HomeScreenState extends State<HomeScreen>
       }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_pendingPaymentKey, paymentId);
+      await prefs.setString(_pendingTariffKey, code);
+      if (pendingMode != null) {
+        await prefs.setString(_pendingModeKey, pendingMode);
+      }
       final uri = Uri.parse(url);
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         _showStub(context, 'Не удалось открыть оплату.');
@@ -274,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _ChatSheet(),
+      builder: (_) => _ChatSheet(counterpartName: _trainerName),
     );
   }
 
@@ -285,6 +469,12 @@ class _HomeScreenState extends State<HomeScreen>
     final stepsValue = _steps != null ? _steps.toString() : '—';
     final stepsStatus =
         (_stepsAvailable && _steps != null) ? 'СЕГОДНЯ' : 'НЕТ ДАННЫХ';
+    final isBasic = _isBasicTariff(_tariffName);
+    final isGuest = _isGuestTariff(_tariffName);
+    final nutritionLocked = !_isStaffUser && (isBasic || isGuest);
+    final modeLocked = !_isStaffUser && isBasic;
+    final weightValue = _formatSimple(_profileWeightKg);
+    final weightStatus = _profileWeightKg != null ? 'ПРОФИЛЬ' : 'НЕТ ДАННЫХ';
 
     return Scaffold(
       body: Stack(
@@ -336,7 +526,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 4),
                                 child: Text(
-                                  _tariffName.toUpperCase(),
+                                  _tariffLabel.toUpperCase(),
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelSmall
@@ -475,7 +665,16 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              _StatsCard(pulse: _glow, sheen: _scrollOffset),
+              _StatsCard(
+                pulse: _glow,
+                sheen: _scrollOffset,
+                locked: nutritionLocked,
+                onTap: () => Navigator.pushNamed(context, '/diary'),
+                onLockedTap: () => _showStub(
+                  context,
+                  '\u0414\u043d\u0435\u0432\u043d\u0438\u043a \u043f\u0438\u0442\u0430\u043d\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u043d\u0430 \u0431\u0430\u0437\u043e\u0432\u043e\u043c \u0442\u0430\u0440\u0438\u0444\u0435.',
+                ),
+              ),
               const SizedBox(height: 16),
               const SizedBox(height: 20),
               Row(
@@ -504,12 +703,13 @@ class _HomeScreenState extends State<HomeScreen>
                   children: [
                     _MetricPill(
                       title: 'Вес',
-                      value: '91',
+                      value: weightValue,
                       unit: 'кг',
-                      status: 'ПРОФИЛЬ',
+                      status: weightStatus,
                       color: Color(0xFFCBE7BA),
                       pulse: _glow,
                       sheen: _scrollOffset,
+                      locked: false,
                     ),
                     const SizedBox(height: 10),
                     _MetricPill(
@@ -520,6 +720,7 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Color(0xFFC7E7F7),
                       pulse: _glow,
                       sheen: _scrollOffset,
+                      locked: false,
                     ),
                     const SizedBox(height: 10),
                     _MetricPill(
@@ -531,6 +732,7 @@ class _HomeScreenState extends State<HomeScreen>
                       pulse: _glow,
                       sheen: _scrollOffset,
                       highlightSheen: true,
+                      locked: nutritionLocked,
                     ),
                   ],
                 ),
@@ -588,6 +790,11 @@ class _HomeScreenState extends State<HomeScreen>
           setState(() => _mode = value);
           _saveMode(value);
         },
+        modeLocked: modeLocked,
+        onModeLocked: () => _showStub(
+          context,
+          '\u041f\u0435\u0440\u0435\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0435 \u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u043d\u0430 \u0442\u0430\u0440\u0438\u0444\u0430\u0445 \u041e\u043f\u0442\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439 \u0438 \u041c\u0430\u043a\u0441\u0438\u043c\u0443\u043c.',
+        ),
         child: _BottomBar(
           activeIndex: _activeNav,
           onHome: () {
@@ -654,7 +861,16 @@ class _IconBubble extends StatelessWidget {
 class _StatsCard extends StatelessWidget {
   final Animation<double> pulse;
   final double sheen;
-  const _StatsCard({required this.pulse, required this.sheen});
+  final bool locked;
+  final VoidCallback? onTap;
+  final VoidCallback? onLockedTap;
+  const _StatsCard({
+    required this.pulse,
+    required this.sheen,
+    this.locked = false,
+    this.onTap,
+    this.onLockedTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -760,7 +976,7 @@ class _StatsCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     InkWell(
-                      onTap: () => Navigator.pushNamed(context, '/diary'),
+                      onTap: locked ? onLockedTap : onTap,
                       borderRadius: BorderRadius.circular(999),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -781,6 +997,16 @@ class _StatsCard extends StatelessWidget {
                     )
                   ],
                 ),
+                if (locked)
+                  Positioned.fill(
+                    child: _LockOverlay(
+                      borderRadius: BorderRadius.circular(28),
+                      compact: false,
+                      message:
+                          '\u0414\u043d\u0435\u0432\u043d\u0438\u043a \u043f\u0438\u0442\u0430\u043d\u0438\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d \u043d\u0430 \u0431\u0430\u0437\u043e\u0432\u043e\u043c \u0442\u0430\u0440\u0438\u0444\u0435.',
+                      onTap: onLockedTap,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -823,6 +1049,64 @@ class _SmallStat extends StatelessWidget {
                 ?.copyWith(color: Colors.black, fontWeight: FontWeight.w700),
           )
         ],
+      ),
+    );
+  }
+}
+
+class _LockOverlay extends StatelessWidget {
+  final BorderRadius borderRadius;
+  final bool compact;
+  final String? message;
+  final VoidCallback? onTap;
+  const _LockOverlay({
+    required this.borderRadius,
+    this.compact = false,
+    this.message,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppTheme.isDark(context);
+    final overlayColor = isDark
+        ? Colors.black.withOpacity(0.35)
+        : Colors.white.withOpacity(0.55);
+    final iconColor = isDark ? Colors.white70 : Colors.black54;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap ?? () {},
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            color: overlayColor,
+            child: Center(
+              child: compact
+                  ? Icon(Icons.lock, color: iconColor, size: 20)
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.lock, color: iconColor, size: 24),
+                          const SizedBox(height: 8),
+                          Text(
+                            message ?? '',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(color: textColor, letterSpacing: 1.1),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1107,6 +1391,7 @@ class _MetricPill extends StatelessWidget {
   final Animation<double> pulse;
   final double sheen;
   final bool highlightSheen;
+  final bool locked;
   const _MetricPill({
     required this.title,
     required this.value,
@@ -1116,6 +1401,7 @@ class _MetricPill extends StatelessWidget {
     required this.pulse,
     required this.sheen,
     this.highlightSheen = false,
+    this.locked = false,
   });
 
   @override
@@ -1229,6 +1515,14 @@ class _MetricPill extends StatelessWidget {
                           ),
                         ),
                       ),
+                    ),
+                  ),
+                if (locked)
+                  Positioned.fill(
+                    child: _LockOverlay(
+                      borderRadius: BorderRadius.circular(24),
+                      compact: true,
+                      onTap: null,
                     ),
                   ),
               ],
@@ -1517,7 +1811,14 @@ class _NoisePainter extends CustomPainter {
 class _ModeToggle extends StatelessWidget {
   final TrainingMode value;
   final ValueChanged<TrainingMode> onChanged;
-  const _ModeToggle({required this.value, required this.onChanged});
+  final bool locked;
+  final VoidCallback? onLockedTap;
+  const _ModeToggle({
+    required this.value,
+    required this.onChanged,
+    this.locked = false,
+    this.onLockedTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1582,7 +1883,7 @@ class _ModeToggle extends StatelessWidget {
             children: [
               Expanded(
                 child: InkWell(
-                  onTap: () => onChanged(TrainingMode.gym),
+                  onTap: locked ? onLockedTap : () => onChanged(TrainingMode.gym),
                   borderRadius: BorderRadius.circular(999),
                   child: Center(
                     child: Text(
@@ -1601,7 +1902,9 @@ class _ModeToggle extends StatelessWidget {
               ),
               Expanded(
                 child: InkWell(
-                  onTap: () => onChanged(TrainingMode.crossfit),
+                  onTap: locked
+                      ? onLockedTap
+                      : () => onChanged(TrainingMode.crossfit),
                   borderRadius: BorderRadius.circular(999),
                   child: Center(
                     child: Text(
@@ -1620,6 +1923,14 @@ class _ModeToggle extends StatelessWidget {
               ),
             ],
           ),
+          if (locked)
+            Positioned.fill(
+              child: _LockOverlay(
+                borderRadius: BorderRadius.circular(999),
+                compact: true,
+                onTap: onLockedTap,
+              ),
+            ),
         ],
       ),
     );
@@ -1629,10 +1940,14 @@ class _ModeToggle extends StatelessWidget {
 class _BottomShell extends StatelessWidget {
   final TrainingMode mode;
   final ValueChanged<TrainingMode> onModeChanged;
+  final bool modeLocked;
+  final VoidCallback? onModeLocked;
   final Widget child;
   const _BottomShell({
     required this.mode,
     required this.onModeChanged,
+    required this.modeLocked,
+    this.onModeLocked,
     required this.child,
   });
 
@@ -1647,7 +1962,12 @@ class _BottomShell extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _ModeToggle(value: mode, onChanged: onModeChanged),
+            _ModeToggle(
+              value: mode,
+              onChanged: onModeChanged,
+              locked: modeLocked,
+              onLockedTap: onModeLocked,
+            ),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1754,31 +2074,447 @@ class _BottomItem extends StatelessWidget {
   }
 }
 
+enum _ChatMediaKind { image, video }
+
+class _ChatMedia {
+  final String url;
+  final String? type;
+  final String? name;
+  final int? size;
+  const _ChatMedia({
+    required this.url,
+    this.type,
+    this.name,
+    this.size,
+  });
+
+  factory _ChatMedia.fromJson(Map<String, dynamic> json) {
+    return _ChatMedia(
+      url: json['url']?.toString() ?? '',
+      type: json['type']?.toString(),
+      name: json['name']?.toString(),
+      size: json['size'] is num ? (json['size'] as num).toInt() : null,
+    );
+  }
+}
+
+class _ChatMessage {
+  final int? id;
+  final String? text;
+  final DateTime? createdAt;
+  final DateTime? readAt;
+  final bool isMine;
+  final _ChatMedia? media;
+
+  const _ChatMessage({
+    required this.id,
+    required this.text,
+    required this.createdAt,
+    required this.readAt,
+    required this.isMine,
+    required this.media,
+  });
+
+  factory _ChatMessage.fromJson(Map<String, dynamic> json) {
+    final mediaRaw = json['media'];
+    _ChatMedia? media;
+    if (mediaRaw is Map && mediaRaw['url'] != null) {
+      media = _ChatMedia.fromJson(Map<String, dynamic>.from(mediaRaw));
+    }
+    return _ChatMessage(
+      id: json['id'] is num ? (json['id'] as num).toInt() : null,
+      text: json['text']?.toString(),
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
+      readAt: DateTime.tryParse(json['readAt']?.toString() ?? ''),
+      isMine: json['isMine'] == true,
+      media: media,
+    );
+  }
+}
+
 class _ChatSheet extends StatefulWidget {
-  const _ChatSheet();
+  final String? counterpartName;
+  const _ChatSheet({this.counterpartName});
 
   @override
   State<_ChatSheet> createState() => _ChatSheetState();
 }
 
 class _ChatSheetState extends State<_ChatSheet> {
-  final List<String> _messages = [
-    'Привет! Я куратор, чем помочь?',
-    'Хочу план на неделю.',
-  ];
+  static const int _maxUploadBytes = 50 * 1024 * 1024;
+  final ApiService _api = ApiService();
+  final ImagePicker _picker = ImagePicker();
   final TextEditingController _controller = TextEditingController();
+  final Map<int, _ChatMessage> _messageMap = {};
+  List<_ChatMessage> _messages = [];
+  ScrollController? _scrollController;
+  Timer? _pollTimer;
+  bool _loading = true;
+  bool _sending = false;
+  String _subtitle = 'Онлайн консультация';
+  int _lastId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final name = widget.counterpartName?.trim();
+    if (name != null && name.isNotEmpty) {
+      _subtitle = 'Куратор: $name';
+    }
+    _loadInitial();
+    _startPolling();
+  }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
-  void _send() {
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  bool _isNearBottom() {
+    final controller = _scrollController;
+    if (controller == null || !controller.hasClients) return true;
+    final distance = controller.position.maxScrollExtent - controller.position.pixels;
+    return distance < 80;
+  }
+
+  void _scrollToBottom() {
+    final controller = _scrollController;
+    if (controller == null || !controller.hasClients) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!controller.hasClients) return;
+      controller.animateTo(
+        controller.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  Future<void> _loadInitial() async {
+    setState(() => _loading = true);
+    final data = await _api.fetchChatMessages(markRead: true);
+    if (!mounted) return;
+    _applyChatPayload(data, scrollToBottom: true);
+    if (mounted) setState(() => _loading = false);
+  }
+
+  void _startPolling() {
+    _pollTimer ??= Timer.periodic(const Duration(seconds: 3), (_) {
+      if (_loading) return;
+      _pollMessages();
+    });
+  }
+
+  Future<void> _pollMessages() async {
+    final shouldScroll = _isNearBottom();
+    final data = await _api.fetchChatMessages(
+      afterId: _lastId > 0 ? _lastId : null,
+      includeLast: true,
+    );
+    if (!mounted) return;
+    _applyChatPayload(data, scrollToBottom: shouldScroll);
+  }
+
+  bool _applyChatPayload(Map<String, dynamic> data, {bool scrollToBottom = false}) {
+    if (data['ok'] != true) return false;
+    final prevLastId = _lastId;
+    final counterpart = data['counterpart'];
+    if (counterpart is Map) {
+      final name = counterpart['name']?.toString().trim();
+      if (name != null && name.isNotEmpty) {
+        _subtitle = 'Куратор: $name';
+      }
+    }
+
+    final items = data['messages'];
+    if (items is List) {
+      for (final raw in items) {
+        if (raw is! Map) continue;
+        final msg = _ChatMessage.fromJson(Map<String, dynamic>.from(raw));
+        final id = msg.id;
+        if (id != null) {
+          _messageMap[id] = msg;
+          if (id > _lastId) _lastId = id;
+        }
+      }
+    }
+
+    _messages = _messageMap.values.toList()
+      ..sort((a, b) => (a.id ?? 0).compareTo(b.id ?? 0));
+    if (mounted) setState(() {});
+
+    final hasNew = _lastId > prevLastId;
+    if (scrollToBottom && hasNew) {
+      _scrollToBottom();
+    }
+    return hasNew;
+  }
+
+  String _formatTimestamp(DateTime? date) {
+    if (date == null) return '';
+    final pad = (int value) => value.toString().padStart(2, '0');
+    return '${pad(date.day)}.${pad(date.month)}.${date.year} ${pad(date.hour)}:${pad(date.minute)}';
+  }
+
+  Future<void> _sendText() async {
+    if (_sending) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    setState(() => _messages.add(text));
     _controller.clear();
+    setState(() => _sending = true);
+    final data = await _api.sendChatMessage(text: text);
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (data['ok'] == true && data['message'] is Map) {
+      _applyChatPayload({
+        'ok': true,
+        'messages': [data['message']]
+      }, scrollToBottom: true);
+      _scrollToBottom();
+      return;
+    }
+    _showMessage('Не удалось отправить сообщение.');
+  }
+
+  Future<void> _pickAndSendMedia() async {
+    if (_sending) return;
+    final kind = await showModalBottomSheet<_ChatMediaKind>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.cardColor(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.image_outlined),
+                title: const Text('Фото'),
+                onTap: () => Navigator.pop(context, _ChatMediaKind.image),
+              ),
+              ListTile(
+                leading: const Icon(Icons.movie_outlined),
+                title: const Text('Видео'),
+                onTap: () => Navigator.pop(context, _ChatMediaKind.video),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (kind == null) return;
+    XFile? picked;
+    if (kind == _ChatMediaKind.image) {
+      picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    } else {
+      picked = await _picker.pickVideo(source: ImageSource.gallery);
+    }
+    if (picked == null) return;
+    await _uploadAndSendFile(picked);
+  }
+
+  String? _guessMimeType(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.heic')) return 'image/heic';
+    if (lower.endsWith('.mp4')) return 'video/mp4';
+    if (lower.endsWith('.mov')) return 'video/quicktime';
+    if (lower.endsWith('.m4v')) return 'video/x-m4v';
+    return null;
+  }
+
+  Future<void> _uploadAndSendFile(XFile picked) async {
+    setState(() => _sending = true);
+    try {
+      final file = File(picked.path);
+      final size = await file.length();
+      if (size <= 0) {
+        _showMessage('Файл пустой.');
+        return;
+      }
+      if (size > _maxUploadBytes) {
+        _showMessage('Файл больше 50 МБ. Выберите файл поменьше.');
+        return;
+      }
+      final mime = picked.mimeType ?? _guessMimeType(picked.path);
+      if (mime == null || (!mime.startsWith('image/') && !mime.startsWith('video/'))) {
+        _showMessage('Можно отправлять только фото или видео.');
+        return;
+      }
+      final fileName = picked.name.isNotEmpty ? picked.name : picked.path.split('/').last;
+      final upload = await _api.createChatUploadUrl(
+        fileName: fileName,
+        contentType: mime,
+        size: size,
+      );
+      if (upload['ok'] != true) {
+        _showMessage('Не удалось загрузить файл.');
+        return;
+      }
+      final uploadUrl = upload['uploadUrl']?.toString();
+      final objectKey = upload['objectKey']?.toString();
+      if (uploadUrl == null || objectKey == null) {
+        _showMessage('Не удалось получить ссылку для загрузки.');
+        return;
+      }
+      final bytes = await file.readAsBytes();
+      final putRes = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {
+          'Content-Type': mime,
+          'Content-Length': size.toString(),
+        },
+        body: bytes,
+      );
+      if (putRes.statusCode < 200 || putRes.statusCode >= 300) {
+        _showMessage('Ошибка загрузки файла.');
+        return;
+      }
+      final send = await _api.sendChatMessage(
+        mediaKey: objectKey,
+        mediaType: mime,
+        mediaName: fileName,
+        mediaSize: size,
+      );
+      if (send['ok'] == true && send['message'] is Map) {
+        _applyChatPayload({
+          'ok': true,
+          'messages': [send['message']]
+        }, scrollToBottom: true);
+        _scrollToBottom();
+      } else {
+        _showMessage('Не удалось отправить файл.');
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _openMediaUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      _showMessage('Не удалось открыть файл.');
+    }
+  }
+
+  Widget _buildMedia(_ChatMedia media, bool isMine, bool isDark) {
+    final type = media.type ?? '';
+    if (type.startsWith('image/')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          media.url,
+          width: 220,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        ),
+      );
+    }
+    return InkWell(
+      onTap: () => _openMediaUrl(media.url),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isMine ? Colors.black.withOpacity(0.1) : (isDark ? Colors.white10 : Colors.black12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.play_circle_fill),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                media.name ?? 'Видео',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBubble(_ChatMessage message, bool isDark) {
+    final mine = message.isMine;
+    final bubbleColor = mine
+        ? LinearGradient(
+            colors: [
+              AppTheme.accentColor(context),
+              AppTheme.accentStrongColor(context),
+            ],
+          )
+        : null;
+    final textColor = mine ? Colors.black : AppTheme.textColor(context);
+    final metaColor = mine ? Colors.black54 : AppTheme.mutedColor(context);
+    final timeText = _formatTimestamp(message.createdAt);
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 280),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: mine ? null : (isDark ? Colors.white10 : Colors.black12),
+          gradient: bubbleColor,
+        ),
+        child: Column(
+          crossAxisAlignment:
+              mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            if (message.media != null) _buildMedia(message.media!, mine, isDark),
+            if (message.media != null && (message.text?.isNotEmpty ?? false))
+              const SizedBox(height: 8),
+            if (message.text != null && message.text!.isNotEmpty)
+              Text(
+                message.text!,
+                style:
+                    Theme.of(context).textTheme.bodyMedium?.copyWith(color: textColor),
+              ),
+            if (timeText.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    timeText,
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelSmall
+                        ?.copyWith(color: metaColor),
+                  ),
+                  if (mine) ...[
+                    const SizedBox(width: 6),
+                    Icon(
+                      message.readAt != null ? Icons.done_all : Icons.check,
+                      size: 14,
+                      color: metaColor,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -1791,6 +2527,7 @@ class _ChatSheetState extends State<_ChatSheet> {
       minChildSize: 0.55,
       maxChildSize: 0.95,
       builder: (context, scrollController) {
+        _scrollController = scrollController;
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
@@ -1811,7 +2548,7 @@ class _ChatSheetState extends State<_ChatSheet> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Онлайн консультация',
+                        _subtitle,
                         style: Theme.of(context)
                             .textTheme
                             .bodySmall
@@ -1827,57 +2564,42 @@ class _ChatSheetState extends State<_ChatSheet> {
               ),
               const SizedBox(height: 8),
               Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final mine = index % 2 == 1;
-                    final bubbleColor = mine
-                        ? LinearGradient(
-                            colors: [
-                              AppTheme.accentColor(context),
-                              AppTheme.accentStrongColor(context),
-                            ],
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _messages.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Сообщений пока нет',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: AppTheme.mutedColor(context)),
+                            ),
                           )
-                        : null;
-                    return Align(
-                      alignment:
-                          mine ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        constraints: const BoxConstraints(maxWidth: 280),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: mine
-                              ? null
-                              : (isDark ? Colors.white10 : Colors.black12),
-                          gradient: bubbleColor,
-                        ),
-                        child: Text(
-                          _messages[index],
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: mine
-                                    ? Colors.black
-                                    : AppTheme.textColor(context),
-                              ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                        : ListView.builder(
+                            controller: scrollController,
+                            itemCount: _messages.length,
+                            itemBuilder: (context, index) {
+                              final message = _messages[index];
+                              return _buildBubble(message, isDark);
+                            },
+                          ),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                  InkWell(
+                    onTap: _sending ? null : _pickAndSendMedia,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: const Icon(Icons.attach_file, size: 18),
                     ),
-                    child: const Icon(Icons.attach_file, size: 18),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1896,12 +2618,12 @@ class _ChatSheetState extends State<_ChatSheet> {
                         contentPadding:
                             const EdgeInsets.symmetric(horizontal: 12),
                       ),
-                      onSubmitted: (_) => _send(),
+                      onSubmitted: (_) => _sendText(),
                     ),
                   ),
                   const SizedBox(width: 10),
                   ElevatedButton(
-                    onPressed: _send,
+                    onPressed: _sending ? null : _sendText,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.accentColor(context),
                       foregroundColor: Colors.black,
@@ -1913,7 +2635,16 @@ class _ChatSheetState extends State<_ChatSheet> {
                         vertical: 12,
                       ),
                     ),
-                    child: const Text('Отправить'),
+                    child: _sending
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
+                            ),
+                          )
+                        : const Text('Отправить'),
                   ),
                 ],
               ),

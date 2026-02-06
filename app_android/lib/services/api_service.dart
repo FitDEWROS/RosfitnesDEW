@@ -125,6 +125,26 @@ class ApiService {
     return data;
   }
 
+  Future<Map<String, dynamic>> updateTrainingMode({required String mode}) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/mode');
+    final payload = <String, dynamic>{'mode': mode};
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
   Future<Map<String, dynamic>> fetchWeightHistory({int weeks = 12}) async {
     final uri = Uri.parse('${AppConfig.apiBase}/api/weight/history')
         .replace(queryParameters: {'weeks': weeks.toString()});
@@ -232,6 +252,100 @@ class ApiService {
       throw Exception('HTTP ${res.statusCode}');
     }
     return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> fetchChatMessages({
+    int? afterId,
+    bool markRead = true,
+    bool includeLast = false,
+  }) async {
+    final query = <String, String>{};
+    if (afterId != null) query['afterId'] = afterId.toString();
+    if (!markRead) query['markRead'] = '0';
+    if (includeLast) query['includeLast'] = '1';
+    final uri = Uri.parse('${AppConfig.apiBase}/api/chat/messages')
+        .replace(queryParameters: query.isEmpty ? null : query);
+    final res = await http.get(uri, headers: await _authHeaders());
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
+  Future<Map<String, dynamic>> fetchChatUnreadCount() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/chat/unread-count');
+    final res = await http.get(uri, headers: await _authHeaders());
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
+  Future<Map<String, dynamic>> createChatUploadUrl({
+    required String fileName,
+    required String contentType,
+    required int size,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/chat/upload-url');
+    final payload = {
+      'fileName': fileName,
+      'contentType': contentType,
+      'size': size,
+    };
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
+  Future<Map<String, dynamic>> sendChatMessage({
+    String? text,
+    String? mediaKey,
+    String? mediaType,
+    String? mediaName,
+    int? mediaSize,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/chat/messages');
+    final payload = <String, dynamic>{};
+    if (text != null && text.trim().isNotEmpty) {
+      payload['text'] = text.trim();
+    }
+    if (mediaKey != null) payload['mediaKey'] = mediaKey;
+    if (mediaType != null) payload['mediaType'] = mediaType;
+    if (mediaName != null) payload['mediaName'] = mediaName;
+    if (mediaSize != null) payload['mediaSize'] = mediaSize;
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
   }
 
   Future<Map<String, dynamic>> postMeasurementsMetrics({
