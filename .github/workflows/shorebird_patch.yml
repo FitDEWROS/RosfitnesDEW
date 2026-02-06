@@ -39,3 +39,4 @@ jobs:
           platform: android
           release-version: latest
           working-directory: app_android
+          flutter-version: '3.38.9'

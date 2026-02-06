@@ -37,6 +37,7 @@ jobs:
         with:
           platform: android
           working-directory: app_android
+          flutter-version: '3.38.9'
           args: --artifact ${{ inputs.artifact }}
 
       - name: Upload APK to S3
