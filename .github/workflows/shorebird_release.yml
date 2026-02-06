@@ -32,6 +32,23 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Bump build number for release
+        run: |
+          python - <<'PY'
+          import os, re, pathlib
+          path = pathlib.Path("pubspec.yaml")
+          text = path.read_text()
+          m = re.search(r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)(?:\+(\d+))?$', text, re.M)
+          if not m:
+              raise SystemExit("version not found in pubspec.yaml")
+          name = m.group(1)
+          build = os.environ.get("GITHUB_RUN_NUMBER", "1")
+          new_line = f"version: {name}+{build}"
+          text = re.sub(r'^version:.*$', new_line, text, flags=re.M)
+          path.write_text(text)
+          print(new_line)
+          PY
+
       - name: 🚀 Shorebird Release (Android)
         uses: shorebirdtech/shorebird-release@v1
         with:
