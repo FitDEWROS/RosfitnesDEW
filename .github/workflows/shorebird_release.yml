@@ -38,7 +38,15 @@ jobs:
           platform: android
           working-directory: app_android
           flutter-version: '3.38.9'
-          args: --artifact ${{ inputs.artifact }}
+          args: --artifact ${{ inputs.artifact }} --verbose
+
+      - name: Dump Shorebird logs on failure
+        if: ${{ failure() }}
+        run: |
+          echo "::group::shorebird logs"
+          ls -la /home/runner/.config/shorebird/logs || true
+          tail -n 400 /home/runner/.config/shorebird/logs/*_shorebird.log || true
+          echo "::endgroup::"
 
       - name: Upload APK to S3
         if: ${{ inputs.artifact == 'apk' }}
