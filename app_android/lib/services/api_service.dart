@@ -81,8 +81,48 @@ class ApiService {
     }
     final data = _decodeJson(res);
     if (data['ok'] != true) return null;
-    final profile = data['profile'];
-    return profile is Map<String, dynamic> ? profile : null;
+    final profileRaw = data['profile'];
+    if (profileRaw is! Map) return null;
+    final profile = Map<String, dynamic>.from(profileRaw as Map);
+    final user = data['user'];
+    if (user is Map) {
+      profile['tgId'] ??= user['id'];
+      profile['username'] ??= user['username'];
+      profile['photoUrl'] ??= user['photo_url'];
+      profile['firstName'] ??= user['first_name'];
+      profile['lastName'] ??= user['last_name'];
+    }
+    return profile;
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    int? heightCm,
+    double? weightKg,
+    int? age,
+    int? timezoneOffsetMin,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/profile');
+    final payload = <String, dynamic>{
+      'heightCm': heightCm,
+      'weightKg': weightKg,
+      'age': age,
+      if (timezoneOffsetMin != null) 'timezoneOffsetMin': timezoneOffsetMin,
+    };
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
   }
 
   Future<Map<String, dynamic>> fetchWeightHistory({int weeks = 12}) async {
@@ -124,10 +164,13 @@ class ApiService {
       },
       body: jsonEncode(payload),
     );
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('HTTP ${res.statusCode}');
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
     }
-    return _decodeJson(res);
+    return data;
   }
 
   Future<Map<String, dynamic>> postSteps({
@@ -214,10 +257,13 @@ class ApiService {
       },
       body: jsonEncode(payload),
     );
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('HTTP ${res.statusCode}');
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
     }
-    return _decodeJson(res);
+    return data;
   }
 
   Future<Map<String, dynamic>?> getMeasurementsUploadUrl({
@@ -245,11 +291,13 @@ class ApiService {
       },
       body: jsonEncode(payload),
     );
-    if (res.statusCode < 200 || res.statusCode >= 300) {
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
       return null;
     }
-    final data = _decodeJson(res);
-    return data['ok'] == true ? data : null;
+    return data;
   }
 
   Future<Map<String, dynamic>> postMeasurement({
@@ -271,10 +319,13 @@ class ApiService {
       },
       body: jsonEncode(payload),
     );
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('HTTP ${res.statusCode}');
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
     }
-    return _decodeJson(res);
+    return data;
   }
 
   Future<Map<String, dynamic>> deleteMeasurement({
@@ -294,10 +345,13 @@ class ApiService {
       },
       body: jsonEncode(payload),
     );
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('HTTP ${res.statusCode}');
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
     }
-    return _decodeJson(res);
+    return data;
   }
 
   Future<bool> putUpload(String url, List<int> bytes, {required String contentType}) async {

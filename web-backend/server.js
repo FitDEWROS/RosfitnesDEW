@@ -406,7 +406,11 @@ app.get('/api/user', async (req, res) => {
         where: { tg_id: Number(tg_id) },
         select: {
           id: true,
+          tg_id: true,
+          username: true,
           first_name: true,
+          last_name: true,
+          photo_url: true,
           tariffName: true,
           tariffExpiresAt: true,
           trainingMode: true,
@@ -431,6 +435,15 @@ app.get('/api/user', async (req, res) => {
       console.error('[api/user] prisma findUnique error', e);
     }
 
+    const resolvedUser = user || (dbUser
+      ? {
+          id: dbUser.tg_id ?? tg_id,
+          username: dbUser.username || null,
+          first_name: dbUser.first_name || null,
+          last_name: dbUser.last_name || null,
+          photo_url: dbUser.photo_url || null
+        }
+      : null);
     const isAdmin = dbUser?.role === 'admin' || dbUser?.role === 'sadmin';
     const isCurator = dbUser?.role === 'curator' || Boolean(dbUser?.isCurator);
     const tariffActive = !dbUser?.tariffExpiresAt || new Date(dbUser.tariffExpiresAt) > new Date();
@@ -438,7 +451,7 @@ app.get('/api/user', async (req, res) => {
     const profileTariffExpiresAt = tariffActive ? dbUser?.tariffExpiresAt : null;
     const profile = {
       id: dbUser?.id ?? null,
-      first_name: dbUser?.first_name || user?.first_name || 'друг',
+      first_name: dbUser?.first_name || resolvedUser?.first_name || user?.first_name || 'друг',
       tariffName: profileTariff || 'Без тарифа',
       tariffExpiresAt: profileTariffExpiresAt,
       trainingMode: dbUser?.trainingMode || 'gym',
@@ -461,7 +474,7 @@ app.get('/api/user', async (req, res) => {
 
     console.log(`[api/user] profile for ${tg_id}:`, profile);
 
-    return res.json({ ok: true, user, profile });
+    return res.json({ ok: true, user: resolvedUser, profile });
   } catch (e) {
     console.error('[api/user] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
@@ -1868,8 +1881,9 @@ async function ensureProgramSeed() {
 // === Профиль (POST) ===
 app.post('/api/profile', async (req, res) => {
   try {
-    const parsed = parseInitData(req.body?.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
 
     const body = req.body || {};
     const data = {};

@@ -35,6 +35,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _weightProgressLoading = false;
   bool _photosLocked = false;
   Map<String, dynamic> _currentPhotos = {};
+  bool _isGuestUser = false;
+  bool _profileEditable = true;
+  bool _profileSaving = false;
 
   @override
   void initState() {
@@ -56,20 +59,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfile() async {
     final auth = AuthService();
-    final photo = await auth.getProfilePhotoUrl();
-    final firstName = await auth.getFirstName();
     final prefs = await SharedPreferences.getInstance();
-    final tariffName = prefs.getString('tariff_name');
+    final cachedTariff = prefs.getString('tariff_name');
+    final cachedPhoto = await auth.getProfilePhotoUrl();
+    final cachedFirstName = await auth.getFirstName();
+    Map<String, dynamic>? profile;
+    try {
+      profile = await _api.fetchUserProfile();
+    } catch (_) {
+      profile = null;
+    }
     if (!mounted) return;
+    final rawTariff = profile?['tariffName']?.toString();
+    final role = profile?['role']?.toString();
+    final isCurator = profile?['isCurator'] == true || role == 'curator';
+    final isStaff = role == 'admin' || role == 'sadmin' || isCurator;
+    final tariffBase = (rawTariff != null && rawTariff.trim().isNotEmpty)
+        ? rawTariff.trim()
+        : (cachedTariff ?? '');
+    final isGuest = !isStaff && _isGuestTariff(tariffBase);
+    final displayTariff = _displayTariff(tariffBase, role, isCurator);
+    if (tariffBase.isNotEmpty) {
+      await prefs.setString('tariff_name', tariffBase);
+    }
+    final firstName = (profile?['firstName'] ??
+            profile?['first_name'] ??
+            cachedFirstName)
+        ?.toString();
+    final username = profile?['username']?.toString();
+    final photoUrl = (profile?['photoUrl'] ?? profile?['photo_url'])?.toString();
+    final tgId = profile?['tgId'] ?? profile?['tg_id'] ?? profile?['telegramId'];
+    final heightCm = profile?['heightCm'];
+    final weightKg = profile?['weightKg'];
+    final age = profile?['age'];
     setState(() {
-      _avatarUrl = photo;
+      _avatarUrl = (photoUrl != null && photoUrl.trim().isNotEmpty)
+          ? photoUrl
+          : cachedPhoto;
       if (firstName != null && firstName.trim().isNotEmpty) {
         _name = firstName.trim().toUpperCase();
-        _username = '@${firstName.trim().toLowerCase()}';
       }
-      if (tariffName != null && tariffName.trim().isNotEmpty) {
-        _tariff = tariffName.trim().toUpperCase();
+      _username = _formatUsername(username, firstName);
+      if (tgId != null) {
+        _userId = tgId.toString();
       }
+      _tariff = displayTariff.toUpperCase();
+      _profileEditable = !isGuest;
+      _isGuestUser = isGuest;
+      _heightController.text = _formatNumber(heightCm);
+      _weightController.text = _formatNumber(weightKg);
+      _ageController.text = _formatNumber(age);
     });
   }
 
@@ -85,6 +124,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  String _formatNumber(dynamic value) {
+    if (value == null) return '';
+    if (value is num) {
+      if (value == value.roundToDouble()) return value.toInt().toString();
+      return value.toString();
+    }
+    final text = value.toString();
+    return text == 'null' ? '' : text;
+  }
+
+  String _formatUsername(String? username, String? firstName) {
+    final raw = (username ?? '').trim();
+    if (raw.isNotEmpty) return raw.startsWith('@') ? raw : '@$raw';
+    final base = (firstName ?? '').trim();
+    if (base.isNotEmpty) return '@${base.toLowerCase()}';
+    return '@user';
+  }
+
+  bool _isGuestTariff(String? tariff) {
+    final value = (tariff ?? '').toLowerCase().trim();
+    return value.isEmpty ||
+        value.contains('\u0431\u0435\u0437 \u0442\u0430\u0440\u0438\u0444\u0430') ||
+        value.contains('\u0433\u043e\u0441\u0442');
+  }
+
+  String _displayTariff(String tariff, String? role, bool isCurator) {
+    if (role == 'sadmin') return '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
+    if (role == 'admin') return '\u0410\u0434\u043c\u0438\u043d';
+    if (role == 'curator' || isCurator) return '\u041a\u0443\u0440\u0430\u0442\u043e\u0440';
+    if (_isGuestTariff(tariff)) return '\u0413\u043e\u0441\u0442\u0435\u0432\u043e\u0439';
+    return tariff.isNotEmpty ? tariff : '\u0411\u0435\u0437 \u0442\u0430\u0440\u0438\u0444\u0430';
+  }
+
+  double? _parseDoubleValue(String value) {
+    final raw = value.trim().replaceAll(',', '.');
+    if (raw.isEmpty) return null;
+    return double.tryParse(raw);
+  }
+
+  int? _parseIntValue(String value) {
+    final parsed = _parseDoubleValue(value);
+    return parsed == null ? null : parsed.round();
+  }
+
+  Future<void> _saveProfile() async {
+    if (_profileSaving) return;
+    if (_isGuestUser) {
+      _showStub(
+        context,
+        '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0444\u0438\u043b\u044f \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0432 \u0433\u043e\u0441\u0442\u0435\u0432\u043e\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u0435.',
+      );
+      return;
+    }
+    setState(() => _profileSaving = true);
+    try {
+      final height = _parseIntValue(_heightController.text);
+      final weight = _parseDoubleValue(_weightController.text);
+      final age = _parseIntValue(_ageController.text);
+      final res = await _api.updateProfile(
+        heightCm: height,
+        weightKg: weight,
+        age: age,
+        timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+      );
+      if (res['ok'] != true) {
+        _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f');
+        return;
+      }
+      final profile = res['profile'];
+      if (profile is Map) {
+        _heightController.text = _formatNumber(profile['heightCm']);
+        _weightController.text = _formatNumber(profile['weightKg']);
+        _ageController.text = _formatNumber(profile['age']);
+      }
+      _showStub(context, '\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e');
+    } catch (_) {
+      _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f');
+    } finally {
+      if (mounted) {
+        setState(() => _profileSaving = false);
+      }
+    }
   }
 
   void _openWeightDynamics(BuildContext context) {
@@ -460,12 +583,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _showStub(context, '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0432\u0435\u0441');
       return;
     }
-    await _api.postWeight(
-      weightKg: value,
-      weekStart: _currentWeekKey,
-      timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
-    );
-    await _loadWeightProgress(setModalState);
+    if (_isGuestUser) {
+      _showStub(
+        context,
+        '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0432 \u0433\u043e\u0441\u0442\u0435\u0432\u043e\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u0435.',
+      );
+      return;
+    }
+    try {
+      final res = await _api.postWeight(
+        weightKg: value,
+        weekStart: _currentWeekKey,
+        timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+      );
+      if (res['error'] == 'locked') {
+        _showStub(
+          context,
+          '\u0412\u0435\u0441 \u043c\u043e\u0436\u043d\u043e \u043c\u0435\u043d\u044f\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0442\u0435\u0447\u0435\u043d\u0438\u0435 24 \u0447\u0430\u0441\u043e\u0432 \u043f\u043e\u0441\u043b\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f.',
+        );
+        return;
+      }
+      if (res['ok'] != true) {
+        _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f');
+        return;
+      }
+      await _loadWeightProgress(setModalState);
+    } catch (_) {
+      _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f');
+    }
   }
 
   Future<void> _saveMeasurements(StateSetter setModalState) async {
@@ -476,17 +621,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _showStub(context, '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u0438\u043d \u0437\u0430\u043c\u0435\u0440');
       return;
     }
-    await _api.postMeasurementsMetrics(
-      waistCm: waist,
-      chestCm: chest,
-      hipsCm: hips,
-      monthStart: _currentMonthKey,
-      timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
-    );
-    await _loadWeightProgress(setModalState);
+    if (_isGuestUser) {
+      _showStub(
+        context,
+        '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0432 \u0433\u043e\u0441\u0442\u0435\u0432\u043e\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u0435.',
+      );
+      return;
+    }
+    try {
+      final res = await _api.postMeasurementsMetrics(
+        waistCm: waist,
+        chestCm: chest,
+        hipsCm: hips,
+        monthStart: _currentMonthKey,
+        timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+      );
+      if (res['error'] == 'locked') {
+        _showStub(
+          context,
+          '\u0417\u0430\u043c\u0435\u0440\u044b \u043c\u043e\u0436\u043d\u043e \u043c\u0435\u043d\u044f\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0442\u0435\u0447\u0435\u043d\u0438\u0435 3 \u0434\u043d\u0435\u0439 \u043f\u043e\u0441\u043b\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f.',
+        );
+        return;
+      }
+      if (res['ok'] != true) {
+        _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f');
+        return;
+      }
+      await _loadWeightProgress(setModalState);
+    } catch (_) {
+      _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f');
+    }
   }
 
   Future<void> _pickAndUpload(String side, StateSetter setModalState) async {
+    if (_isGuestUser) {
+      _showStub(
+        context,
+        '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0432 \u0433\u043e\u0441\u0442\u0435\u0432\u043e\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u0435.',
+      );
+      return;
+    }
     final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (file == null) return;
     final bytes = await file.readAsBytes();
@@ -502,22 +676,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438');
       return;
     }
+    if (upload['error'] == 'locked') {
+      _showStub(
+        context,
+        '\u0424\u043e\u0442\u043e \u043c\u043e\u0436\u043d\u043e \u043c\u0435\u043d\u044f\u0442\u044c \u0438\u043b\u0438 \u0443\u0434\u0430\u043b\u044f\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0442\u0435\u0447\u0435\u043d\u0438\u0435 3 \u0434\u043d\u0435\u0439 \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438.',
+      );
+      return;
+    }
+    if (upload['ok'] != true || upload['uploadUrl'] == null || upload['objectKey'] == null) {
+      _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438');
+      return;
+    }
     final ok = await _api.putUpload(upload['uploadUrl'] as String, bytes,
         contentType: file.mimeType ?? 'image/jpeg');
     if (!ok) {
       _showStub(context, '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c');
       return;
     }
-    await _api.postMeasurement(
+    final saved = await _api.postMeasurement(
       side: side,
       objectKey: upload['objectKey'] as String,
       monthStart: _currentMonthKey,
     );
+    if (saved['error'] == 'locked') {
+      _showStub(
+        context,
+        '\u0424\u043e\u0442\u043e \u043c\u043e\u0436\u043d\u043e \u043c\u0435\u043d\u044f\u0442\u044c \u0438\u043b\u0438 \u0443\u0434\u0430\u043b\u044f\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0442\u0435\u0447\u0435\u043d\u0438\u0435 3 \u0434\u043d\u0435\u0439 \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438.',
+      );
+      return;
+    }
+    if (saved['ok'] != true) {
+      _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438');
+      return;
+    }
     await _loadWeightProgress(setModalState);
   }
 
   Future<void> _deleteMeasurement(String side, StateSetter setModalState) async {
-    await _api.deleteMeasurement(side: side, monthStart: _currentMonthKey);
+    if (_isGuestUser) {
+      _showStub(
+        context,
+        '\u0420\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0432 \u0433\u043e\u0441\u0442\u0435\u0432\u043e\u043c \u0434\u043e\u0441\u0442\u0443\u043f\u0435.',
+      );
+      return;
+    }
+    final res = await _api.deleteMeasurement(side: side, monthStart: _currentMonthKey);
+    if (res['error'] == 'locked') {
+      _showStub(
+        context,
+        '\u0424\u043e\u0442\u043e \u043c\u043e\u0436\u043d\u043e \u043c\u0435\u043d\u044f\u0442\u044c \u0438\u043b\u0438 \u0443\u0434\u0430\u043b\u044f\u0442\u044c \u0442\u043e\u043b\u044c\u043a\u043e \u0432 \u0442\u0435\u0447\u0435\u043d\u0438\u0435 3 \u0434\u043d\u0435\u0439 \u043f\u043e\u0441\u043b\u0435 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438.',
+      );
+      return;
+    }
+    if (res['ok'] != true) {
+      _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0438\u044f');
+      return;
+    }
     await _loadWeightProgress(setModalState);
   }
 
@@ -563,6 +777,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = AppTheme.isDark(context);
+    final heightText = _heightController.text.trim();
+    final weightText = _weightController.text.trim();
+    final ageText = _ageController.text.trim();
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -657,17 +874,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _StatCard(
                           title: '\u0420\u041e\u0421\u0422',
-                          value: '${_heightController.text} \u0441\u043c',
+                          value: heightText.isEmpty
+                              ? '\u2014'
+                              : '$heightText \u0441\u043c',
                         ),
                         const SizedBox(width: 10),
                         _StatCard(
                           title: '\u0412\u0415\u0421',
-                          value: '${_weightController.text} \u043a\u0433',
+                          value: weightText.isEmpty
+                              ? '\u2014'
+                              : '$weightText \u043a\u0433',
                         ),
                         const SizedBox(width: 10),
                         _StatCard(
                           title: '\u0412\u041e\u0417\u0420\u0410\u0421\u0422',
-                          value: '${_ageController.text} \u043b\u0435\u0442',
+                          value: ageText.isEmpty ? '\u2014' : '$ageText \u043b\u0435\u0442',
                         ),
                       ],
                     ),
@@ -701,48 +922,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              Expanded(
-                                child: _FieldBlock(
-                                  label: '\u0420\u041e\u0421\u0422 (\u0421\u041c)',
-                                  controller: _heightController,
+                                Expanded(
+                                  child: _FieldBlock(
+                                    label: '\u0420\u041e\u0421\u0422 (\u0421\u041c)',
+                                    controller: _heightController,
+                                    enabled: _profileEditable,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _FieldBlock(
-                                  label: '\u0412\u0415\u0421 (\u041a\u0413)',
-                                  controller: _weightController,
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _FieldBlock(
+                                    label: '\u0412\u0415\u0421 (\u041a\u0413)',
+                                    controller: _weightController,
+                                    enabled: _profileEditable,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _FieldBlock(
-                                  label: '\u0412\u041e\u0417\u0420\u0410\u0421\u0422',
-                                  controller: _ageController,
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _FieldBlock(
+                                    label: '\u0412\u041e\u0417\u0420\u0410\u0421\u0422',
+                                    controller: _ageController,
+                                    enabled: _profileEditable,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: 160,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.accentColor(context),
-                                foregroundColor: Colors.black,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 10),
-                              ),
-                              onPressed: () => _showStub(
-                                context,
-                                '\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u043e',
-                              ),
-                              child: const Text('\u0421\u041e\u0425\u0420\u0410\u041d\u0418\u0422\u042c'),
+                              ],
                             ),
-                          ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: 160,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.accentColor(context),
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 10),
+                                ),
+                                onPressed: _profileSaving ? null : _saveProfile,
+                                child: const Text('\u0421\u041e\u0425\u0420\u0410\u041d\u0418\u0422\u042c'),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -888,7 +1109,12 @@ class _ActionRow extends StatelessWidget {
 class _FieldBlock extends StatelessWidget {
   final String label;
   final TextEditingController controller;
-  const _FieldBlock({required this.label, required this.controller});
+  final bool enabled;
+  const _FieldBlock({
+    required this.label,
+    required this.controller,
+    this.enabled = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -906,6 +1132,7 @@ class _FieldBlock extends StatelessWidget {
         TextField(
           controller: controller,
           keyboardType: TextInputType.number,
+          enabled: enabled,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.black12,
