@@ -27,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   TrainingMode _mode = TrainingMode.crossfit;
   bool _chatAllowed = false;
+  int _chatUnread = 0;
+  int _notificationsUnread = 0;
+  Timer? _unreadTimer;
   String? _trainerName;
   String? _avatarUrl;
   String? _firstName;
@@ -76,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen>
     _scrollController.dispose();
     _glowController.dispose();
     _stepsSub?.cancel();
+    _unreadTimer?.cancel();
     _stepsService.dispose();
     super.dispose();
   }
@@ -139,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen>
         _mode = TrainingMode.crossfit;
       }
     });
+    _startUnreadPolling();
   }
 
   Future<void> _initSteps() async {
@@ -242,6 +247,49 @@ class _HomeScreenState extends State<HomeScreen>
         timezoneOffsetMin: now.timeZoneOffset.inMinutes,
       );
     } catch (_) {}
+  }
+
+  Future<void> _refreshUnreadBadges() async {
+    Map<String, dynamic> notifData;
+    try {
+      notifData = await _api.fetchNotifications(unreadOnly: true, limit: 1);
+    } catch (_) {
+      notifData = {'ok': false};
+    }
+    if (!mounted) return;
+    if (notifData['ok'] == true) {
+      final next = _toInt(notifData['unreadCount']);
+      if (next != _notificationsUnread) {
+        setState(() => _notificationsUnread = next);
+      }
+    }
+
+    if (_chatAllowed) {
+      Map<String, dynamic> chatData;
+      try {
+        chatData = await _api.fetchChatUnreadCount();
+      } catch (_) {
+        chatData = {'ok': false};
+      }
+      if (!mounted) return;
+      if (chatData['ok'] == true) {
+        final next = _toInt(chatData['unreadCount']);
+        if (next != _chatUnread) {
+          setState(() => _chatUnread = next);
+        }
+      }
+    } else if (_chatUnread != 0) {
+      setState(() => _chatUnread = 0);
+    }
+  }
+
+  void _startUnreadPolling() {
+    if (_unreadTimer != null) return;
+    _refreshUnreadBadges();
+    _unreadTimer = Timer.periodic(
+      const Duration(seconds: 8),
+      (_) => _refreshUnreadBadges(),
+    );
   }
 
   Future<void> _saveMode(TrainingMode value) async {
@@ -573,7 +621,7 @@ class _HomeScreenState extends State<HomeScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _ChatSheet(counterpartName: _trainerName),
-    );
+    ).whenComplete(() => _refreshUnreadBadges());
   }
 
   @override
@@ -590,6 +638,10 @@ class _HomeScreenState extends State<HomeScreen>
     final modeLocked = !_isStaffUser && isBasic;
     final weightValue = _formatSimple(_profileWeightKg);
     final weightStatus = _profileWeightKg != null ? 'ПРОФИЛЬ' : 'НЕТ ДАННЫХ';
+    final chatFabBottom = 110 + MediaQuery.of(context).padding.bottom;
+    final notificationBadge = _notificationsUnread > 0
+        ? (_notificationsUnread > 99 ? '99+' : '$_notificationsUnread')
+        : null;
 
     return Scaffold(
       body: Stack(
@@ -680,17 +732,6 @@ class _HomeScreenState extends State<HomeScreen>
                           child: Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              if (_chatAllowed)
-                                Positioned(
-                                  right: 58,
-                                  top: 0,
-                                  child: _IconBubble(
-                                    icon: Icons.chat_bubble_outline,
-                                    onTap: () => _openChat(context),
-                                    backgroundColor: AppTheme.accentColor(context),
-                                    iconColor: Colors.black,
-                                  ),
-                                ),
                               Positioned(
                                 left: 0,
                                 top: 38,
@@ -698,32 +739,42 @@ class _HomeScreenState extends State<HomeScreen>
                                   children: [
                                     _IconBubble(
                                       icon: Icons.notifications_none,
-                                      onTap: () => Navigator.pushNamed(
-                                        context,
-                                        '/notifications',
-                                      ),
+                                      onTap: () async {
+                                        await Navigator.pushNamed(
+                                          context,
+                                          '/notifications',
+                                        );
+                                        if (mounted) {
+                                          _refreshUnreadBadges();
+                                        }
+                                      },
                                     ),
-                                    Positioned(
-                                      right: 0,
-                                      top: 0,
-                                      child: Container(
-                                        width: 16,
-                                        height: 16,
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.accentColor(context),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Center(
-                                          child: Text(
-                                            '0',
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 10,
+                                    if (notificationBadge != null)
+                                      Positioned(
+                                        right: 0,
+                                        top: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                          ),
+                                          height: 16,
+                                          constraints: const BoxConstraints(minWidth: 16),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.accentColor(context),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              notificationBadge,
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    )
+                                      )
                                   ],
                                 ),
                               ),
@@ -897,6 +948,15 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
         ),
+        if (_chatAllowed)
+          Positioned(
+            right: 18,
+            bottom: chatFabBottom,
+            child: _ChatFab(
+              unread: _chatUnread,
+              onTap: () => _openChat(context),
+            ),
+          ),
       ],
     ),
       bottomNavigationBar: _BottomShell(
@@ -969,6 +1029,76 @@ class _IconBubble extends StatelessWidget {
           size: 20,
         ),
       ),
+    );
+  }
+}
+
+class _ChatFab extends StatelessWidget {
+  final int unread;
+  final VoidCallback onTap;
+  const _ChatFab({required this.unread, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeText = unread > 99 ? '99+' : unread.toString();
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.accentColor(context),
+                  AppTheme.accentStrongColor(context),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.chat_bubble_outline,
+              color: Colors.black,
+              size: 24,
+            ),
+          ),
+        ),
+        if (unread > 0)
+          Positioned(
+            right: -2,
+            top: -2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              height: 18,
+              constraints: const BoxConstraints(minWidth: 18),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.accentColor(context)),
+              ),
+              child: Center(
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    color: AppTheme.accentColor(context),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -2640,6 +2770,11 @@ class _ChatSheetState extends State<_ChatSheet> {
   Widget build(BuildContext context) {
     final isDark = AppTheme.isDark(context);
     final sheetColor = AppTheme.cardColor(context);
+    final media = MediaQuery.of(context);
+    final bottomInset = math.max(
+      media.viewInsets.bottom,
+      media.padding.bottom + 72,
+    );
 
     return DraggableScrollableSheet(
       initialChildSize: 0.82,
@@ -2648,7 +2783,7 @@ class _ChatSheetState extends State<_ChatSheet> {
       builder: (context, scrollController) {
         _scrollController = scrollController;
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          padding: EdgeInsets.fromLTRB(18, 14, 18, 14 + bottomInset),
           decoration: BoxDecoration(
             color: sheetColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),

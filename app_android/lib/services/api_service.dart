@@ -299,6 +299,53 @@ class ApiService {
     return data;
   }
 
+  Future<Map<String, dynamic>> fetchNotifications({
+    int limit = 50,
+    int offset = 0,
+    bool unreadOnly = false,
+  }) async {
+    final query = <String, String>{
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+    if (unreadOnly) query['unreadOnly'] = '1';
+    final uri = Uri.parse('${AppConfig.apiBase}/api/notifications')
+        .replace(queryParameters: query);
+    final res = await http.get(uri, headers: await _authHeaders());
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
+  Future<Map<String, dynamic>> markNotificationsRead({
+    List<int>? ids,
+    bool all = false,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/notifications/read');
+    final payload = <String, dynamic>{};
+    if (ids != null && ids.isNotEmpty) payload['ids'] = ids;
+    if (all) payload['all'] = true;
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
   Future<Map<String, dynamic>> createChatUploadUrl({
     required String fileName,
     required String contentType,
