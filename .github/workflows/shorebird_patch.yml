@@ -1,0 +1,41 @@
+name: Shorebird Patch Android
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "app_android/**"
+      - ".github/workflows/shorebird_patch.yml"
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: app_android
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+    steps:
+      - name: 📚 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: ☕ Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 🚀 Shorebird Patch (Android)
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: android
+          release-version: latest
+          working-directory: app_android

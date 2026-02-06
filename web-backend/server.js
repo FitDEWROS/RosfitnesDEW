@@ -389,6 +389,25 @@ function startPythonBot() {
 process.on('SIGTERM', () => process.exit(0));
 process.on('SIGINT',  () => process.exit(0));
 
+// /api/app/version
+app.get('/api/app/version', (_req, res) => {
+  const versionCode = Number.isFinite(APP_UPDATE_VERSION_CODE) && APP_UPDATE_VERSION_CODE > 0
+    ? APP_UPDATE_VERSION_CODE
+    : null;
+  const minVersionCode = Number.isFinite(APP_UPDATE_MIN_CODE) && APP_UPDATE_MIN_CODE > 0
+    ? APP_UPDATE_MIN_CODE
+    : null;
+  const versionName = APP_UPDATE_VERSION_NAME || null;
+  const url = APP_UPDATE_URL || null;
+  res.json({
+    ok: true,
+    versionCode,
+    versionName,
+    minVersionCode,
+    url
+  });
+});
+
 // /api/user
 app.get('/api/user', async (req, res) => {
   try {
@@ -1314,6 +1333,10 @@ const deleteObjectKey = async (key) => {
 const APP_URL_RAW = process.env.APP_URL || '';
 const ADMIN_URL_RAW = process.env.ADMIN_URL || '';
 const APP_VERSION = process.env.APP_VERSION || '';
+const APP_UPDATE_VERSION_CODE = Number(process.env.APP_UPDATE_VERSION_CODE || 0);
+const APP_UPDATE_VERSION_NAME = process.env.APP_UPDATE_VERSION_NAME || APP_VERSION || '';
+const APP_UPDATE_MIN_CODE = Number(process.env.APP_UPDATE_MIN_CODE || 0);
+const APP_UPDATE_URL = process.env.APP_UPDATE_URL || '';
 
 const appendQueryParams = (url, params) => {
   if (!url) return '';
@@ -1523,37 +1546,41 @@ function buildUserDisplayName(user) {
   return fullName || user.username || `Пользователь #${user.id}`;
 }
 
-async function getUserFromInitData(initData) {
-  const parsed = parseInitData(initData);
-  if (!parsed.ok) return parsed;
-
-    const user = await prisma.user.findUnique({
-      where: { tg_id: Number(parsed.tg_id) },
-      select: {
-        id: true,
-        role: true,
-        isCurator: true,
-        trainerId: true,
-        tariffName: true,
-        tariffExpiresAt: true,
-        first_name: true,
-        last_name: true,
-        username: true
-      }
-    });
+async function getUserFromAuth(auth) {
+  if (!auth?.ok) return auth || { ok: false, status: 401, error: 'unauthorized' };
+  const user = await prisma.user.findUnique({
+    where: { tg_id: Number(auth.tg_id) },
+    select: {
+      id: true,
+      role: true,
+      isCurator: true,
+      trainerId: true,
+      tariffName: true,
+      tariffExpiresAt: true,
+      first_name: true,
+      last_name: true,
+      username: true
+    }
+  });
 
   if (!user) {
     return { ok: false, status: 404, error: 'user_not_found' };
   }
 
-  return { ok: true, user, tg_id: parsed.tg_id };
+  return { ok: true, user, tg_id: auth.tg_id };
 }
 
-async function resolveChatContext(initData, clientId, ensureThread = true) {
-  const auth = await getUserFromInitData(initData);
-  if (!auth.ok) return auth;
+async function getUserFromInitData(initData) {
+  const parsed = parseInitData(initData);
+  if (!parsed.ok) return parsed;
+  return getUserFromAuth({ ok: true, tg_id: parsed.tg_id });
+}
 
-  const requester = auth.user;
+async function resolveChatContext(auth, clientId, ensureThread = true) {
+  const authResult = await getUserFromAuth(auth);
+  if (!authResult.ok) return authResult;
+
+  const requester = authResult.user;
   const requesterIsCurator = requester.role === 'curator' || requester.isCurator;
   const isClient = requester.role === 'user' && !requesterIsCurator;
 
@@ -2859,7 +2886,20 @@ app.get('/api/mode', async (req, res) => {
 // === Установить новый режим (gym / crossfit) ===
 app.post('/api/mode', async (req, res) => {
   try {
-    const { tg_id, mode } = req.body;
+    const hasAuth = Boolean(req.headers?.authorization)
+      || Boolean(req.query?.token)
+      || Boolean(req.body?.token)
+      || Boolean(req.query?.initData)
+      || Boolean(req.body?.initData);
+    let tg_id = null;
+    if (hasAuth) {
+      const auth = getAuthFromRequest(req);
+      if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+      tg_id = auth.tg_id;
+    } else {
+      tg_id = req.body?.tg_id;
+    }
+    const { mode } = req.body;
     if (!tg_id || !mode) return res.status(400).json({ ok: false, error: 'missing_params' });
 
     if (!['gym', 'crossfit'].includes(mode)) {
@@ -2962,14 +3002,15 @@ app.post('/api/notifications/read', async (req, res) => {
 // === Chat: messages ===
 app.get('/api/chat/messages', async (req, res) => {
   try {
-    const initData = req.query?.initData;
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
     const clientId = req.query?.clientId ? Number(req.query.clientId) : null;
     const afterId = req.query?.afterId ? Number(req.query.afterId) : null;
   const markRead = req.query?.markRead !== '0';
   const includeLast = String(req.query?.includeLast || '').toLowerCase() === 'true'
     || String(req.query?.includeLast) === '1';
 
-    const ctx = await resolveChatContext(initData, clientId, true);
+    const ctx = await resolveChatContext(auth, clientId, true);
     if (!ctx.ok) return res.status(ctx.status).json({ ok: false, error: ctx.error });
     if (!ctx.thread) {
       return res.json({ ok: true, threadId: null, messages: [], counterpart: null });
@@ -3052,9 +3093,10 @@ app.get('/api/chat/messages', async (req, res) => {
 
 app.get('/api/chat/unread-count', async (req, res) => {
   try {
-    const initData = req.query?.initData;
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
     const clientId = req.query?.clientId ? Number(req.query.clientId) : null;
-    const ctx = await resolveChatContext(initData, clientId, true);
+    const ctx = await resolveChatContext(auth, clientId, true);
     if (!ctx.ok) return res.status(ctx.status).json({ ok: false, error: ctx.error });
     if (!ctx.thread) return res.json({ ok: true, unreadCount: 0 });
 
@@ -3075,7 +3117,8 @@ app.get('/api/chat/unread-count', async (req, res) => {
 
 app.post('/api/chat/upload-url', async (req, res) => {
   try {
-    const initData = req.body?.initData;
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
     const clientId = req.body?.clientId ? Number(req.body.clientId) : null;
     const fileName = optionalString(req.body?.fileName);
     const contentType = optionalString(req.body?.contentType);
@@ -3088,7 +3131,7 @@ app.post('/api/chat/upload-url', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'invalid_size' });
     }
 
-    const ctx = await resolveChatContext(initData, clientId, true);
+    const ctx = await resolveChatContext(auth, clientId, true);
     if (!ctx.ok) return res.status(ctx.status).json({ ok: false, error: ctx.error });
     if (!ctx.thread) return res.status(400).json({ ok: false, error: 'no_thread' });
 
@@ -3182,7 +3225,8 @@ app.post('/api/admin/upload-url', async (req, res) => {
 
 app.post('/api/chat/messages', async (req, res) => {
   try {
-    const initData = req.body?.initData;
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
     const clientId = req.body?.clientId ? Number(req.body.clientId) : null;
     const text = optionalString(req.body?.text);
     const mediaKey = optionalString(req.body?.mediaKey);
@@ -3191,7 +3235,7 @@ app.post('/api/chat/messages', async (req, res) => {
     const mediaSize = req.body?.mediaSize ? Number(req.body.mediaSize) : null;
     if (!text && !mediaKey) return res.status(400).json({ ok: false, error: 'missing_content' });
 
-    const ctx = await resolveChatContext(initData, clientId, true);
+    const ctx = await resolveChatContext(auth, clientId, true);
     if (!ctx.ok) return res.status(ctx.status).json({ ok: false, error: ctx.error });
     if (!ctx.thread) return res.status(400).json({ ok: false, error: 'no_thread' });
 

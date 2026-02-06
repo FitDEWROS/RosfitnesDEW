@@ -1,0 +1,40 @@
+name: Shorebird Release Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact:
+        description: "Artifact type (aab or apk)"
+        required: true
+        default: "aab"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: app_android
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+    steps:
+      - name: 📚 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: ☕ Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 🚀 Shorebird Release (Android)
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          platform: android
+          working-directory: app_android
+          args: --artifact ${{ inputs.artifact }}

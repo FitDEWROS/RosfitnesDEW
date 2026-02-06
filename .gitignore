@@ -22,3 +22,4 @@ app_android/android/local.properties
 app_android/android/app/debug/
 app_android/android/app/profile/
 app_android/android/app/release/
+app_android/.shorebird/
