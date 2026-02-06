@@ -1,10 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme.dart';
 import '../app.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
+import '../services/steps_service.dart';
 
 enum TrainingMode { gym, crossfit }
 
@@ -22,6 +24,13 @@ class _HomeScreenState extends State<HomeScreen>
   String? _avatarUrl;
   String? _firstName;
   String _tariffName = '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
+  final ApiService _api = ApiService();
+  final StepsService _stepsService = StepsService();
+  StreamSubscription<int>? _stepsSub;
+  int? _steps;
+  bool _stepsAvailable = true;
+  DateTime? _lastStepsSentAt;
+  int _lastStepsSentValue = -1;
   final ScrollController _scrollController = ScrollController();
   final _metricsKey = GlobalKey();
   final _workoutsKey = GlobalKey();
@@ -40,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen>
     )..repeat(reverse: true);
     _glow = CurvedAnimation(parent: _glowController, curve: Curves.easeInOut);
     _loadPrefs();
+    _initSteps();
   }
 
   @override
@@ -47,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen>
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     _glowController.dispose();
+    _stepsSub?.cancel();
+    _stepsService.dispose();
     super.dispose();
   }
 
@@ -58,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen>
     final auth = AuthService();
     final avatarUrl = await auth.getProfilePhotoUrl();
     final firstName = await auth.getFirstName();
-    final profile = await ApiService().fetchUserProfile();
+    final profile = await _api.fetchUserProfile();
 
     if (!mounted) return;
     setState(() {
@@ -78,6 +90,53 @@ class _HomeScreenState extends State<HomeScreen>
         _mode = TrainingMode.crossfit;
       }
     });
+  }
+
+  Future<void> _initSteps() async {
+    final cached = await _stepsService.loadCachedSteps();
+    if (cached != null && mounted) {
+      setState(() => _steps = cached);
+    }
+
+    final allowed = await _stepsService.ensurePermission();
+    if (!allowed) {
+      if (mounted) {
+        setState(() => _stepsAvailable = false);
+      }
+      return;
+    }
+
+    await _stepsService.start();
+    _stepsSub = _stepsService.stepsStream.listen(
+      (value) {
+        if (!mounted) return;
+        setState(() {
+          _steps = value;
+          _stepsAvailable = true;
+        });
+        _sendStepsThrottled(value);
+      },
+      onError: (_) {
+        if (mounted) setState(() => _stepsAvailable = false);
+      },
+    );
+  }
+
+  Future<void> _sendStepsThrottled(int steps) async {
+    final now = DateTime.now();
+    if (_lastStepsSentAt != null) {
+      final diff = now.difference(_lastStepsSentAt!);
+      if (steps == _lastStepsSentValue && diff.inMinutes < 5) return;
+      if (diff.inSeconds < 30) return;
+    }
+    _lastStepsSentAt = now;
+    _lastStepsSentValue = steps;
+    try {
+      await _api.postSteps(
+        steps: steps,
+        timezoneOffsetMin: now.timeZoneOffset.inMinutes,
+      );
+    } catch (_) {}
   }
 
   Future<void> _saveMode(TrainingMode value) async {
@@ -162,6 +221,9 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final isDark = AppTheme.isDark(context);
     final parallax = (_scrollOffset * 0.02).clamp(-4.0, 4.0);
+    final stepsValue = _steps != null ? _steps.toString() : '—';
+    final stepsStatus =
+        (_stepsAvailable && _steps != null) ? 'СЕГОДНЯ' : 'НЕТ ДАННЫХ';
 
     return Scaffold(
       body: Stack(
@@ -390,10 +452,10 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     const SizedBox(height: 10),
                     _MetricPill(
-                      title: 'Вода',
-                      value: '0',
-                      unit: 'л',
-                      status: 'НЕТ ДАННЫХ',
+                      title: 'Шаги',
+                      value: stepsValue,
+                      unit: 'шаг',
+                      status: stepsStatus,
                       color: Color(0xFFC7E7F7),
                       pulse: _glow,
                       sheen: _scrollOffset,

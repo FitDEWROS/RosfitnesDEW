@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
+import '../services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,6 +13,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final ApiService _api = ApiService();
+  final ImagePicker _picker = ImagePicker();
   String? _avatarUrl;
   String _name = '\u041c\u0410\u041a\u0421\u0418\u041c';
   String _username = '@maksim_nazarkin';
@@ -24,6 +28,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _waistController = TextEditingController();
   final _chestController = TextEditingController();
   final _hipController = TextEditingController();
+  String _currentWeekKey = '';
+  String _currentMonthKey = '';
+  String _currentWeekLabel = '';
+  bool _weightProgressLoaded = false;
+  bool _weightProgressLoading = false;
+  bool _photosLocked = false;
+  Map<String, dynamic> _currentPhotos = {};
 
   @override
   void initState() {
@@ -77,6 +88,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openWeightDynamics(BuildContext context) {
+    final now = DateTime.now();
+    _currentWeekKey = _getWeekStartKey(now);
+    _currentMonthKey = _getMonthStartKey(now);
+    _currentWeekLabel = _formatWeekRangeNumeric(_currentWeekKey);
+    _weightProgressLoaded = false;
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -88,182 +104,460 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Container(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              color: isDark ? const Color(0xFF1C1D21) : const Color(0xFFF4F0E7),
+              borderRadius: BorderRadius.circular(26),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? const [Color(0xFF26282E), Color(0xFF1B1C22)]
+                    : const [Color(0xFFF7F1E6), Color(0xFFE8DDCC)],
+              ),
               border: Border.all(color: Colors.white10),
               boxShadow: const [
                 BoxShadow(
                   color: Colors.black45,
-                  blurRadius: 24,
-                  offset: Offset(0, 12),
+                  blurRadius: 26,
+                  offset: Offset(0, 14),
                 )
               ],
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '\u0414\u0418\u041d\u0410\u041c\u0418\u041a\u0410 \u0412\u0415\u0421\u0410',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(letterSpacing: 1.4),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '02.02 - 08.02',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(color: AppTheme.mutedColor(context)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () => Navigator.pop(context),
-                        borderRadius: BorderRadius.circular(999),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(Icons.close, size: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _InlineField(
-                          hint: '\u0412\u0435\u0441, \u043a\u0433',
-                          controller: _weightEntryController,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.accentColor(context),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                        onPressed: () => _showStub(
-                          context,
-                          '\u0412\u0435\u0441 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d',
-                        ),
-                        child: const Text('\u0421\u041e\u0425\u0420\u0410\u041d\u0418\u0422\u042c'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '\u0417\u0410\u041c\u0415\u0420\u042b, \u0421\u041c',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(letterSpacing: 2, color: AppTheme.mutedColor(context)),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _InlineField(
-                          hint: '\u0422\u0430\u043b\u0438\u044f, \u0441\u043c',
-                          controller: _waistController,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _InlineField(
-                          hint: '\u0413\u0440\u0443\u0434\u044c, \u0441\u043c',
-                          controller: _chestController,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _InlineField(
-                          hint: '\u0411\u0435\u0434\u0440\u0430, \u0441\u043c',
-                          controller: _hipController,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentColor(context),
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                      onPressed: () => _showStub(
-                        context,
-                        '\u0417\u0430\u043c\u0435\u0440\u044b \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b',
-                      ),
-                      child: const Text('\u0421\u041e\u0425\u0420\u0410\u041d\u0418\u0422\u042c \u0417\u0410\u041c\u0415\u0420\u042b'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: const [
-                      Expanded(child: _WeightPhotoCard(title: '\u0421\u041f\u0415\u0420\u0415\u0414\u0418')),
-                      SizedBox(width: 12),
-                      Expanded(child: _WeightPhotoCard(title: '\u0421\u0411\u041e\u041a\u0423')),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const _WeightPhotoCard(title: '\u0421\u0417\u0410\u0414\u0418'),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(12),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -60,
+                  right: -40,
+                  child: Container(
+                    width: 180,
+                    height: 180,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.black12,
-                      border: Border.all(color: Colors.white10),
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          AppTheme.accentColor(context).withOpacity(0.25),
+                          Colors.transparent
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '01.01 - 31.01',
+                  ),
+                ),
+                Positioned(
+                  left: -40,
+                  bottom: -60,
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          (isDark
+                                  ? const Color(0xFF5A5144)
+                                  : const Color(0xFFD5C4A3))
+                              .withOpacity(0.18),
+                          Colors.transparent
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                StatefulBuilder(
+                  builder: (context, setModalState) {
+                    if (!_weightProgressLoaded && !_weightProgressLoading) {
+                      _loadWeightProgress(setModalState);
+                    }
+                    return SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '\u0414\u0418\u041d\u0410\u041c\u0418\u041a\u0410 \u0412\u0415\u0421\u0410',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(letterSpacing: 1.4),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _currentWeekLabel,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: AppTheme.mutedColor(context),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => Navigator.pop(context),
+                                borderRadius: BorderRadius.circular(999),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.close, size: 18),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _InlineField(
+                                  hint: '\u0412\u0435\u0441, \u043a\u0433',
+                                  controller: _weightEntryController,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.accentColor(context),
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                                onPressed: _weightProgressLoading
+                                    ? null
+                                    : () => _saveWeight(setModalState),
+                                child: Text(
+                                  '\u0421\u041e\u0425\u0420\u0410\u041d\u0418\u0422\u042c',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.copyWith(
+                                        letterSpacing: 1.0,
+                                        color: Colors.black,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            '\u0417\u0410\u041c\u0415\u0420\u042b, \u0421\u041c',
                             style: Theme.of(context)
                                 .textTheme
                                 .labelSmall
-                                ?.copyWith(color: AppTheme.mutedColor(context)),
+                                ?.copyWith(
+                                  letterSpacing: 2,
+                                  color: AppTheme.mutedColor(context),
+                                ),
                           ),
-                        ),
-                        Text(
-                          '91 \u043a\u0433',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(color: AppTheme.mutedColor(context)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _InlineField(
+                                  hint: '\u0422\u0430\u043b\u0438\u044f, \u0441\u043c',
+                                  controller: _waistController,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _InlineField(
+                                  hint: '\u0413\u0440\u0443\u0434\u044c, \u0441\u043c',
+                                  controller: _chestController,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _InlineField(
+                                  hint: '\u0411\u0435\u0434\u0440\u0430, \u0441\u043c',
+                                  controller: _hipController,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentColor(context),
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              onPressed: _weightProgressLoading
+                                  ? null
+                                  : () => _saveMeasurements(setModalState),
+                              child: Text(
+                                '\u0421\u041e\u0425\u0420\u0410\u041d\u0418\u0422\u042c \u0417\u0410\u041c\u0415\u0420\u042b',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelMedium
+                                    ?.copyWith(
+                                      letterSpacing: 0.8,
+                                      color: Colors.black,
+                                    ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _WeightPhotoCard(
+                                  title: '\u0421\u041f\u0415\u0420\u0415\u0414\u0418',
+                                  imageUrl:
+                                      _currentPhotos['frontUrl']?.toString(),
+                                  locked: _photosLocked,
+                                  onUpload: _photosLocked
+                                      ? null
+                                      : () => _pickAndUpload(
+                                            'front',
+                                            setModalState,
+                                          ),
+                                  onDelete: _photosLocked
+                                      ? null
+                                      : () => _deleteMeasurement(
+                                            'front',
+                                            setModalState,
+                                          ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _WeightPhotoCard(
+                                  title: '\u0421\u0411\u041e\u041a\u0423',
+                                  imageUrl:
+                                      _currentPhotos['sideUrl']?.toString(),
+                                  locked: _photosLocked,
+                                  onUpload: _photosLocked
+                                      ? null
+                                      : () => _pickAndUpload(
+                                            'side',
+                                            setModalState,
+                                          ),
+                                  onDelete: _photosLocked
+                                      ? null
+                                      : () => _deleteMeasurement(
+                                            'side',
+                                            setModalState,
+                                          ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _WeightPhotoCard(
+                            title: '\u0421\u0417\u0410\u0414\u0418',
+                            imageUrl: _currentPhotos['backUrl']?.toString(),
+                            locked: _photosLocked,
+                            onUpload: _photosLocked
+                                ? null
+                                : () => _pickAndUpload('back', setModalState),
+                            onDelete: _photosLocked
+                                ? null
+                                : () => _deleteMeasurement('back', setModalState),
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              color: Colors.black12,
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _formatMonthRangeNumeric(_currentMonthKey),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: AppTheme.mutedColor(context),
+                                        ),
+                                  ),
+                                ),
+                                Text(
+                                  _weightController.text.isEmpty
+                                      ? '\u2014'
+                                      : '${_weightController.text} \u043a\u0433',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: AppTheme.mutedColor(context),
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         );
       },
     );
+  }
+
+  Future<void> _loadWeightProgress(StateSetter setModalState) async {
+    if (_weightProgressLoading) return;
+    _weightProgressLoading = true;
+    setModalState(() {});
+    try {
+      final weight = await _api.fetchWeightHistory(weeks: 12);
+      final measures = await _api.fetchMeasurementsHistory(months: 12);
+      final logs = (weight['logs'] as List? ?? const []).cast<Map<String, dynamic>>();
+      final items = (measures['items'] as List? ?? const []).cast<Map<String, dynamic>>();
+      final logMap = <String, Map<String, dynamic>>{};
+      for (final log in logs) {
+        final key = log['weekStart']?.toString() ?? '';
+        if (key.isNotEmpty) logMap[key] = log;
+      }
+      final photoMap = <String, Map<String, dynamic>>{};
+      for (final item in items) {
+        final key = item['weekStart']?.toString() ?? '';
+        if (key.isNotEmpty) photoMap[key] = item;
+      }
+      final currentLog = logMap[_currentWeekKey];
+      if (currentLog != null && currentLog['weightKg'] != null) {
+        _weightEntryController.text = '${currentLog['weightKg']}';
+        _weightController.text = '${currentLog['weightKg']}';
+      }
+      final currentPhotos = photoMap[_currentMonthKey] ?? {};
+      _currentPhotos = currentPhotos;
+      _photosLocked = currentPhotos['locked'] == true;
+      _waistController.text = currentPhotos['waistCm'] != null
+          ? '${currentPhotos['waistCm']}'
+          : '';
+      _chestController.text = currentPhotos['chestCm'] != null
+          ? '${currentPhotos['chestCm']}'
+          : '';
+      _hipController.text = currentPhotos['hipsCm'] != null
+          ? '${currentPhotos['hipsCm']}'
+          : '';
+    } finally {
+      _weightProgressLoaded = true;
+      _weightProgressLoading = false;
+      setModalState(() {});
+    }
+  }
+
+  Future<void> _saveWeight(StateSetter setModalState) async {
+    final value = double.tryParse(_weightEntryController.text.replaceAll(',', '.'));
+    if (value == null) {
+      _showStub(context, '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0432\u0435\u0441');
+      return;
+    }
+    await _api.postWeight(
+      weightKg: value,
+      weekStart: _currentWeekKey,
+      timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+    );
+    await _loadWeightProgress(setModalState);
+  }
+
+  Future<void> _saveMeasurements(StateSetter setModalState) async {
+    final waist = double.tryParse(_waistController.text.replaceAll(',', '.'));
+    final chest = double.tryParse(_chestController.text.replaceAll(',', '.'));
+    final hips = double.tryParse(_hipController.text.replaceAll(',', '.'));
+    if (waist == null && chest == null && hips == null) {
+      _showStub(context, '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u0438\u043d \u0437\u0430\u043c\u0435\u0440');
+      return;
+    }
+    await _api.postMeasurementsMetrics(
+      waistCm: waist,
+      chestCm: chest,
+      hipsCm: hips,
+      monthStart: _currentMonthKey,
+      timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+    );
+    await _loadWeightProgress(setModalState);
+  }
+
+  Future<void> _pickAndUpload(String side, StateSetter setModalState) async {
+    final file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    final upload = await _api.getMeasurementsUploadUrl(
+      side: side,
+      fileName: file.name,
+      contentType: file.mimeType ?? 'image/jpeg',
+      size: bytes.length,
+      monthStart: _currentMonthKey,
+      timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+    );
+    if (upload == null) {
+      _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438');
+      return;
+    }
+    final ok = await _api.putUpload(upload['uploadUrl'] as String, bytes,
+        contentType: file.mimeType ?? 'image/jpeg');
+    if (!ok) {
+      _showStub(context, '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c');
+      return;
+    }
+    await _api.postMeasurement(
+      side: side,
+      objectKey: upload['objectKey'] as String,
+      monthStart: _currentMonthKey,
+    );
+    await _loadWeightProgress(setModalState);
+  }
+
+  Future<void> _deleteMeasurement(String side, StateSetter setModalState) async {
+    await _api.deleteMeasurement(side: side, monthStart: _currentMonthKey);
+    await _loadWeightProgress(setModalState);
+  }
+
+  String _getWeekStartKey(DateTime date) {
+    final d = DateTime.utc(date.year, date.month, date.day);
+    final day = (d.weekday + 6) % 7;
+    final start = d.subtract(Duration(days: day));
+    return _toYmd(start);
+  }
+
+  String _getMonthStartKey(DateTime date) {
+    final d = DateTime.utc(date.year, date.month, 1);
+    return _toYmd(d);
+  }
+
+  String _toYmd(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  String _formatWeekRangeNumeric(String weekStart) {
+    if (weekStart.isEmpty) return '';
+    final start = DateTime.parse('${weekStart}T00:00:00Z').toLocal();
+    final end = start.add(const Duration(days: 6));
+    return '${_formatDateShort(start)} - ${_formatDateShort(end)}';
+  }
+
+  String _formatMonthRangeNumeric(String monthStart) {
+    if (monthStart.isEmpty) return '';
+    final start = DateTime.parse('${monthStart}T00:00:00Z').toLocal();
+    final end = DateTime(start.year, start.month + 1, 0);
+    return '${_formatDateShort(start)} - ${_formatDateShort(end)}';
+  }
+
+  String _formatDateShort(DateTime date) {
+    final d = date.day.toString().padLeft(2, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    return '$d.$m';
   }
 
   @override
@@ -642,7 +936,7 @@ class _InlineField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
-        fillColor: Colors.black12,
+        fillColor: AppTheme.cardColor(context).withOpacity(0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -656,7 +950,17 @@ class _InlineField extends StatelessWidget {
 
 class _WeightPhotoCard extends StatelessWidget {
   final String title;
-  const _WeightPhotoCard({required this.title});
+  final String? imageUrl;
+  final VoidCallback? onUpload;
+  final VoidCallback? onDelete;
+  final bool locked;
+  const _WeightPhotoCard({
+    required this.title,
+    this.imageUrl,
+    this.onUpload,
+    this.onDelete,
+    this.locked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -664,8 +968,15 @@ class _WeightPhotoCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: Colors.black12,
+        color: AppTheme.cardColor(context).withOpacity(0.55),
         border: Border.all(color: Colors.white10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -683,63 +994,68 @@ class _WeightPhotoCard extends StatelessWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              color: Colors.black12,
+              color: AppTheme.cardColor(context).withOpacity(0.5),
               border: Border.all(color: Colors.white10),
             ),
-            child: Center(
-              child: Text(
-                '\u0424\u043e\u0442\u043e \u0435\u0449\u0435 \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u043e',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: AppTheme.mutedColor(context)),
-                textAlign: TextAlign.center,
-              ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: (imageUrl != null && imageUrl!.isNotEmpty)
+                  ? Image.network(
+                      imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _photoPlaceholder(context),
+                    )
+                  : _photoPlaceholder(context),
             ),
           ),
           const SizedBox(height: 10),
-          Row(
+          Column(
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('\u0421\u043a\u043e\u0440\u043e')),
-                    );
-                  },
-                  child: const Text('\u0417\u0410\u0413\u0420\u0423\u0417\u0418\u0422\u042c'),
+              TextButton(
+                onPressed: locked ? null : onUpload,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textColor(context),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                ),
+                child: Text(
+                  '\u0417\u0410\u0413\u0420\u0423\u0417\u0418\u0422\u042c',
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelMedium
+                      ?.copyWith(letterSpacing: 1.4),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('\u0423\u0434\u0430\u043b\u0435\u043d\u043e')),
-                    );
-                  },
-                  child: const Text('\u0423\u0414\u0410\u041b\u0418\u0422\u042c'),
+              const SizedBox(height: 2),
+              TextButton(
+                onPressed: locked ? null : onDelete,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textColor(context),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                ),
+                child: Text(
+                  '\u0423\u0414\u0410\u041b\u0418\u0422\u042c',
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelMedium
+                      ?.copyWith(letterSpacing: 1.4),
                 ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _photoPlaceholder(BuildContext context) {
+    return Center(
+      child: Text(
+        '\u0424\u043e\u0442\u043e \u0435\u0449\u0435 \u043d\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043d\u043e',
+        style: Theme.of(context)
+            .textTheme
+            .labelSmall
+            ?.copyWith(color: AppTheme.mutedColor(context)),
+        textAlign: TextAlign.center,
       ),
     );
   }

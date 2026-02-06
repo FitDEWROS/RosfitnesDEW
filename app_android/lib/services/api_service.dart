@@ -74,11 +74,8 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> fetchUserProfile() async {
-    final token = await _auth.getToken();
-    if (token == null || token.isEmpty) return null;
-    final uri = Uri.parse('${AppConfig.apiBase}/api/user')
-        .replace(queryParameters: {'token': token});
-    final res = await http.get(uri);
+    final uri = Uri.parse('${AppConfig.apiBase}/api/user');
+    final res = await http.get(uri, headers: await _authHeaders());
     if (res.statusCode < 200 || res.statusCode >= 300) {
       return null;
     }
@@ -86,6 +83,196 @@ class ApiService {
     if (data['ok'] != true) return null;
     final profile = data['profile'];
     return profile is Map<String, dynamic> ? profile : null;
+  }
+
+  Future<Map<String, dynamic>> fetchWeightHistory({int weeks = 12}) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/weight/history')
+        .replace(queryParameters: {'weeks': weeks.toString()});
+    final res = await http.get(uri, headers: await _authHeaders());
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> fetchMeasurementsHistory({int months = 12}) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/measurements/history')
+        .replace(queryParameters: {'months': months.toString()});
+    final res = await http.get(uri, headers: await _authHeaders());
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> postWeight({
+    required double weightKg,
+    required String weekStart,
+    int? timezoneOffsetMin,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/weight');
+    final payload = {
+      'weightKg': weightKg,
+      'weekStart': weekStart,
+      if (timezoneOffsetMin != null) 'timezoneOffsetMin': timezoneOffsetMin,
+    };
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> postSteps({
+    required int steps,
+    String? date,
+    int? timezoneOffsetMin,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/steps');
+    final payload = <String, dynamic>{
+      'steps': steps,
+    };
+    if (date != null && date.isNotEmpty) payload['date'] = date;
+    if (timezoneOffsetMin != null) {
+      payload['timezoneOffsetMin'] = timezoneOffsetMin;
+    }
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> postMeasurementsMetrics({
+    double? waistCm,
+    double? chestCm,
+    double? hipsCm,
+    required String monthStart,
+    int? timezoneOffsetMin,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/measurements/metrics');
+    final payload = <String, dynamic>{
+      'monthStart': monthStart,
+      if (timezoneOffsetMin != null) 'timezoneOffsetMin': timezoneOffsetMin,
+    };
+    if (waistCm != null) payload['waistCm'] = waistCm;
+    if (chestCm != null) payload['chestCm'] = chestCm;
+    if (hipsCm != null) payload['hipsCm'] = hipsCm;
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>?> getMeasurementsUploadUrl({
+    required String side,
+    required String fileName,
+    required String contentType,
+    required int size,
+    required String monthStart,
+    int? timezoneOffsetMin,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/measurements/upload-url');
+    final payload = {
+      'side': side,
+      'fileName': fileName,
+      'contentType': contentType,
+      'size': size,
+      'monthStart': monthStart,
+      if (timezoneOffsetMin != null) 'timezoneOffsetMin': timezoneOffsetMin,
+    };
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      return null;
+    }
+    final data = _decodeJson(res);
+    return data['ok'] == true ? data : null;
+  }
+
+  Future<Map<String, dynamic>> postMeasurement({
+    required String side,
+    required String objectKey,
+    required String monthStart,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/measurements');
+    final payload = {
+      'side': side,
+      'objectKey': objectKey,
+      'monthStart': monthStart,
+    };
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> deleteMeasurement({
+    required String side,
+    required String monthStart,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/measurements/delete');
+    final payload = {
+      'side': side,
+      'monthStart': monthStart,
+    };
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
+  Future<bool> putUpload(String url, List<int> bytes, {required String contentType}) async {
+    final res = await http.put(
+      Uri.parse(url),
+      headers: {'Content-Type': contentType},
+      body: bytes,
+    );
+    return res.statusCode >= 200 && res.statusCode < 300;
   }
 
   Future<List<NutritionHistoryDay>> fetchNutritionHistory({

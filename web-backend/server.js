@@ -1899,6 +1899,77 @@ app.post('/api/weight', async (req, res) => {
 });
 
 // === Замеры (GET / POST) ===
+// === Steps (GET / POST) ===
+app.get('/api/steps', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
+
+    const offsetRaw = Number(req.query?.timezoneOffsetMin);
+    const timezoneOffsetMin = Number.isFinite(offsetRaw) ? Math.round(offsetRaw) : null;
+    const dateKey = req.query?.date
+      ? getDateKey(req.query.date)
+      : toDateKeyWithOffset(new Date(), timezoneOffsetMin);
+
+    const dbUser = await ensureUserRecord(parsed);
+    if (timezoneOffsetMin !== null) {
+      await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { timezoneOffsetMin }
+      });
+    }
+
+    const log = await prisma.stepLog.findUnique({
+      where: { userId_date: { userId: dbUser.id, date: dateKey } },
+      select: { steps: true, date: true }
+    });
+
+    res.json({ ok: true, date: dateKey, steps: log?.steps ?? null });
+  } catch (e) {
+    console.error('[api/steps:get] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/steps', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
+
+    const steps = toInt(req.body?.steps);
+    if (steps === null || !Number.isFinite(steps) || steps < 0) {
+      return res.status(400).json({ ok: false, error: 'invalid_steps' });
+    }
+
+    const offsetRaw = Number(req.body?.timezoneOffsetMin);
+    const timezoneOffsetMin = Number.isFinite(offsetRaw) ? Math.round(offsetRaw) : null;
+    const dateKey = req.body?.date
+      ? getDateKey(req.body.date)
+      : toDateKeyWithOffset(new Date(), timezoneOffsetMin);
+
+    const dbUser = await ensureUserRecord(parsed);
+    const log = await prisma.stepLog.upsert({
+      where: { userId_date: { userId: dbUser.id, date: dateKey } },
+      update: { steps },
+      create: { userId: dbUser.id, date: dateKey, steps }
+    });
+
+    if (timezoneOffsetMin !== null) {
+      await prisma.user.update({
+        where: { id: dbUser.id },
+        data: { timezoneOffsetMin }
+      });
+    }
+
+    res.json({ ok: true, date: dateKey, steps: log.steps });
+  } catch (e) {
+    console.error('[api/steps:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
 app.get('/api/measurements/history', async (req, res) => {
   try {
     const auth = getAuthFromRequest(req);

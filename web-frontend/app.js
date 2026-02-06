@@ -12,13 +12,12 @@
   const macroCarbEl = document.getElementById("macroCarb");
   const metricWeightEl = document.getElementById("metricWeight");
   const metricWeightStatusEl = document.getElementById("metricWeightStatus");
-  const metricWaterEl = document.getElementById("metricWater");
-  const metricWaterStatusEl = document.getElementById("metricWaterStatus");
+  const metricStepsEl = document.getElementById("metricSteps");
+  const metricStepsStatusEl = document.getElementById("metricStepsStatus");
   const metricMealsEl = document.getElementById("metricMeals");
   const metricMealsStatusEl = document.getElementById("metricMealsStatus");
   const nutritionLink = document.getElementById("nutritionLink");
   const nutritionHero = document.getElementById("nutritionHero");
-  const metricWaterCard = document.getElementById("metricWaterCard");
   const metricMealsCard = document.getElementById("metricMealsCard");
   const modeToggleEl = document.getElementById("modeToggle");
   const themeToggleBtn = document.getElementById("themeToggle");
@@ -569,9 +568,6 @@
     if (nutritionHero) {
       nutritionHero.classList.toggle("fog-lock", nutritionLocked);
     }
-    if (metricWaterCard) {
-      metricWaterCard.classList.toggle("fog-lock", nutritionLocked);
-    }
     if (metricMealsCard) {
       metricMealsCard.classList.toggle("fog-lock", nutritionLocked);
     }
@@ -587,7 +583,6 @@
     const protein = readNumber(entry?.protein);
     const fat = readNumber(entry?.fat);
     const carb = readNumber(entry?.carb);
-    const water = readNumber(entry?.waterLiters);
     const meals = readNumber(entry?.mealsCount);
 
     if (heroKcalEl) heroKcalEl.textContent = formatWhole(kcal);
@@ -595,18 +590,43 @@
     if (macroFatEl) macroFatEl.textContent = formatWhole(fat);
     if (macroCarbEl) macroCarbEl.textContent = formatWhole(carb);
 
-    if (metricWaterEl) {
-      metricWaterEl.textContent = formatSimple(water, "0");
-      if (metricWaterStatusEl) {
-        metricWaterStatusEl.textContent = water && water > 0 ? "Заполнено" : "Нет данных";
-      }
-    }
-
     if (metricMealsEl) {
       metricMealsEl.textContent = formatWhole(meals, "0");
       if (metricMealsStatusEl) {
         metricMealsStatusEl.textContent = meals && meals > 0 ? "Заполнено" : "Нет данных";
       }
+    }
+  };
+
+  const applyStepsValue = (steps) => {
+    const hasSteps = Number.isFinite(steps);
+    if (metricStepsEl) {
+      metricStepsEl.textContent = hasSteps ? formatWhole(steps, "0") : "0";
+    }
+    if (metricStepsStatusEl) {
+      metricStepsStatusEl.textContent = hasSteps ? "Сегодня" : "Нет данных";
+    }
+  };
+
+  const fetchSteps = async (initData) => {
+    if (!API_BASE || !initData) {
+      applyStepsValue(null);
+      return;
+    }
+    try {
+      const params = new URLSearchParams();
+      params.set("initData", initData);
+      params.set("timezoneOffsetMin", String(getTimezoneOffsetMin()));
+      const res = await fetch(`${API_BASE}/api/steps?${params.toString()}`);
+      const json = await res.json().catch(() => ({}));
+      if (json?.ok) {
+        const steps = readNumber(json.steps);
+        applyStepsValue(steps);
+      } else {
+        applyStepsValue(null);
+      }
+    } catch (e) {
+      console.warn("[api/steps] Ошибка запроса", e);
     }
   };
 
@@ -1792,6 +1812,7 @@
         await fetch(`${API_BASE}/api/validate?initData=${encodeURIComponent(initData)}`).catch(() => ({}));
         await fetchUserAndRender(initData);
         await fetchNutrition(initData);
+        await fetchSteps(initData);
         await fetchNotificationsCount(initData);
       }
     } catch (e) {

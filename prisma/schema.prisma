@@ -51,6 +51,7 @@ model User {
   chatThreadsAsCurator ChatThread[] @relation("ChatCurator")
   chatMessages   ChatMessage[] @relation("ChatMessageSender")
   weightLogs     WeightLog[]
+  stepLogs       StepLog[]
   bodyMeasurements BodyMeasurement[]
 }
 
@@ -294,6 +295,19 @@ model WeightLog {
 
   @@unique([userId, weekStart])
   @@index([userId, weekStart])
+}
+
+model StepLog {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  date      String   @db.VarChar(10)
+  steps     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }
 
 model BodyMeasurement {
