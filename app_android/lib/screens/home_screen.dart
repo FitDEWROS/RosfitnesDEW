@@ -1005,13 +1005,12 @@ class _StatsCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 colors: [
                   AppTheme.accentColor(context),
                   AppTheme.accentStrongColor(context),
@@ -1060,57 +1059,62 @@ class _StatsCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '0',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineLarge
-                          ?.copyWith(
-                              color: Colors.black, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'ККАЛ',
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelSmall
-                          ?.copyWith(color: Colors.black54, letterSpacing: 2),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: const [
-                        _SmallStat(title: 'Б', value: '0'),
-                        SizedBox(width: 12),
-                        _SmallStat(title: 'Ж', value: '0'),
-                        SizedBox(width: 12),
-                        _SmallStat(title: 'У', value: '0'),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    InkWell(
-                      onTap: locked ? onLockedTap : onTap,
-                      borderRadius: BorderRadius.circular(999),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          color: Colors.black.withOpacity(0.15),
-                        ),
-                        child: Text(
-                          'ДНЕВНИК ПИТАНИЯ',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(
-                                  letterSpacing: 1.6, color: Colors.black87),
-                        ),
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '0',
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineLarge
+                            ?.copyWith(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w700),
                       ),
-                    )
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'ККАЛ',
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall
+                            ?.copyWith(color: Colors.black54, letterSpacing: 2),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: const [
+                          _SmallStat(title: 'Б', value: '0'),
+                          SizedBox(width: 12),
+                          _SmallStat(title: 'Ж', value: '0'),
+                          SizedBox(width: 12),
+                          _SmallStat(title: 'У', value: '0'),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      InkWell(
+                        onTap: locked ? onLockedTap : onTap,
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: Colors.black.withOpacity(0.15),
+                          ),
+                          child: Text(
+                            'ДНЕВНИК ПИТАНИЯ',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                    letterSpacing: 1.6,
+                                    color: Colors.black87),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
                 ),
                 if (locked)
                   Positioned.fill(
