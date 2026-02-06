@@ -467,9 +467,12 @@ app.get('/api/user', async (req, res) => {
       console.error('[api/user] prisma findUnique error', e);
     }
 
+    const resolvedTgId = Number.isFinite(Number(dbUser?.tg_id))
+      ? Number(dbUser.tg_id)
+      : tg_id;
     const resolvedUser = user || (dbUser
       ? {
-          id: dbUser.tg_id ?? tg_id,
+          id: resolvedTgId,
           username: dbUser.username || null,
           first_name: dbUser.first_name || null,
           last_name: dbUser.last_name || null,
