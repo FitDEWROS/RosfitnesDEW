@@ -847,6 +847,98 @@ function normalizeTariffs(value) {
   return Array.from(unique);
 }
 
+const TARIFF_CODE_TO_NAME = {
+  base: 'Базовый',
+  optimal: 'Оптимальный',
+  maximum: 'Максимум'
+};
+
+function normalizeTariffCode(value) {
+  if (!value) return '';
+  const raw = String(value).trim().toLowerCase();
+  if (raw === 'base' || raw.includes('баз')) return 'base';
+  if (raw === 'optimal' || raw.includes('оптим')) return 'optimal';
+  if (raw === 'maximum' || raw.includes('макс')) return 'maximum';
+  return '';
+}
+
+function tariffNameFromCode(code) {
+  return TARIFF_CODE_TO_NAME[code] || '';
+}
+
+const TARIFF_PRICE_RUB = {
+  base: Number(process.env.TARIFF_PRICE_BASE_RUB || 1000),
+  optimal: Number(process.env.TARIFF_PRICE_OPTIMAL_RUB || 5000),
+  maximum: Number(process.env.TARIFF_PRICE_MAX_RUB || 15000)
+};
+
+function formatRubAmount(value) {
+  const num = Number(value);
+  const safe = Number.isFinite(num) && num > 0 ? num : 1;
+  return safe.toFixed(2);
+}
+
+async function applyTariffToUser(userId, tariffCode) {
+  const tariffName = tariffNameFromCode(tariffCode);
+  if (!tariffName) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { tariffExpiresAt: true }
+  });
+  const now = new Date();
+  const base = isTariffActive(user?.tariffExpiresAt)
+    ? new Date(user.tariffExpiresAt)
+    : now;
+  const expiresAt = new Date(base.getTime() + TARIFF_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+  return prisma.user.update({
+    where: { id: userId },
+    data: { tariffName, tariffExpiresAt: expiresAt }
+  });
+}
+
+function yookassaRequest(method, path, payload, idempotenceKey) {
+  return new Promise((resolve, reject) => {
+    if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY) {
+      return reject(new Error('yookassa_disabled'));
+    }
+    const auth = Buffer.from(`${YOOKASSA_SHOP_ID}:${YOOKASSA_SECRET_KEY}`).toString('base64');
+    const body = payload ? JSON.stringify(payload) : '';
+    const req = https.request(
+      {
+        method,
+        hostname: 'api.yookassa.ru',
+        path: `/v3${path}`,
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'Content-Type': 'application/json',
+          'Content-Length': body ? Buffer.byteLength(body) : 0,
+          ...(idempotenceKey ? { 'Idempotence-Key': idempotenceKey } : {})
+        }
+      },
+      (res) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
+            return reject(new Error(`yookassa_http_${res.statusCode || 0}`));
+          }
+          try {
+            resolve(data ? JSON.parse(data) : {});
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+    );
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
 const buildGuestTariffConditions = () => ([
   { tariffName: null },
   { tariffName: '' },
@@ -1093,6 +1185,10 @@ function startChatCleanup() {
 const CHAT_MAX_UPLOAD_MB = Number(process.env.CHAT_MAX_UPLOAD_MB || 50);
 const CHAT_MAX_UPLOAD_BYTES = Math.round(CHAT_MAX_UPLOAD_MB * 1024 * 1024);
 const CHAT_SIGNED_URL_TTL = Number(process.env.CHAT_SIGNED_URL_TTL || 900);
+const YOOKASSA_SHOP_ID = process.env.YOOKASSA_SHOP_ID || '';
+const YOOKASSA_SECRET_KEY = process.env.YOOKASSA_SECRET_KEY || '';
+const PAYMENT_RETURN_URL = process.env.PAYMENT_RETURN_URL || `${APP_AUTH_SCHEME}://payment`;
+const TARIFF_PERIOD_DAYS = Number(process.env.TARIFF_PERIOD_DAYS || 30);
 const WEIGHT_REMINDER_INTERVAL_MS = Number(process.env.WEIGHT_REMINDER_INTERVAL_MS || 300000);
 const WEIGHT_REMINDER_HOUR = Number(process.env.WEIGHT_REMINDER_HOUR || 15);
 const WEIGHT_REMINDER_MINUTE = Number(process.env.WEIGHT_REMINDER_MINUTE || 0);
@@ -1815,6 +1911,99 @@ app.post('/api/profile', async (req, res) => {
     });
   } catch (e) {
     console.error('[api/profile] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Payments (YooKassa) ===
+app.post('/api/payments/create', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
+
+    if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY) {
+      return res.status(500).json({ ok: false, error: 'payment_disabled' });
+    }
+
+    const tariffRaw = cleanString(req.body?.tariff || req.body?.tariffCode || req.body?.tariffName);
+    const tariffCode = normalizeTariffCode(tariffRaw);
+    if (!tariffCode) {
+      return res.status(400).json({ ok: false, error: 'invalid_tariff' });
+    }
+    const tariffName = tariffNameFromCode(tariffCode);
+    const priceRub = TARIFF_PRICE_RUB[tariffCode];
+    if (!Number.isFinite(priceRub) || priceRub <= 0) {
+      return res.status(400).json({ ok: false, error: 'invalid_price' });
+    }
+
+    const dbUser = await ensureUserRecord(parsed);
+    const idempotenceKey = crypto.randomUUID();
+    const payload = {
+      amount: { value: formatRubAmount(priceRub), currency: 'RUB' },
+      capture: true,
+      confirmation: { type: 'redirect', return_url: PAYMENT_RETURN_URL },
+      description: `Тариф ${tariffName}`,
+      metadata: { userId: dbUser.id, tariff: tariffCode }
+    };
+
+    const payment = await yookassaRequest('POST', '/payments', payload, idempotenceKey);
+    const confirmationUrl = payment?.confirmation?.confirmation_url || '';
+    if (!confirmationUrl) {
+      return res.status(502).json({ ok: false, error: 'no_confirmation_url' });
+    }
+
+    res.json({
+      ok: true,
+      paymentId: payment.id,
+      status: payment.status,
+      confirmationUrl
+    });
+  } catch (e) {
+    console.error('[api/payments:create] error', e?.message || e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/payments/confirm', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+    const parsed = { tg_id: auth.tg_id, user: auth.user };
+
+    if (!YOOKASSA_SHOP_ID || !YOOKASSA_SECRET_KEY) {
+      return res.status(500).json({ ok: false, error: 'payment_disabled' });
+    }
+
+    const paymentId = cleanString(req.body?.paymentId);
+    if (!paymentId) {
+      return res.status(400).json({ ok: false, error: 'missing_payment_id' });
+    }
+
+    const dbUser = await ensureUserRecord(parsed);
+    const payment = await yookassaRequest('GET', `/payments/${paymentId}`);
+    const metaUserId = Number(payment?.metadata?.userId);
+    if (!Number.isFinite(metaUserId) || metaUserId !== dbUser.id) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
+    const tariffCode = normalizeTariffCode(payment?.metadata?.tariff);
+    if (!tariffCode) {
+      return res.status(400).json({ ok: false, error: 'invalid_tariff' });
+    }
+
+    if (payment?.status === 'succeeded') {
+      await applyTariffToUser(dbUser.id, tariffCode);
+    }
+
+    res.json({
+      ok: true,
+      status: payment?.status || 'unknown',
+      paid: payment?.status === 'succeeded',
+      tariff: tariffCode
+    });
+  } catch (e) {
+    console.error('[api/payments:confirm] error', e?.message || e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });

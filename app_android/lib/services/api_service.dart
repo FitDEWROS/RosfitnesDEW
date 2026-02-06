@@ -157,6 +157,40 @@ class ApiService {
     return _decodeJson(res);
   }
 
+  Future<Map<String, dynamic>> createPayment({required String tariffCode}) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/payments/create');
+    final payload = {'tariff': tariffCode};
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
+  Future<Map<String, dynamic>> confirmPayment({required String paymentId}) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/payments/confirm');
+    final payload = {'paymentId': paymentId};
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> postMeasurementsMetrics({
     double? waistCm,
     double? chestCm,

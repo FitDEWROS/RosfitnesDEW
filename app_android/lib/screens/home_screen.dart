@@ -2,6 +2,7 @@
 import 'dart:math' as math;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme.dart';
 import '../app.dart';
 import '../services/auth_service.dart';
@@ -18,12 +19,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   TrainingMode _mode = TrainingMode.crossfit;
   bool _chatAllowed = false;
   String? _avatarUrl;
   String? _firstName;
   String _tariffName = '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
+  static const String _pendingPaymentKey = 'pending_payment_id';
   final ApiService _api = ApiService();
   final StepsService _stepsService = StepsService();
   StreamSubscription<int>? _stepsSub;
@@ -42,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_handleScroll);
     _glowController = AnimationController(
       vsync: this,
@@ -50,10 +53,12 @@ class _HomeScreenState extends State<HomeScreen>
     _glow = CurvedAnimation(parent: _glowController, curve: Curves.easeInOut);
     _loadPrefs();
     _initSteps();
+    _checkPendingPayment();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     _glowController.dispose();
@@ -120,6 +125,31 @@ class _HomeScreenState extends State<HomeScreen>
         if (mounted) setState(() => _stepsAvailable = false);
       },
     );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPendingPayment();
+    }
+  }
+
+  Future<void> _checkPendingPayment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final paymentId = prefs.getString(_pendingPaymentKey);
+    if (paymentId == null || paymentId.isEmpty) return;
+    try {
+      final res = await _api.confirmPayment(paymentId: paymentId);
+      final paid = res['paid'] == true;
+      if (paid) {
+        await prefs.remove(_pendingPaymentKey);
+        if (!mounted) return;
+        await _loadPrefs();
+        _showStub(context, 'Платеж подтвержден. Тариф активирован.');
+      }
+    } catch (_) {
+      // ignore
+    }
   }
 
   Future<void> _sendStepsThrottled(int steps) async {
@@ -200,12 +230,43 @@ class _HomeScreenState extends State<HomeScreen>
       isScrollControlled: true,
       builder: (_) => _TariffModal(
         current: _tariffName,
-        onBuy: () => _showStub(
-          context,
-          '\u041f\u043e\u043a\u0443\u043f\u043a\u0430 \u0441\u043a\u043e\u0440\u043e \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f',
-        ),
+        onBuy: (name) => _startPayment(context, name),
       ),
     );
+  }
+
+  String? _tariffCodeFromName(String name) {
+    final lower = name.toLowerCase();
+    if (lower.contains('баз')) return 'base';
+    if (lower.contains('оптим')) return 'optimal';
+    if (lower.contains('макс')) return 'maximum';
+    return null;
+  }
+
+  Future<void> _startPayment(BuildContext context, String tariffName) async {
+    Navigator.pop(context);
+    final code = _tariffCodeFromName(tariffName);
+    if (code == null) {
+      _showStub(context, 'Не удалось определить тариф.');
+      return;
+    }
+    try {
+      final res = await _api.createPayment(tariffCode: code);
+      final url = res['confirmationUrl']?.toString() ?? '';
+      final paymentId = res['paymentId']?.toString() ?? '';
+      if (url.isEmpty || paymentId.isEmpty) {
+        _showStub(context, 'Ошибка создания платежа.');
+        return;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_pendingPaymentKey, paymentId);
+      final uri = Uri.parse(url);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        _showStub(context, 'Не удалось открыть оплату.');
+      }
+    } catch (_) {
+      _showStub(context, 'Не удалось создать платеж.');
+    }
   }
 
   void _openChat(BuildContext context) {
@@ -844,7 +905,7 @@ class _TariffCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0434\u043b\u044f \u043f\u043e\u043a\u0443\u043f\u043a\u0438 \u0441\u043a\u043e\u0440\u043e',
+            '\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u0434\u043b\u044f \u043f\u043e\u043a\u0443\u043f\u043a\u0438',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppTheme.mutedColor(context),
                 ),
@@ -857,7 +918,7 @@ class _TariffCard extends StatelessWidget {
 
 class _TariffModal extends StatefulWidget {
   final String current;
-  final VoidCallback onBuy;
+  final ValueChanged<String> onBuy;
   const _TariffModal({required this.current, required this.onBuy});
 
   @override
@@ -989,7 +1050,7 @@ class _TariffModalState extends State<_TariffModal> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      onPressed: widget.onBuy,
+                      onPressed: () => widget.onBuy(_options[_selected].name),
                       child: const Text('\u041a\u0423\u041f\u0418\u0422\u042c'),
                     ),
                   ),

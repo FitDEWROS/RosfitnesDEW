@@ -60,8 +60,9 @@ class StepsService {
     int steps = counter - base;
     if (steps < 0) steps = 0;
 
+    final safeDate = baseDate ?? today;
     await prefs.setInt(_baseKey, base);
-    await prefs.setString(_baseDateKey, baseDate);
+    await prefs.setString(_baseDateKey, safeDate);
     await prefs.setInt(_lastCounterKey, counter);
     await prefs.setInt(_lastValueKey, steps);
 
