@@ -38,3 +38,52 @@ jobs:
           platform: android
           working-directory: app_android
           args: --artifact ${{ inputs.artifact }}
+
+      - name: Upload APK to S3
+        if: ${{ inputs.artifact == 'apk' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_KEY: ${{ secrets.S3_APK_KEY || 'updates/app-release.apk' }}
+        run: |
+          set -euo pipefail
+          APK_PATH="build/app/outputs/flutter-apk/app-release.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "APK not found at $APK_PATH"
+            exit 1
+          fi
+          aws s3 cp "$APK_PATH" "s3://$S3_BUCKET/$S3_KEY" \
+            --endpoint-url "$S3_ENDPOINT" \
+            --acl public-read
+
+      - name: Upload latest.json
+        if: ${{ inputs.artifact == 'apk' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_KEY: ${{ secrets.S3_APK_KEY || 'updates/app-release.apk' }}
+          PUBLIC_BASE_URL: ${{ secrets.APP_UPDATE_PUBLIC_URL }}
+        run: |
+          set -euo pipefail
+          VERSION_LINE=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          VERSION_NAME="${VERSION_LINE%%+*}"
+          VERSION_CODE="${VERSION_LINE##*+}"
+          if [ "$VERSION_CODE" = "$VERSION_LINE" ]; then VERSION_CODE=1; fi
+          if [ -n "${PUBLIC_BASE_URL:-}" ]; then
+            APK_URL="${PUBLIC_BASE_URL%/}/$S3_KEY"
+          else
+            APK_URL="${S3_ENDPOINT%/}/$S3_BUCKET/$S3_KEY"
+          fi
+          cat > /tmp/latest.json <<EOF
+          {"versionCode":$VERSION_CODE,"versionName":"$VERSION_NAME","minVersionCode":0,"url":"$APK_URL"}
+          EOF
+          aws s3 cp /tmp/latest.json "s3://$S3_BUCKET/updates/latest.json" \
+            --endpoint-url "$S3_ENDPOINT" \
+            --acl public-read \
+            --content-type application/json

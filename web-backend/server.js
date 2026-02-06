@@ -390,15 +390,28 @@ process.on('SIGTERM', () => process.exit(0));
 process.on('SIGINT',  () => process.exit(0));
 
 // /api/app/version
-app.get('/api/app/version', (_req, res) => {
-  const versionCode = Number.isFinite(APP_UPDATE_VERSION_CODE) && APP_UPDATE_VERSION_CODE > 0
+app.get('/api/app/version', async (_req, res) => {
+  let versionCode = Number.isFinite(APP_UPDATE_VERSION_CODE) && APP_UPDATE_VERSION_CODE > 0
     ? APP_UPDATE_VERSION_CODE
     : null;
-  const minVersionCode = Number.isFinite(APP_UPDATE_MIN_CODE) && APP_UPDATE_MIN_CODE > 0
+  let minVersionCode = Number.isFinite(APP_UPDATE_MIN_CODE) && APP_UPDATE_MIN_CODE > 0
     ? APP_UPDATE_MIN_CODE
     : null;
-  const versionName = APP_UPDATE_VERSION_NAME || null;
-  const url = APP_UPDATE_URL || null;
+  let versionName = APP_UPDATE_VERSION_NAME || null;
+  let url = APP_UPDATE_URL || null;
+
+  const remote = await getAppUpdatePayload();
+  if (remote && typeof remote === 'object') {
+    const remoteCode = Number(remote.versionCode);
+    const remoteMin = Number(remote.minVersionCode ?? remote.minCode);
+    const remoteName = remote.versionName;
+    const remoteUrl = remote.url;
+    if (Number.isFinite(remoteCode) && remoteCode > 0) versionCode = remoteCode;
+    if (Number.isFinite(remoteMin) && remoteMin > 0) minVersionCode = remoteMin;
+    if (typeof remoteName === 'string' && remoteName.trim()) versionName = remoteName.trim();
+    if (typeof remoteUrl === 'string' && remoteUrl.trim()) url = remoteUrl.trim();
+  }
+
   res.json({
     ok: true,
     versionCode,
@@ -1337,6 +1350,34 @@ const APP_UPDATE_VERSION_CODE = Number(process.env.APP_UPDATE_VERSION_CODE || 0)
 const APP_UPDATE_VERSION_NAME = process.env.APP_UPDATE_VERSION_NAME || APP_VERSION || '';
 const APP_UPDATE_MIN_CODE = Number(process.env.APP_UPDATE_MIN_CODE || 0);
 const APP_UPDATE_URL = process.env.APP_UPDATE_URL || '';
+const APP_UPDATE_JSON_KEY = process.env.APP_UPDATE_JSON_KEY || 'updates/latest.json';
+const APP_UPDATE_JSON_URL = process.env.APP_UPDATE_JSON_URL || '';
+const APP_UPDATE_JSON_TTL_MS = Number(process.env.APP_UPDATE_JSON_TTL_MS || 60_000);
+
+let appUpdateCache = { ts: 0, data: null };
+const buildAppUpdateJsonUrl = () => {
+  if (APP_UPDATE_JSON_URL) return APP_UPDATE_JSON_URL;
+  if (!APP_UPDATE_JSON_KEY) return '';
+  return getPublicObjectUrl(APP_UPDATE_JSON_KEY) || '';
+};
+
+const getAppUpdatePayload = async () => {
+  const url = buildAppUpdateJsonUrl();
+  if (!url) return null;
+  const now = Date.now();
+  if (appUpdateCache.data && now - appUpdateCache.ts < APP_UPDATE_JSON_TTL_MS) {
+    return appUpdateCache.data;
+  }
+  try {
+    const data = await fetchJson(url);
+    appUpdateCache = { ts: now, data };
+    return data;
+  } catch (e) {
+    console.warn('[app-update] fetch failed', e?.message || e);
+    appUpdateCache = { ts: now, data: null };
+    return null;
+  }
+};
 
 const appendQueryParams = (url, params) => {
   if (!url) return '';

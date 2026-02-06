@@ -18,11 +18,13 @@ class _DiaryScreenState extends State<DiaryScreen> {
   bool _loading = true;
   String? _error;
   NutritionDay? _day;
+  bool _accessChecked = false;
+  bool _nutritionLocked = false;
 
   @override
   void initState() {
     super.initState();
-    _loadDay();
+    _init();
   }
 
   String _dateKey(DateTime date) {
@@ -51,6 +53,54 @@ class _DiaryScreenState extends State<DiaryScreen> {
         setState(() => _loading = false);
       }
     }
+  }
+
+  Future<void> _init() async {
+    await _loadAccess();
+    if (!mounted) return;
+    if (_nutritionLocked) {
+      setState(() => _loading = false);
+      return;
+    }
+    await _loadDay();
+  }
+
+  Future<void> _loadAccess() async {
+    try {
+      final profile = await _api.fetchUserProfile();
+      final tariff = profile?['tariffName']?.toString() ?? '';
+      final role = profile?['role']?.toString() ?? 'user';
+      final isCurator = profile?['isCurator'] == true || role == 'curator';
+      final isStaff = role == 'admin' || role == 'sadmin' || isCurator;
+      final isBasic = _isBasicTariff(tariff);
+      final isGuest = _isGuestTariff(tariff);
+      final locked = !isStaff && (isBasic || isGuest);
+      if (mounted) {
+        setState(() {
+          _nutritionLocked = locked;
+          _accessChecked = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _nutritionLocked = true;
+          _accessChecked = true;
+        });
+      }
+    }
+  }
+
+  bool _isBasicTariff(String? tariff) {
+    final value = (tariff ?? '').toLowerCase();
+    return value.replaceAll(RegExp(r'[^a-zа-я0-9]'), '').contains('базов');
+  }
+
+  bool _isGuestTariff(String? tariff) {
+    final value = (tariff ?? '').toLowerCase().trim();
+    if (value.isEmpty) return true;
+    if (value.contains('гост')) return true;
+    return value.replaceAll(RegExp(r'[^a-zа-я0-9]'), '').contains('безтариф');
   }
 
   Future<void> _shiftDay(int delta) async {
@@ -98,6 +148,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_nutritionLocked) {
+      return _buildLocked(context);
+    }
     final items = _day?.items ?? const <NutritionItem>[];
     final totals = _calcTotals(items);
 
@@ -139,6 +192,64 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 else ..._buildMealSections(items),
                 const SizedBox(height: 80),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocked(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: AppTheme.backgroundGradient(context),
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardColor(context),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.lock, size: 28),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Дневник питания недоступен на базовом и гостевом тарифе.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    if (_accessChecked)
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _nutritionLocked = false;
+                            _accessChecked = false;
+                          });
+                          _init();
+                        },
+                        child: const Text('Проверить доступ'),
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: CircularProgressIndicator(),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

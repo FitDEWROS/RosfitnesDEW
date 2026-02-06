@@ -189,6 +189,19 @@ class _HomeScreenState extends State<HomeScreen>
         final pendingTariff = prefs.getString(_pendingTariffKey);
         final pendingMode = prefs.getString(_pendingModeKey);
         final tariffCode = res['tariff']?.toString();
+        final effectiveCode = (tariffCode != null && tariffCode.isNotEmpty)
+            ? tariffCode
+            : pendingTariff;
+        final effectiveName = _tariffNameFromCode(effectiveCode);
+        if (effectiveName != null && effectiveName.isNotEmpty) {
+          await prefs.setString('tariff_name', effectiveName);
+          if (mounted) {
+            setState(() {
+              _tariffName = effectiveName;
+              _tariffLabel = _displayTariff(effectiveName, 'user', false);
+            });
+          }
+        }
         if ((tariffCode == 'base' || pendingTariff == 'base') && pendingMode != null) {
           try {
             final modeRes = await _api.updateTrainingMode(mode: pendingMode);
@@ -420,80 +433,99 @@ class _HomeScreenState extends State<HomeScreen>
     return null;
   }
 
+  String? _tariffNameFromCode(String? code) {
+    switch (code) {
+      case 'base':
+        return 'Базовый';
+      case 'optimal':
+        return 'Оптимальный';
+      case 'maximum':
+        return 'Максимум';
+      default:
+        return null;
+    }
+  }
+
   Future<String?> _selectBasicMode(BuildContext context) async {
     return showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         final isDark = AppTheme.isDark(sheetContext);
-        return Container(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1C1B1E) : const Color(0xFFF6EBD3),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: Colors.white10),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Выберите режим',
-                style: Theme.of(sheetContext)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(letterSpacing: 1.2),
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1C1B1E) : const Color(0xFFF6EBD3),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(color: Colors.white10),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Для базового тарифа переключение будет недоступно.',
-                textAlign: TextAlign.center,
-                style: Theme.of(sheetContext)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppTheme.mutedColor(sheetContext)),
-              ),
-              const SizedBox(height: 14),
-              Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(sheetContext, 'gym'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentColor(sheetContext),
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text('ЗАЛ'),
-                    ),
+                  Text(
+                    'Выберите режим',
+                    style: Theme.of(sheetContext)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(letterSpacing: 1.2),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(sheetContext, 'crossfit'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.textColor(sheetContext),
-                        side: BorderSide(
-                          color: isDark ? Colors.white24 : Colors.black26,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text('КРОССФИТ'),
-                    ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Для базового тарифа переключение будет недоступно.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(sheetContext)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppTheme.mutedColor(sheetContext)),
                   ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(sheetContext, 'gym'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.accentColor(sheetContext),
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('ЗАЛ'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(sheetContext, 'crossfit'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.textColor(sheetContext),
+                            side: BorderSide(
+                              color: isDark ? Colors.white24 : Colors.black26,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('КРОССФИТ'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    child: const Text('Отмена'),
+                  )
                 ],
               ),
-              const SizedBox(height: 6),
-              TextButton(
-                onPressed: () => Navigator.pop(sheetContext),
-                child: const Text('Отмена'),
-              )
-            ],
+            ),
           ),
         );
       },
