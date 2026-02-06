@@ -202,7 +202,14 @@ app.get('/auth/telegram/callback', (req, res) => {
 
   const token = signMobileToken({
     tg_id: tgId,
-    auth_date: Number(params.auth_date) || 0
+    auth_date: Number(params.auth_date) || 0,
+    user: {
+      id: tgId,
+      username: username || null,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      photo_url: photoUrl || null
+    }
   });
   if (!token) return res.status(500).send('token_disabled');
   const redirectParams = new URLSearchParams({ token });
@@ -428,6 +435,7 @@ app.get('/api/user', async (req, res) => {
     if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
     const tg_id = auth.tg_id ? Number(auth.tg_id) : null;
     const user = auth.user || null;
+    const parsed = { tg_id, user };
     console.log("[api/user] tg_id =", tg_id);
 
     if (!tg_id) return res.status(400).json({ ok: false, error: 'no_tg_id' });
@@ -462,6 +470,37 @@ app.get('/api/user', async (req, res) => {
           }
         }
       });
+      if (!dbUser) {
+        await ensureUserRecord(parsed);
+        dbUser = await prisma.user.findUnique({
+          where: { tg_id: Number(tg_id) },
+          select: {
+            id: true,
+            tg_id: true,
+            username: true,
+            first_name: true,
+            last_name: true,
+            photo_url: true,
+            tariffName: true,
+            tariffExpiresAt: true,
+            trainingMode: true,
+            heightCm: true,
+            weightKg: true,
+            age: true,
+            role: true,
+            trainerScope: true,
+            isCurator: true,
+            trainer: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                username: true
+              }
+            }
+          }
+        });
+      }
       console.log('[api/user] dbUser:', dbUser);
     } catch (e) {
       console.error('[api/user] prisma findUnique error', e);
@@ -774,7 +813,8 @@ function parseMobileToken(token) {
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
     const tg_id = payload?.tg_id ? Number(payload.tg_id) : null;
     if (!Number.isFinite(tg_id)) return { ok: false, status: 401, error: 'bad_tg_id' };
-    return { ok: true, tg_id, payload };
+    const user = payload?.user || null;
+    return { ok: true, tg_id, payload, user };
   } catch (_) {
     return { ok: false, status: 401, error: 'bad_token_body' };
   }
@@ -787,7 +827,7 @@ function getAuthFromRequest(req) {
   if (token) {
     const parsed = parseMobileToken(token);
     if (!parsed.ok) return parsed;
-    return { ok: true, tg_id: parsed.tg_id, source: 'token' };
+    return { ok: true, tg_id: parsed.tg_id, user: parsed.user || null, source: 'token' };
   }
   const initData = req.body?.initData || req.query?.initData || null;
   const parsed = parseInitData(initData);
@@ -796,14 +836,21 @@ function getAuthFromRequest(req) {
 }
 
 const ensureUserRecord = async (parsed) => {
+  const updates = {};
+  if (parsed.user?.username) updates.username = parsed.user.username;
+  if (parsed.user?.first_name) updates.first_name = parsed.user.first_name;
+  if (parsed.user?.last_name) updates.last_name = parsed.user.last_name;
+  if (parsed.user?.photo_url) updates.photo_url = parsed.user.photo_url;
+
   return prisma.user.upsert({
     where: { tg_id: Number(parsed.tg_id) },
-    update: {},
+    update: updates,
     create: {
       tg_id: Number(parsed.tg_id),
       username: parsed.user?.username || null,
       first_name: parsed.user?.first_name || null,
-      last_name: parsed.user?.last_name || null
+      last_name: parsed.user?.last_name || null,
+      photo_url: parsed.user?.photo_url || null
     }
   });
 };

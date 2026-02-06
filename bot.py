@@ -29,7 +29,6 @@ TARIFF_REMINDER_CHECK_MINUTES = int(os.getenv("TARIFF_REMINDER_CHECK_MINUTES", "
 
 REQUIRED_PROFILE_FIELDS = (
     "first_name",
-    "last_name",
     "heightCm",
     "weightKg",
     "age",
@@ -83,6 +82,10 @@ def _should_force_registration(user) -> bool:
     role = getattr(user, "role", None)
     is_staff = role in ("admin", "sadmin", "trainer", "curator") or bool(getattr(user, "isCurator", False))
     if is_staff:
+        return False
+    if _tariff_active(user):
+        return False
+    if getattr(user, "agreed_offer", False):
         return False
     return not _profile_complete(user)
 
