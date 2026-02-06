@@ -40,6 +40,15 @@ class AuthService {
     await prefs.remove(_tokenKey);
     await prefs.remove(_photoUrlKey);
     await prefs.remove(_firstNameKey);
+    await prefs.remove('tariff_name');
+    await prefs.remove('training_mode');
+    await prefs.remove('profile_height_cm');
+    await prefs.remove('profile_weight_kg');
+    await prefs.remove('profile_age');
+    await prefs.remove('pending_payment_id');
+    await prefs.remove('pending_tariff_code');
+    await prefs.remove('pending_training_mode');
+    await prefs.remove('has_curator');
   }
 
   Future<String?> handleAuthUri(Uri uri) async {

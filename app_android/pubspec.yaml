@@ -37,6 +37,7 @@ dependencies:
   http: ^1.2.2
   path_drawing: ^1.0.1
   shared_preferences: ^2.2.3
+  package_info_plus: ^9.0.0
   url_launcher: ^6.3.0
   video_player: ^2.9.2
   video_thumbnail: ^0.5.3
@@ -81,6 +82,7 @@ flutter:
     - assets/emblem.png
     - assets/front.svg
     - assets/back.svg
+    - shorebird.yaml
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme.dart';
@@ -32,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen>
   String _tariffName = '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
   String _tariffLabel = '\u0412\u043b\u0430\u0434\u0435\u043b\u0435\u0446';
   bool _isStaffUser = false;
+  bool _updateChecked = false;
   static const String _pendingModeKey = 'pending_training_mode';
   static const String _pendingTariffKey = 'pending_tariff_code';
   double? _profileWeightKg;
@@ -64,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen>
     _loadPrefs();
     _initSteps();
     _checkPendingPayment();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
   }
 
   @override
@@ -129,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen>
       final profileMode = profile?['trainingMode']?.toString();
       if (profileMode == 'gym' || profileMode == 'crossfit') {
         _mode = profileMode == 'gym' ? TrainingMode.gym : TrainingMode.crossfit;
-        prefs.setString('training_mode', profileMode);
+        prefs.setString('training_mode', profileMode!);
       } else if (modeRaw == 'gym') {
         _mode = TrainingMode.gym;
       } else {
@@ -287,16 +290,95 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  bool _isBasicTariff(String? tariff) {
+  int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
+  Future<void> _checkForUpdate() async {
+    if (_updateChecked) return;
+    _updateChecked = true;
+    Map<String, dynamic> data;
+    try {
+      data = await _api.fetchAppUpdateInfo();
+    } catch (_) {
+      return;
+    }
+    if (data['ok'] != true) return;
+    final latestCode = _toInt(data['versionCode']);
+    final minCode = _toInt(data['minVersionCode']);
+    final url = data['url']?.toString();
+    final versionName = data['versionName']?.toString();
+    if (latestCode == null || url == null || url.isEmpty) return;
+
+    PackageInfo pkg;
+    try {
+      pkg = await PackageInfo.fromPlatform();
+    } catch (_) {
+      return;
+    }
+    final currentCode = int.tryParse(pkg.buildNumber) ?? 0;
+    if (latestCode <= currentCode) return;
+    if (!mounted) return;
+
+    final forceUpdate = minCode != null && currentCode < minCode;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: !forceUpdate,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Доступно обновление'),
+          content: Text(
+            versionName != null && versionName.isNotEmpty
+                ? 'Новая версия: $versionName'
+                : 'Доступна новая версия приложения.',
+          ),
+          actions: [
+            if (!forceUpdate)
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Позже'),
+              ),
+            ElevatedButton(
+              onPressed: () async {
+                final uri = Uri.tryParse(url);
+                if (uri != null) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Обновить'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _normalizeTariff(String? tariff) {
     final value = (tariff ?? '').toLowerCase();
-    return value.contains('\u0431\u0430\u0437\u043e\u0432');
+    return value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String _compactTariff(String? tariff) {
+    return _normalizeTariff(tariff).replaceAll(RegExp(r'[^a-zа-я0-9]'), '');
+  }
+
+  bool _isBasicTariff(String? tariff) {
+    final compact = _compactTariff(tariff);
+    return compact.contains('\u0431\u0430\u0437\u043e\u0432');
   }
 
   bool _isGuestTariff(String? tariff) {
-    final value = (tariff ?? '').toLowerCase().trim();
-    return value.isEmpty ||
-        value.contains('\u0431\u0435\u0437 \u0442\u0430\u0440\u0438\u0444\u0430') ||
-        value.contains('\u0433\u043e\u0441\u0442');
+    final normalized = _normalizeTariff(tariff);
+    if (normalized.isEmpty) return true;
+    if (normalized.contains('\u0433\u043e\u0441\u0442')) return true;
+    final compact = _compactTariff(tariff);
+    return compact.contains('\u0431\u0435\u0437\u0442\u0430\u0440\u0438\u0444');
   }
 
   bool _isChatTariff(String? tariff) {
@@ -472,6 +554,7 @@ class _HomeScreenState extends State<HomeScreen>
     final isBasic = _isBasicTariff(_tariffName);
     final isGuest = _isGuestTariff(_tariffName);
     final nutritionLocked = !_isStaffUser && (isBasic || isGuest);
+    final metricsLocked = !_isStaffUser && isGuest;
     final modeLocked = !_isStaffUser && isBasic;
     final weightValue = _formatSimple(_profileWeightKg);
     final weightStatus = _profileWeightKg != null ? 'ПРОФИЛЬ' : 'НЕТ ДАННЫХ';
@@ -709,7 +792,7 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Color(0xFFCBE7BA),
                       pulse: _glow,
                       sheen: _scrollOffset,
-                      locked: false,
+                      locked: metricsLocked,
                     ),
                     const SizedBox(height: 10),
                     _MetricPill(
@@ -720,7 +803,7 @@ class _HomeScreenState extends State<HomeScreen>
                       color: Color(0xFFC7E7F7),
                       pulse: _glow,
                       sheen: _scrollOffset,
-                      locked: false,
+                      locked: metricsLocked,
                     ),
                     const SizedBox(height: 10),
                     _MetricPill(
@@ -2259,7 +2342,7 @@ class _ChatSheetState extends State<_ChatSheet> {
 
   String _formatTimestamp(DateTime? date) {
     if (date == null) return '';
-    final pad = (int value) => value.toString().padStart(2, '0');
+    final pad = (int value) => value.toString().padLeft(2, '0');
     return '${pad(date.day)}.${pad(date.month)}.${date.year} ${pad(date.hour)}:${pad(date.minute)}';
   }
 

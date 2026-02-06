@@ -254,6 +254,18 @@ class ApiService {
     return _decodeJson(res);
   }
 
+  Future<Map<String, dynamic>> fetchAppUpdateInfo() async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/app/version');
+    final res = await http.get(uri);
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
   Future<Map<String, dynamic>> fetchChatMessages({
     int? afterId,
     bool markRead = true,

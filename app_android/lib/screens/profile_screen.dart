@@ -21,9 +21,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _tariff = '\u0412\u041b\u0410\u0414\u0415\u041b\u0415\u0426';
   String _userId = '354538028';
 
-  final _heightController = TextEditingController(text: '173');
-  final _weightController = TextEditingController(text: '91');
-  final _ageController = TextEditingController(text: '28');
+  final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _ageController = TextEditingController();
   final _weightEntryController = TextEditingController();
   final _waistController = TextEditingController();
   final _chestController = TextEditingController();
@@ -61,6 +61,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final auth = AuthService();
     final prefs = await SharedPreferences.getInstance();
     final cachedTariff = prefs.getString('tariff_name');
+    final cachedHeight = prefs.getString('profile_height_cm');
+    final cachedWeight = prefs.getString('profile_weight_kg');
+    final cachedAge = prefs.getString('profile_age');
     final cachedPhoto = await auth.getProfilePhotoUrl();
     final cachedFirstName = await auth.getFirstName();
     Map<String, dynamic>? profile;
@@ -89,9 +92,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final username = profile?['username']?.toString();
     final photoUrl = (profile?['photoUrl'] ?? profile?['photo_url'])?.toString();
     final tgId = profile?['tgId'] ?? profile?['tg_id'] ?? profile?['telegramId'];
+    final profileLoaded = profile != null;
     final heightCm = profile?['heightCm'];
     final weightKg = profile?['weightKg'];
     final age = profile?['age'];
+    final heightText = _formatNumber(heightCm);
+    final weightText = _formatNumber(weightKg);
+    final ageText = _formatNumber(age);
+    String resolveField(String fromProfile, String? cachedValue, String current) {
+      if (profileLoaded) return fromProfile;
+      final cached = (cachedValue ?? '').trim();
+      if (cached.isNotEmpty) return cached;
+      return current;
+    }
+    if (profileLoaded) {
+      if (heightText.isNotEmpty) {
+        prefs.setString('profile_height_cm', heightText);
+      } else {
+        prefs.remove('profile_height_cm');
+      }
+      if (weightText.isNotEmpty) {
+        prefs.setString('profile_weight_kg', weightText);
+      } else {
+        prefs.remove('profile_weight_kg');
+      }
+      if (ageText.isNotEmpty) {
+        prefs.setString('profile_age', ageText);
+      } else {
+        prefs.remove('profile_age');
+      }
+    }
     setState(() {
       _avatarUrl = (photoUrl != null && photoUrl.trim().isNotEmpty)
           ? photoUrl
@@ -106,9 +136,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _tariff = displayTariff.toUpperCase();
       _profileEditable = !isGuest;
       _isGuestUser = isGuest;
-      _heightController.text = _formatNumber(heightCm);
-      _weightController.text = _formatNumber(weightKg);
-      _ageController.text = _formatNumber(age);
+      _heightController.text = resolveField(
+        heightText,
+        cachedHeight,
+        _heightController.text,
+      );
+      _weightController.text = resolveField(
+        weightText,
+        cachedWeight,
+        _weightController.text,
+      );
+      _ageController.text = resolveField(
+        ageText,
+        cachedAge,
+        _ageController.text,
+      );
     });
   }
 
@@ -144,11 +186,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return '@user';
   }
 
+  String _normalizeTariff(String? tariff) {
+    final value = (tariff ?? '').toLowerCase();
+    return value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String _compactTariff(String? tariff) {
+    return _normalizeTariff(tariff).replaceAll(RegExp(r'[^a-zа-я0-9]'), '');
+  }
+
   bool _isGuestTariff(String? tariff) {
-    final value = (tariff ?? '').toLowerCase().trim();
-    return value.isEmpty ||
-        value.contains('\u0431\u0435\u0437 \u0442\u0430\u0440\u0438\u0444\u0430') ||
-        value.contains('\u0433\u043e\u0441\u0442');
+    final normalized = _normalizeTariff(tariff);
+    if (normalized.isEmpty) return true;
+    if (normalized.contains('\u0433\u043e\u0441\u0442')) return true;
+    final compact = _compactTariff(tariff);
+    return compact.contains('\u0431\u0435\u0437\u0442\u0430\u0440\u0438\u0444');
   }
 
   String _displayTariff(String tariff, String? role, bool isCurator) {
