@@ -3012,8 +3012,8 @@ app.post('/api/mode', async (req, res) => {
 // === Notifications (GET / POST) ===
 app.get('/api/notifications', async (req, res) => {
   try {
-    const parsed = parseInitData(req.query.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
 
     const limitRaw = Number(req.query.limit || 20);
     const offsetRaw = Number(req.query.offset || 0);
@@ -3021,15 +3021,7 @@ app.get('/api/notifications', async (req, res) => {
     const offset = Number.isFinite(offsetRaw) ? Math.max(0, offsetRaw) : 0;
     const unreadOnly = String(req.query.unreadOnly || '').toLowerCase() === 'true' || String(req.query.unreadOnly) === '1';
 
-    const dbUser = await prisma.user.upsert({
-      where: { tg_id: Number(parsed.tg_id) },
-      update: {},
-      create: {
-        tg_id: Number(parsed.tg_id),
-        username: parsed.user?.username || null,
-        first_name: parsed.user?.first_name || null
-      }
-    });
+    const dbUser = await ensureUserRecord(auth);
 
     const [notifications, unreadCount] = await Promise.all([
       prisma.notification.findMany({
@@ -3055,23 +3047,15 @@ app.get('/api/notifications', async (req, res) => {
 
 app.post('/api/notifications/read', async (req, res) => {
   try {
-    const parsed = parseInitData(req.body?.initData);
-    if (!parsed.ok) return res.status(parsed.status).json({ ok: false, error: parsed.error });
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
 
     const ids = Array.isArray(req.body?.ids)
       ? req.body.ids.map((id) => Number(id)).filter((id) => Number.isInteger(id))
       : [];
     const markAll = Boolean(req.body?.all);
 
-    const dbUser = await prisma.user.upsert({
-      where: { tg_id: Number(parsed.tg_id) },
-      update: {},
-      create: {
-        tg_id: Number(parsed.tg_id),
-        username: parsed.user?.username || null,
-        first_name: parsed.user?.first_name || null
-      }
-    });
+    const dbUser = await ensureUserRecord(auth);
 
     const where = { userId: dbUser.id };
     if (!markAll && ids.length) {
