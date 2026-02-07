@@ -23,3 +23,8 @@ app_android/android/app/debug/
 app_android/android/app/profile/
 app_android/android/app/release/
 app_android/.shorebird/
+
+# Firebase service accounts
+web-backend/keys/
+web-backend/*service-account*.json
+web-backend/*serviceaccount*.json

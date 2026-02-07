@@ -52,6 +52,7 @@ model User {
   chatMessages   ChatMessage[] @relation("ChatMessageSender")
   weightLogs     WeightLog[]
   stepLogs       StepLog[]
+  pushTokens     PushToken[]
   bodyMeasurements BodyMeasurement[]
 }
 
@@ -308,6 +309,19 @@ model StepLog {
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+model PushToken {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  token     String   @unique
+  platform  String?
+  deviceId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model BodyMeasurement {

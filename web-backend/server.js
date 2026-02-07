@@ -18,6 +18,7 @@ import https from 'https';
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaClient } from '@prisma/client';
+import { GoogleAuth } from 'google-auth-library';
 
 const ROOT      = path.resolve(__dirname, '..');
 const HOST      = '0.0.0.0';
@@ -45,6 +46,33 @@ const APP_AUTH_SCHEME = process.env.APP_AUTH_SCHEME || 'fitdew';
 const APP_AUTH_HOST = process.env.APP_AUTH_HOST || 'auth';
 const TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || '';
 const MOBILE_TOKEN_SECRET = process.env.MOBILE_TOKEN_SECRET || process.env.BOT_TOKEN || '';
+const FCM_SERVER_KEY = process.env.FCM_SERVER_KEY || '';
+const FCM_SERVICE_ACCOUNT_PATH = process.env.FCM_SERVICE_ACCOUNT_PATH || process.env.GOOGLE_APPLICATION_CREDENTIALS || '';
+const FCM_SERVICE_ACCOUNT_JSON_BASE64 = process.env.FCM_SERVICE_ACCOUNT_JSON_BASE64 || '';
+let FCM_PROJECT_ID = process.env.FCM_PROJECT_ID || '';
+let fcmCredentials = null;
+if (FCM_SERVICE_ACCOUNT_JSON_BASE64) {
+  try {
+    const raw = Buffer.from(FCM_SERVICE_ACCOUNT_JSON_BASE64, 'base64').toString('utf8');
+    fcmCredentials = JSON.parse(raw);
+    if (!FCM_PROJECT_ID && fcmCredentials?.project_id) {
+      FCM_PROJECT_ID = fcmCredentials.project_id;
+    }
+  } catch (_) {}
+}
+if (!FCM_PROJECT_ID && FCM_SERVICE_ACCOUNT_PATH) {
+  try {
+    const raw = fs.readFileSync(FCM_SERVICE_ACCOUNT_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed?.project_id) FCM_PROJECT_ID = parsed.project_id;
+  } catch (_) {}
+}
+const FCM_SCOPES = ['https://www.googleapis.com/auth/firebase.messaging'];
+const fcmAuth = fcmCredentials
+  ? new GoogleAuth({ credentials: fcmCredentials, scopes: FCM_SCOPES })
+  : (FCM_SERVICE_ACCOUNT_PATH
+    ? new GoogleAuth({ keyFile: FCM_SERVICE_ACCOUNT_PATH, scopes: FCM_SCOPES })
+    : null);
 
 // Prisma
 const prisma = new PrismaClient();
@@ -313,6 +341,36 @@ function postJson(url, payload) {
         } catch (err) {
           reject(err);
         }
+      });
+    });
+    request.on('error', reject);
+    request.write(data);
+    request.end();
+  });
+}
+
+function postJsonWithHeaders(url, payload, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(payload || {});
+    const request = https.request(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data),
+        ...headers
+      }
+    }, res => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => {
+        let parsed = null;
+        try {
+          parsed = body ? JSON.parse(body) : {};
+        } catch (_) {
+          parsed = null;
+        }
+        resolve({ status: res.statusCode || 0, body: parsed, raw: body });
       });
     });
     request.on('error', reject);
@@ -1551,6 +1609,141 @@ async function sendTelegramNotifications(userIds, payload) {
   }
 }
 
+function chunkArray(list, size) {
+  const out = [];
+  for (let i = 0; i < list.length; i += size) {
+    out.push(list.slice(i, i + size));
+  }
+  return out;
+}
+
+function normalizePushData(data) {
+  const out = {};
+  if (!data || typeof data !== 'object') return out;
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === 'string') {
+      out[key] = value;
+    } else {
+      out[key] = String(value);
+    }
+  }
+  return out;
+}
+
+async function sendPushNotificationsLegacy(tokens, payload) {
+  if (!FCM_SERVER_KEY) return;
+  if (!tokens.length) return;
+
+  const title = payload?.title || 'Оповещение';
+  const body = payload?.message || '';
+  const data = normalizePushData(payload?.data);
+
+  const batches = chunkArray(tokens, 500);
+  const invalidTokens = [];
+
+  for (const batch of batches) {
+    const res = await postJsonWithHeaders(
+      'https://fcm.googleapis.com/fcm/send',
+      {
+        registration_ids: batch,
+        notification: { title, body },
+        data,
+        priority: 'high'
+      },
+      { Authorization: `key=${FCM_SERVER_KEY}` }
+    );
+    const results = res?.body?.results;
+    if (Array.isArray(results)) {
+      results.forEach((item, idx) => {
+        const error = item?.error;
+        if (['NotRegistered', 'InvalidRegistration', 'MismatchSenderId'].includes(error)) {
+          invalidTokens.push(batch[idx]);
+        }
+      });
+    }
+  }
+
+  if (invalidTokens.length) {
+    await prisma.pushToken.deleteMany({ where: { token: { in: invalidTokens } } });
+  }
+}
+
+async function sendPushNotificationsV1(tokens, payload) {
+  if (!fcmAuth || !FCM_PROJECT_ID) return;
+  if (!tokens.length) return;
+
+  let accessToken = null;
+  try {
+    const token = await fcmAuth.getAccessToken();
+    accessToken = typeof token === 'string' ? token : token?.token;
+  } catch (e) {
+    console.error('[push] failed to get access token', e);
+    return;
+  }
+  if (!accessToken) return;
+
+  const url = `https://fcm.googleapis.com/v1/projects/${FCM_PROJECT_ID}/messages:send`;
+  const title = payload?.title || 'Оповещение';
+  const body = payload?.message || '';
+  const data = normalizePushData(payload?.data);
+  const batches = chunkArray(tokens, 100);
+  const invalidTokens = [];
+
+  for (const batch of batches) {
+    await Promise.all(
+      batch.map(async (token) => {
+        const res = await postJsonWithHeaders(
+          url,
+          {
+            message: {
+              token,
+              notification: { title, body },
+              data
+            }
+          },
+          { Authorization: `Bearer ${accessToken}` }
+        );
+        const error = res?.body?.error;
+        const details = Array.isArray(error?.details) ? error.details : [];
+        const fcmError = details.find((item) => String(item?.['@type'] || '').includes('google.firebase.fcm.v1.FcmError'));
+        const errorCode = fcmError?.errorCode;
+        if (res.status === 404 || errorCode === 'UNREGISTERED' || errorCode === 'INVALID_ARGUMENT') {
+          invalidTokens.push(token);
+        }
+      })
+    );
+  }
+
+  if (invalidTokens.length) {
+    await prisma.pushToken.deleteMany({ where: { token: { in: invalidTokens } } });
+  }
+}
+
+async function sendPushNotifications(userIds, payload) {
+  const ids = Array.isArray(userIds) ? userIds.filter((id) => Number.isInteger(id)) : [];
+  if (!ids.length) return;
+
+  try {
+    const rows = await prisma.pushToken.findMany({
+      where: { userId: { in: ids } },
+      select: { token: true }
+    });
+    const tokens = [...new Set(rows.map((row) => row.token).filter(Boolean))];
+    if (!tokens.length) return;
+
+    if (fcmAuth && FCM_PROJECT_ID) {
+      await sendPushNotificationsV1(tokens, payload);
+      return;
+    }
+    if (FCM_SERVER_KEY) {
+      await sendPushNotificationsLegacy(tokens, payload);
+    }
+  } catch (e) {
+    console.error('[push] notify failed', e);
+  }
+}
+
 async function createNotificationsForUsers(userIds, payload) {
   const ids = Array.isArray(userIds) ? userIds.filter((id) => Number.isInteger(id)) : [];
   if (!ids.length) return;
@@ -1570,6 +1763,7 @@ async function createNotificationsForUsers(userIds, payload) {
 
   await prisma.notification.createMany({ data: rows });
   await sendTelegramNotifications(ids, { type, title, message, data });
+  await sendPushNotifications(ids, { type, title, message, data });
 }
 
 async function requireAdmin(initData) {
@@ -1763,6 +1957,12 @@ const notifyChatIfUnread = async ({ messageId, recipientId, title, webAppUrl }) 
     });
     if (!message || message.readAt) return;
     await sendTelegramNotifications([recipientId], {
+      type: 'chat_message',
+      title,
+      message: null,
+      webAppUrl
+    });
+    await sendPushNotifications([recipientId], {
       type: 'chat_message',
       title,
       message: null,
@@ -3005,6 +3205,61 @@ app.post('/api/mode', async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     console.error('[api/mode:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+// === Push tokens ===
+app.post('/api/push/token', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+
+    const token = optionalString(req.body?.token);
+    const platform = optionalString(req.body?.platform);
+    const deviceId = optionalString(req.body?.deviceId);
+    if (!token) return res.status(400).json({ ok: false, error: 'missing_token' });
+
+    const dbUser = await ensureUserRecord(auth);
+
+    await prisma.pushToken.upsert({
+      where: { token },
+      update: {
+        userId: dbUser.id,
+        platform: platform || null,
+        deviceId: deviceId || null
+      },
+      create: {
+        userId: dbUser.id,
+        token,
+        platform: platform || null,
+        deviceId: deviceId || null
+      }
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[api/push:token] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/push/token/delete', async (req, res) => {
+  try {
+    const auth = getAuthFromRequest(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ ok: false, error: auth.error });
+
+    const token = optionalString(req.body?.token);
+    if (!token) return res.status(400).json({ ok: false, error: 'missing_token' });
+
+    const dbUser = await ensureUserRecord(auth);
+    await prisma.pushToken.deleteMany({
+      where: { token, userId: dbUser.id }
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[api/push:token:delete] error', e);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
