@@ -4449,6 +4449,63 @@ app.get('/api/admin/clients/:id/weight-history', async (req, res) => {
   }
 });
 
+// === Admin: client steps history ===
+app.get('/api/admin/clients/:id/steps-history', async (req, res) => {
+  try {
+    const auth = await requireStaff(req.query?.initData);
+    if (!auth.ok) return res.status(auth.status).json({ ok: false, error: auth.error });
+    if (!auth.canCurate) return res.status(403).json({ ok: false, error: 'forbidden' });
+
+    const clientId = Number(req.params.id);
+    if (!Number.isInteger(clientId)) {
+      return res.status(400).json({ ok: false, error: 'invalid_client_id' });
+    }
+
+    const client = await prisma.user.findUnique({
+      where: { id: clientId },
+      select: { id: true, trainerId: true, role: true, isCurator: true, timezoneOffsetMin: true }
+    });
+    if (!client) return res.status(404).json({ ok: false, error: 'not_found' });
+    const isClientTarget = client.role === 'user' && !client.isCurator;
+    if (auth.role !== 'sadmin' && !isClientTarget) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+    if (auth.role !== 'admin' && auth.role !== 'sadmin' && client.trainerId !== auth.userId) {
+      return res.status(403).json({ ok: false, error: 'forbidden' });
+    }
+
+    let toKey = req.query.to
+      ? getDateKey(req.query.to)
+      : toDateKeyWithOffset(new Date(), client.timezoneOffsetMin);
+    let fromKey = req.query.from ? getDateKey(req.query.from) : null;
+    const daysRaw = Number(req.query.days ?? 30);
+    const days = Number.isFinite(daysRaw) ? Math.max(1, Math.min(daysRaw, 180)) : 30;
+    if (!fromKey) {
+      const toDate = new Date(`${toKey}T00:00:00Z`);
+      toDate.setUTCDate(toDate.getUTCDate() - (days - 1));
+      fromKey = toDateKeyUTC(toDate);
+    }
+    if (fromKey > toKey) {
+      const tmp = fromKey;
+      fromKey = toKey;
+      toKey = tmp;
+    }
+
+    const logs = await prisma.stepLog.findMany({
+      where: {
+        userId: client.id,
+        date: { gte: fromKey, lte: toKey }
+      },
+      orderBy: { date: 'desc' }
+    });
+
+    res.json({ ok: true, from: fromKey, to: toKey, days, logs });
+  } catch (e) {
+    console.error('[api/admin/clients:steps-history] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
 // === Admin: client measurements ===
 app.get('/api/admin/clients/:id/measurements', async (req, res) => {
   try {

@@ -207,6 +207,9 @@
     #progressCard {
       margin-top: 16px;
     }
+    #stepsCard {
+      margin-top: 16px;
+    }
 
     .progress-list {
       display: grid;
@@ -240,6 +243,36 @@
       font-size: 0.8rem;
       color: var(--muted);
       letter-spacing: 0.04em;
+    }
+
+    .steps-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .steps-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    html.light .steps-row {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .steps-date {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .steps-value {
+      font-weight: 700;
+      letter-spacing: 0.02em;
     }
 
     .progress-photos {
@@ -1140,6 +1173,15 @@
       <p class="page-subtitle">Открой отдельную страницу для просмотра фото и замеров клиента.</p>
     </section>
 
+    <section class="section-card" id="stepsCard" hidden>
+      <div class="section-head">
+        <h2 class="section-title">Шаги клиента</h2>
+        <button class="btn-outline" id="refreshSteps" type="button">Обновить</button>
+      </div>
+      <p class="page-subtitle" id="stepsSubtitle">Последние 30 дней</p>
+      <div class="steps-list" id="stepsList"></div>
+    </section>
+
 
     <section class="section-card" id="chatCard" hidden>
 
@@ -1291,6 +1333,11 @@
       const progressCard = document.getElementById("progressCard");
       const progressList = document.getElementById("progressList");
       const openProgressPage = document.getElementById("openProgressPage");
+
+      const stepsCard = document.getElementById("stepsCard");
+      const stepsList = document.getElementById("stepsList");
+      const stepsSubtitle = document.getElementById("stepsSubtitle");
+      const refreshSteps = document.getElementById("refreshSteps");
 
       const clientTitle = document.getElementById("clientTitle");
 
@@ -1776,6 +1823,57 @@
           if (progressCard) progressCard.hidden = false;
         } catch (e) {
           console.error("Ошибка загрузки прогресса", e);
+        }
+      };
+
+      const formatStepsValue = (value) => {
+        if (!Number.isFinite(value)) return "—";
+        return Number(value).toLocaleString("ru-RU");
+      };
+
+      const formatStepsDate = (dateKey) => {
+        if (!dateKey) return "—";
+        const date = parseYMD(dateKey);
+        return `${date.getDate()} ${monthsShort[date.getMonth()]} ${date.getFullYear()}`;
+      };
+
+      const renderSteps = (logs = [], fromKey, toKey) => {
+        if (!stepsList) return;
+        stepsList.innerHTML = "";
+        if (stepsSubtitle) {
+          if (fromKey && toKey) {
+            stepsSubtitle.textContent = `${formatStepsDate(fromKey)} — ${formatStepsDate(toKey)}`;
+          } else {
+            stepsSubtitle.textContent = "Последние 30 дней";
+          }
+        }
+        if (!logs.length) {
+          stepsList.innerHTML = '<div class="page-subtitle">Нет данных по шагам.</div>';
+          return;
+        }
+        logs.forEach((log) => {
+          const row = document.createElement("div");
+          row.className = "steps-row";
+          row.innerHTML = `
+            <span class="steps-date">${formatStepsDate(log.date)}</span>
+            <span class="steps-value">${formatStepsValue(log.steps)}</span>
+          `;
+          stepsList.appendChild(row);
+        });
+      };
+
+      const loadSteps = async () => {
+        if (!apiBase || !initData || !clientId) return;
+        try {
+          const url = `${apiBase}/api/admin/clients/${clientId}/steps-history?initData=${encodeURIComponent(initData)}&days=30`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) return;
+          const logs = Array.isArray(json.logs) ? json.logs : [];
+          renderSteps(logs, json.from, json.to);
+          if (stepsCard) stepsCard.hidden = false;
+        } catch (e) {
+          console.error("Ошибка загрузки шагов", e);
         }
       };
 
@@ -2619,6 +2717,7 @@ const saveCommentHandler = async () => {
           accessMessage.textContent = "Доступ подтвержден.";
 
           await loadClient();
+          await loadSteps();
 
           if (hasNutritionDiary) {
 
@@ -2663,6 +2762,7 @@ prevMonth?.addEventListener("click", () => {
       saveComment?.addEventListener("click", saveCommentHandler);
 
       openProgressPage?.addEventListener("click", openProgressWindow);
+      refreshSteps?.addEventListener("click", loadSteps);
 
       chatSend?.addEventListener("click", sendChatMessage);
 

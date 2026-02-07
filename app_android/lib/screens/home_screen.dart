@@ -638,7 +638,7 @@ class _HomeScreenState extends State<HomeScreen>
     final modeLocked = !_isStaffUser && isBasic;
     final weightValue = _formatSimple(_profileWeightKg);
     final weightStatus = _profileWeightKg != null ? 'ПРОФИЛЬ' : 'НЕТ ДАННЫХ';
-    final chatFabBottom = 110 + MediaQuery.of(context).padding.bottom;
+    final chatFabBottom = 18.0;
     final notificationBadge = _notificationsUnread > 0
         ? (_notificationsUnread > 99 ? '99+' : '$_notificationsUnread')
         : null;
@@ -950,7 +950,7 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         if (_chatAllowed)
           Positioned(
-            right: 18,
+            left: 18,
             bottom: chatFabBottom,
             child: _ChatFab(
               unread: _chatUnread,
