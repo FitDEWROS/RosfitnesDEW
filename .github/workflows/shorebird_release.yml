@@ -61,7 +61,7 @@ jobs:
             exit 1
           fi
           KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/fitdew-release.jks
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\n\r ' | base64 --decode > android/app/fitdew-release.jks
           cat > android/key.properties <<EOF
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyPassword=$KEY_PASSWORD
