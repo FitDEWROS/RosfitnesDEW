@@ -23,6 +23,9 @@ app_android/android/app/debug/
 app_android/android/app/profile/
 app_android/android/app/release/
 app_android/.shorebird/
+app_android/android/key.properties
+app_android/android/app/*.jks
+app_android/android/app/*.keystore
 
 # Firebase service accounts
 web-backend/keys/
