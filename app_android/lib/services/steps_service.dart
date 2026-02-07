@@ -8,6 +8,8 @@ class StepsService {
   static const _baseDateKey = 'steps_base_date';
   static const _lastCounterKey = 'steps_last_counter';
   static const _lastValueKey = 'steps_today';
+  static const _seedKey = 'steps_seed';
+  static const _seedDateKey = 'steps_seed_date';
 
   StreamSubscription<StepCount>? _sub;
   final StreamController<int> _controller = StreamController<int>.broadcast();
@@ -24,6 +26,15 @@ class StepsService {
   Future<int?> loadCachedSteps() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_lastValueKey);
+  }
+
+  Future<void> seedStepsForToday(int steps) async {
+    if (steps < 0) return;
+    final prefs = await SharedPreferences.getInstance();
+    final today = _dateKey(DateTime.now());
+    await prefs.setInt(_seedKey, steps);
+    await prefs.setString(_seedDateKey, today);
+    await prefs.setInt(_lastValueKey, steps);
   }
 
   Future<void> start() async {
@@ -49,12 +60,31 @@ class StepsService {
     int? base = prefs.getInt(_baseKey);
     String? baseDate = prefs.getString(_baseDateKey);
     final lastCounter = prefs.getInt(_lastCounterKey);
+    final lastValue = prefs.getInt(_lastValueKey);
+    final seedDate = prefs.getString(_seedDateKey);
+    final seedValue = prefs.getInt(_seedKey);
 
     if (base == null || baseDate != today) {
-      base = counter;
+      int? seed;
+      if (seedDate == today && seedValue != null && seedValue >= 0) {
+        seed = seedValue;
+      } else if (lastValue != null && lastValue >= 0) {
+        seed = lastValue;
+      }
+      if (seed != null) {
+        base = counter - seed;
+        if (base < 0) base = counter;
+      } else {
+        base = counter;
+      }
       baseDate = today;
     } else if (lastCounter != null && counter < lastCounter) {
-      base = counter;
+      if (lastValue != null && lastValue >= 0) {
+        base = counter - lastValue;
+        if (base < 0) base = counter;
+      } else {
+        base = counter;
+      }
     }
 
     int steps = counter - base;

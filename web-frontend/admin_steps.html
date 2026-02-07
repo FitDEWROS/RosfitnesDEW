@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fit Dew - Шаги клиента</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      document.documentElement.classList.toggle("light", savedTheme === "light");
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="env.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --card: rgba(24, 27, 34, 0.9);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f7;
+      --muted: rgba(255, 255, 255, 0.55);
+      --accent: #f2d17c;
+      --shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
+      --radius: 18px;
+    }
+
+    html {
+      color-scheme: dark;
+    }
+
+    html.light {
+      color-scheme: light;
+      --bg: #f4f1e9;
+      --card: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(0, 0, 0, 0.06);
+      --text: #121212;
+      --muted: rgba(0, 0, 0, 0.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .admin-screen {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .page-header {
+      display: grid;
+      gap: 8px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .page-title {
+      margin: 0;
+      font-family: "Exo 2", sans-serif;
+      font-size: 1.6rem;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .section-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      margin: 0;
+      font-family: "Exo 2", sans-serif;
+      font-size: 1.1rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-outline {
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    html.light .btn-outline {
+      background: rgba(0, 0, 0, 0.04);
+      color: #1b1b1b;
+    }
+
+    .calendar-card {
+      margin-top: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .calendar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .calendar-title {
+      font-weight: 600;
+    }
+
+    .calendar-nav {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    html.light .calendar-nav {
+      background: rgba(0, 0, 0, 0.04);
+      color: #1b1b1b;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .calendar-day {
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      position: relative;
+    }
+
+    html.light .calendar-day {
+      background: rgba(0, 0, 0, 0.04);
+      color: #1b1b1b;
+    }
+
+    .calendar-day.is-out {
+      opacity: 0.4;
+    }
+
+    .calendar-day.is-selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(242, 209, 124, 0.2);
+    }
+
+    .calendar-day.has-data::after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(242, 209, 124, 0.18);
+    }
+
+    .day-card {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+      margin-top: 12px;
+    }
+
+    html.light .day-card {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .day-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .info-item {
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    html.light .info-item {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .info-label {
+      color: var(--muted);
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .info-value {
+      font-weight: 600;
+    }
+
+    @media (max-width: 720px) {
+      .calendar-day {
+        height: 32px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-screen">
+    <header class="page-header">
+      <div class="header-top">
+        <div>
+          <div class="eyebrow">Клиент</div>
+          <h1 class="page-title" id="clientTitle">Шаги клиента</h1>
+          <p class="page-subtitle" id="clientSubtitle">Календарь шагов по дням.</p>
+        </div>
+        <button class="btn-outline" id="backBtn" type="button">Назад</button>
+      </div>
+    </header>
+
+    <section class="section-card">
+      <div class="section-head">
+        <h2 class="section-title">Шаги клиента</h2>
+        <div class="actions">
+          <button class="btn-outline" id="refreshSteps" type="button">Обновить</button>
+        </div>
+      </div>
+      <p class="page-subtitle" id="stepsStatus">Выберите дату, чтобы увидеть шаги.</p>
+      <div class="calendar-card">
+        <div class="calendar-head">
+          <div class="calendar-title">Календарь</div>
+          <div class="actions">
+            <button class="calendar-nav" id="prevMonth" type="button">&lt;</button>
+            <span id="calendarTitle">Месяц</span>
+            <button class="calendar-nav" id="nextMonth" type="button">&gt;</button>
+          </div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+      <div class="day-card">
+        <div>
+          <div class="info-label">Выбранная дата</div>
+          <div class="info-value" id="selectedDateLabel">—</div>
+        </div>
+        <div class="day-metrics">
+          <div class="info-item">
+            <div class="info-label">Шаги</div>
+            <div class="info-value" id="stepsValue">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function() {
+      const tg = window.Telegram?.WebApp || null;
+      const API_BASE = window.ENV?.API_BASE || "";
+      const APP_VERSION = window.ENV?.APP_VERSION || "";
+      const apiBase = API_BASE ? API_BASE.replace(/\/$/, "") : "";
+      const params = new URLSearchParams(window.location.search);
+
+      const clientTitle = document.getElementById("clientTitle");
+      const clientSubtitle = document.getElementById("clientSubtitle");
+      const stepsStatus = document.getElementById("stepsStatus");
+      const calendarTitle = document.getElementById("calendarTitle");
+      const calendarGrid = document.getElementById("calendarGrid");
+      const selectedDateLabel = document.getElementById("selectedDateLabel");
+      const stepsValue = document.getElementById("stepsValue");
+      const refreshSteps = document.getElementById("refreshSteps");
+      const backBtn = document.getElementById("backBtn");
+      const prevMonth = document.getElementById("prevMonth");
+      const nextMonth = document.getElementById("nextMonth");
+
+      const clientId = Number(params.get("clientId") || params.get("id"));
+      let initData = params.get("initData") || "";
+
+      const monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+      const monthsShort = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+
+      let currentMonth = new Date();
+      let selectedDate = new Date();
+      let monthSteps = {};
+
+      const buildInitData = () => {
+        const raw = tg?.initData || "";
+        if (raw && raw.length > 0) return raw;
+
+        const u = tg?.initDataUnsafe || null;
+        if (!u || !u.hash) return "";
+
+        const p = new URLSearchParams();
+        if (u.query_id) p.set("query_id", u.query_id);
+        if (u.user) p.set("user", JSON.stringify(u.user));
+        if (u.auth_date) p.set("auth_date", String(u.auth_date));
+        if (u.start_param) p.set("start_param", u.start_param);
+        if (u.chat_type) p.set("chat_type", u.chat_type);
+        if (u.chat_instance) p.set("chat_instance", u.chat_instance);
+        p.set("hash", u.hash);
+        return p.toString();
+      };
+
+      if (!initData) initData = buildInitData();
+
+      const toYMD = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      };
+
+      const parseYMD = (value) => new Date(`${value}T00:00:00`);
+
+      const startOfWeek = (date) => {
+        const d = new Date(date);
+        const day = (d.getDay() + 6) % 7;
+        d.setDate(d.getDate() - day);
+        return d;
+      };
+
+      const addDays = (date, offset) => {
+        const d = new Date(date);
+        d.setDate(d.getDate() + offset);
+        return d;
+      };
+
+      const updateCalendarTitle = () => {
+        if (!calendarTitle) return;
+        calendarTitle.textContent = `${monthNames[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
+      };
+
+      const formatStepsValue = (value) => {
+        if (!Number.isFinite(value)) return "—";
+        return Number(value).toLocaleString("ru-RU");
+      };
+
+      const formatStepsDate = (dateKey) => {
+        if (!dateKey) return "—";
+        const date = parseYMD(dateKey);
+        return `${date.getDate()} ${monthsShort[date.getMonth()]} ${date.getFullYear()}`;
+      };
+
+      const updateDayDetails = () => {
+        const key = toYMD(selectedDate);
+        if (selectedDateLabel) selectedDateLabel.textContent = key;
+        if (stepsValue) stepsValue.textContent = formatStepsValue(monthSteps[key]);
+      };
+
+      const renderCalendar = () => {
+        if (!calendarGrid) return;
+        calendarGrid.innerHTML = "";
+        const first = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const start = startOfWeek(first);
+        const selectedKey = toYMD(selectedDate);
+
+        for (let i = 0; i < 42; i += 1) {
+          const date = addDays(start, i);
+          const key = toYMD(date);
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "calendar-day";
+          if (date.getMonth() !== currentMonth.getMonth()) btn.classList.add("is-out");
+          if (key === selectedKey) btn.classList.add("is-selected");
+          if (Object.prototype.hasOwnProperty.call(monthSteps, key)) {
+            btn.classList.add("has-data");
+          }
+          btn.textContent = String(date.getDate());
+          btn.addEventListener("click", () => {
+            selectedDate = parseYMD(key);
+            updateDayDetails();
+            renderCalendar();
+          });
+          calendarGrid.appendChild(btn);
+        }
+      };
+
+      const loadClient = async () => {
+        if (!apiBase || !initData || !clientId) return;
+        try {
+          const res = await fetch(`${apiBase}/api/admin/clients/${clientId}?initData=${encodeURIComponent(initData)}`);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) return;
+
+          const client = json.client || {};
+          const name = [client.first_name, client.last_name].filter(Boolean).join(" ") || "Клиент";
+          if (clientTitle) clientTitle.textContent = name;
+          if (clientSubtitle) {
+            clientSubtitle.textContent = client.username ? `@${client.username}` : "без username";
+          }
+        } catch (e) {
+          console.error("Ошибка загрузки клиента", e);
+        }
+      };
+
+      const loadMonth = async () => {
+        if (!apiBase || !initData || !clientId) {
+          if (stepsStatus) stepsStatus.textContent = "Нет доступа к данным.";
+          return;
+        }
+        if (stepsStatus) stepsStatus.textContent = "Загружаем данные...";
+        const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+        const from = toYMD(start);
+        const to = toYMD(end);
+        try {
+          const url = `${apiBase}/api/admin/clients/${clientId}/steps-history?initData=${encodeURIComponent(initData)}&from=${from}&to=${to}`;
+          const res = await fetch(url);
+          const json = await res.json().catch(() => ({}));
+          if (!json?.ok) return;
+          monthSteps = {};
+          (json.logs || []).forEach((log) => {
+            if (log?.date) monthSteps[log.date] = log.steps;
+          });
+          if (stepsStatus) {
+            stepsStatus.textContent = `${formatStepsDate(from)} — ${formatStepsDate(to)}`;
+          }
+          updateCalendarTitle();
+          renderCalendar();
+          updateDayDetails();
+        } catch (e) {
+          console.error("Ошибка загрузки шагов", e);
+          if (stepsStatus) stepsStatus.textContent = "Не удалось загрузить шаги.";
+        }
+      };
+
+      const goBack = () => {
+        if (!clientId) return;
+        const query = new URLSearchParams();
+        query.set("clientId", String(clientId));
+        if (initData) query.set("initData", initData);
+        if (APP_VERSION) query.set("v", APP_VERSION);
+        window.location.href = `admin_client.html?${query.toString()}`;
+      };
+
+      prevMonth?.addEventListener("click", () => {
+        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+        selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        loadMonth();
+      });
+
+      nextMonth?.addEventListener("click", () => {
+        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+        selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        loadMonth();
+      });
+
+      refreshSteps?.addEventListener("click", loadMonth);
+      backBtn?.addEventListener("click", goBack);
+
+      loadClient();
+      loadMonth();
+    })();
+  </script>
+</body>
+</html>

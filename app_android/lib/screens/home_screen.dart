@@ -152,6 +152,20 @@ class _HomeScreenState extends State<HomeScreen>
       setState(() => _steps = cached);
     }
 
+    final offsetMin = DateTime.now().timeZoneOffset.inMinutes;
+    try {
+      final res = await _api.fetchSteps(timezoneOffsetMin: offsetMin);
+      if (res['ok'] == true) {
+        final serverSteps = _toInt(res['steps']);
+        if (serverSteps != null && (cached == null || serverSteps > cached)) {
+          await _stepsService.seedStepsForToday(serverSteps);
+          if (mounted) {
+            setState(() => _steps = serverSteps);
+          }
+        }
+      }
+    } catch (_) {}
+
     final allowed = await _stepsService.ensurePermission();
     if (!allowed) {
       if (mounted) {

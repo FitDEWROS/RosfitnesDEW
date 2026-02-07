@@ -220,6 +220,24 @@ class ApiService {
     return _decodeJson(res);
   }
 
+  Future<Map<String, dynamic>> fetchSteps({
+    String? date,
+    int? timezoneOffsetMin,
+  }) async {
+    final query = <String, String>{};
+    if (date != null && date.isNotEmpty) query['date'] = date;
+    if (timezoneOffsetMin != null) {
+      query['timezoneOffsetMin'] = timezoneOffsetMin.toString();
+    }
+    final uri = Uri.parse('${AppConfig.apiBase}/api/steps')
+        .replace(queryParameters: query.isEmpty ? null : query);
+    final res = await http.get(uri, headers: await _authHeaders());
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    return _decodeJson(res);
+  }
+
   Future<Map<String, dynamic>> createPayment({required String tariffCode}) async {
     final uri = Uri.parse('${AppConfig.apiBase}/api/payments/create');
     final payload = {'tariff': tariffCode};

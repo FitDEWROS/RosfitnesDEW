@@ -1176,9 +1176,12 @@
     <section class="section-card" id="stepsCard" hidden>
       <div class="section-head">
         <h2 class="section-title">Шаги клиента</h2>
-        <button class="btn-outline" id="refreshSteps" type="button">Обновить</button>
+        <div class="actions">
+          <button class="btn-outline" id="openStepsPage" type="button">Открыть</button>
+          <button class="btn-outline" id="refreshSteps" type="button">Обновить</button>
+        </div>
       </div>
-      <p class="page-subtitle" id="stepsSubtitle">Последние 30 дней</p>
+      <p class="page-subtitle" id="stepsSubtitle">Последние 3 дня</p>
       <div class="steps-list" id="stepsList"></div>
     </section>
 
@@ -1338,6 +1341,7 @@
       const stepsList = document.getElementById("stepsList");
       const stepsSubtitle = document.getElementById("stepsSubtitle");
       const refreshSteps = document.getElementById("refreshSteps");
+      const openStepsPage = document.getElementById("openStepsPage");
 
       const clientTitle = document.getElementById("clientTitle");
 
@@ -1468,6 +1472,21 @@
 
       const openProgressWindow = () => {
         const url = buildProgressUrl();
+        if (!url) return;
+        window.location.href = url;
+      };
+
+      const buildStepsUrl = () => {
+        if (!clientId) return "";
+        const query = new URLSearchParams();
+        query.set("clientId", String(clientId));
+        if (initData) query.set("initData", initData);
+        if (APP_VERSION) query.set("v", APP_VERSION);
+        return `admin_steps.html?${query.toString()}`;
+      };
+
+      const openStepsWindow = () => {
+        const url = buildStepsUrl();
         if (!url) return;
         window.location.href = url;
       };
@@ -1844,14 +1863,31 @@
           if (fromKey && toKey) {
             stepsSubtitle.textContent = `${formatStepsDate(fromKey)} — ${formatStepsDate(toKey)}`;
           } else {
-            stepsSubtitle.textContent = "Последние 30 дней";
+            stepsSubtitle.textContent = "Последние 3 дня";
           }
         }
-        if (!logs.length) {
+        const stepMap = {};
+        logs.forEach((log) => {
+          if (log?.date) stepMap[log.date] = log.steps;
+        });
+        const rows = [];
+        if (fromKey && toKey) {
+          const fromDate = parseYMD(fromKey);
+          const toDate = parseYMD(toKey);
+          const cursor = new Date(toDate);
+          while (cursor >= fromDate) {
+            const key = toYMD(cursor);
+            rows.push({ date: key, steps: stepMap[key] });
+            cursor.setDate(cursor.getDate() - 1);
+          }
+        } else {
+          logs.forEach((log) => rows.push(log));
+        }
+        if (!rows.length) {
           stepsList.innerHTML = '<div class="page-subtitle">Нет данных по шагам.</div>';
           return;
         }
-        logs.forEach((log) => {
+        rows.forEach((log) => {
           const row = document.createElement("div");
           row.className = "steps-row";
           row.innerHTML = `
@@ -1865,7 +1901,7 @@
       const loadSteps = async () => {
         if (!apiBase || !initData || !clientId) return;
         try {
-          const url = `${apiBase}/api/admin/clients/${clientId}/steps-history?initData=${encodeURIComponent(initData)}&days=30`;
+          const url = `${apiBase}/api/admin/clients/${clientId}/steps-history?initData=${encodeURIComponent(initData)}&days=3`;
           const res = await fetch(url);
           const json = await res.json().catch(() => ({}));
           if (!json?.ok) return;
@@ -2762,6 +2798,7 @@ prevMonth?.addEventListener("click", () => {
       saveComment?.addEventListener("click", saveCommentHandler);
 
       openProgressPage?.addEventListener("click", openProgressWindow);
+      openStepsPage?.addEventListener("click", openStepsWindow);
       refreshSteps?.addEventListener("click", loadSteps);
 
       chatSend?.addEventListener("click", sendChatMessage);
