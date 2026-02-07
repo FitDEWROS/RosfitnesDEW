@@ -65,9 +65,29 @@ jobs:
           flutter-version: '3.38.9'
           args: --artifact ${{ env.ARTIFACT }} --verbose
 
+      - name: Collect build logs
+        if: ${{ always() }}
+        run: |
+          mkdir -p artifacts
+          if [ -f output.log ]; then cp output.log artifacts/; fi
+          cp /home/runner/.config/shorebird/logs/*_shorebird.log artifacts/ || true
+
+      - name: Upload build logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorebird-build-logs
+          path: artifacts/**
+          if-no-files-found: warn
+
       - name: Dump Shorebird logs on failure
         if: ${{ failure() }}
         run: |
+          if [ -f output.log ]; then
+            echo "::group::shorebird output.log (tail)"
+            tail -n 200 output.log || true
+            echo "::endgroup::"
+          fi
           echo "::group::shorebird logs"
           ls -la /home/runner/.config/shorebird/logs || true
           tail -n 400 /home/runner/.config/shorebird/logs/*_shorebird.log || true

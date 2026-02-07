@@ -2771,10 +2771,7 @@ class _ChatSheetState extends State<_ChatSheet> {
     final isDark = AppTheme.isDark(context);
     final sheetColor = AppTheme.cardColor(context);
     final media = MediaQuery.of(context);
-    final bottomInset = math.max(
-      media.viewInsets.bottom,
-      media.padding.bottom + 72,
-    );
+    final bottomInset = media.viewInsets.bottom + 12;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.82,
@@ -2782,14 +2779,16 @@ class _ChatSheetState extends State<_ChatSheet> {
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         _scrollController = scrollController;
-        return Container(
-          padding: EdgeInsets.fromLTRB(18, 14, 18, 14 + bottomInset),
-          decoration: BoxDecoration(
-            color: sheetColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
+        return SafeArea(
+          top: false,
+          child: Container(
+            padding: EdgeInsets.fromLTRB(18, 14, 18, 14 + bottomInset),
+            decoration: BoxDecoration(
+              color: sheetColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -2902,7 +2901,8 @@ class _ChatSheetState extends State<_ChatSheet> {
                   ),
                 ],
               ),
-            ],
+              ],
+            ),
           ),
         );
       },
