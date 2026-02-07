@@ -258,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
     if (!mounted) return;
     if (notifData['ok'] == true) {
-      final next = _toInt(notifData['unreadCount']);
+      final next = _toInt(notifData['unreadCount']) ?? 0;
       if (next != _notificationsUnread) {
         setState(() => _notificationsUnread = next);
       }
@@ -273,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen>
       }
       if (!mounted) return;
       if (chatData['ok'] == true) {
-        final next = _toInt(chatData['unreadCount']);
+        final next = _toInt(chatData['unreadCount']) ?? 0;
         if (next != _chatUnread) {
           setState(() => _chatUnread = next);
         }
