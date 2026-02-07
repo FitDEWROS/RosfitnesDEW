@@ -1,12 +1,19 @@
 name: Shorebird Release Android
 
 on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "app_android/**"
+      - ".github/workflows/shorebird_release.yml"
   workflow_dispatch:
     inputs:
       artifact:
         description: "Artifact type (aab or apk)"
-        required: true
-        default: "aab"
+        required: false
+        default: "apk"
 
 jobs:
   release:
@@ -17,6 +24,7 @@ jobs:
         working-directory: app_android
     env:
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+      ARTIFACT: ${{ github.event.inputs.artifact || 'apk' }}
     steps:
       - name: 📚 Checkout
         uses: actions/checkout@v4
@@ -55,7 +63,7 @@ jobs:
           platform: android
           working-directory: app_android
           flutter-version: '3.38.9'
-          args: --artifact ${{ inputs.artifact }} --verbose
+          args: --artifact ${{ env.ARTIFACT }} --verbose
 
       - name: Dump Shorebird logs on failure
         if: ${{ failure() }}
@@ -66,7 +74,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Upload APK to S3
-        if: ${{ inputs.artifact == 'apk' }}
+        if: ${{ env.ARTIFACT == 'apk' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
@@ -86,7 +94,7 @@ jobs:
             --acl public-read
 
       - name: Upload latest.json
-        if: ${{ inputs.artifact == 'apk' }}
+        if: ${{ env.ARTIFACT == 'apk' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}

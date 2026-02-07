@@ -1,13 +1,7 @@
 name: Shorebird Patch Android
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    paths:
-      - "app_android/**"
-      - ".github/workflows/shorebird_patch.yml"
+  workflow_dispatch:
 
 jobs:
   patch:
