@@ -339,6 +339,54 @@ class ApiService {
     return data;
   }
 
+  Future<Map<String, dynamic>> registerPushToken({
+    required String token,
+    String? platform,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/push/token');
+    final payload = <String, dynamic>{
+      'token': token,
+      if (platform != null && platform.isNotEmpty) 'platform': platform,
+    };
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
+  Future<Map<String, dynamic>> unregisterPushToken({
+    required String token,
+  }) async {
+    final uri = Uri.parse('${AppConfig.apiBase}/api/push/token/delete');
+    final payload = <String, dynamic>{'token': token};
+    final res = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        ...await _authHeaders(),
+      },
+      body: jsonEncode(payload),
+    );
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
+    }
+    return data;
+  }
+
   Future<Map<String, dynamic>> markNotificationsRead({
     List<int>? ids,
     bool all = false,

@@ -18,6 +18,8 @@ import 'screens/exercises_screen.dart';
 import 'screens/crossfit_exercises_screen.dart';
 import 'screens/exercise_detail_screen.dart';
 import 'theme.dart';
+import 'app_navigator.dart';
+import 'services/push_service.dart';
 
 class FitDewApp extends StatefulWidget {
   const FitDewApp({super.key});
@@ -28,7 +30,6 @@ class FitDewApp extends StatefulWidget {
 
 class _FitDewAppState extends State<FitDewApp> {
   final _auth = AuthService();
-  final _navigatorKey = GlobalKey<NavigatorState>();
   final _themeController = ThemeController();
   bool _ready = false;
   bool _isAuthed = false;
@@ -71,7 +72,8 @@ class _FitDewAppState extends State<FitDewApp> {
       final token = await _auth.handleAuthUri(uri);
       if (token != null) {
         setState(() => _isAuthed = true);
-        _navigatorKey.currentState?.pushReplacement(
+        await PushService().refreshToken();
+        AppNavigator.key.currentState?.pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       }
@@ -86,7 +88,7 @@ class _FitDewAppState extends State<FitDewApp> {
         animation: _themeController,
         builder: (context, _) {
           return MaterialApp(
-            navigatorKey: _navigatorKey,
+            navigatorKey: AppNavigator.key,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme(),
             darkTheme: AppTheme.darkTheme(),

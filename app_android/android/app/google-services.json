@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "599160237195",
+    "project_id": "fitdew-ea0a9",
+    "storage_bucket": "fitdew-ea0a9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:599160237195:android:0daad12383449fdc71388e",
+        "android_client_info": {
+          "package_name": "com.fitdew.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnO7BVNhaWU5VgykKb9T5DLZbs10Za1QI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
