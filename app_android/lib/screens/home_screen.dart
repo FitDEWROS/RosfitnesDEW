@@ -651,6 +651,16 @@ class _HomeScreenState extends State<HomeScreen>
     }
     try {
       final res = await _api.createPayment(tariffCode: code);
+      if (res['ok'] != true) {
+        final message = res['message']?.toString().trim();
+        _showStub(
+          context,
+          (message != null && message.isNotEmpty)
+              ? message
+              : 'Не удалось создать платеж.',
+        );
+        return;
+      }
       final url = res['confirmationUrl']?.toString() ?? '';
       final paymentId = res['paymentId']?.toString() ?? '';
       if (url.isEmpty || paymentId.isEmpty) {

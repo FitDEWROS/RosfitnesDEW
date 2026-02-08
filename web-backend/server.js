@@ -991,10 +991,24 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 function clampTariffExpiresAt(expiresAt, now) {
   if (!expiresAt) return null;
-  if (!Number.isFinite(TARIFF_MAX_DAYS) || TARIFF_MAX_DAYS <= 0) return expiresAt;
-  const maxDate = new Date(now.getTime() + TARIFF_MAX_DAYS * DAY_MS);
   const current = new Date(expiresAt);
   if (Number.isNaN(current.getTime())) return expiresAt;
+
+  const maxDays = Number.isFinite(TARIFF_MAX_DAYS) && TARIFF_MAX_DAYS > 0
+    ? TARIFF_MAX_DAYS
+    : null;
+  const activeCapDays = Number.isFinite(TARIFF_ACTIVE_MAX_DAYS) && TARIFF_ACTIVE_MAX_DAYS > 0
+    ? TARIFF_ACTIVE_MAX_DAYS
+    : null;
+  let maxDate = null;
+  if (maxDays) {
+    maxDate = new Date(now.getTime() + maxDays * DAY_MS);
+  }
+  if (activeCapDays) {
+    const capDate = new Date(now.getTime() + activeCapDays * DAY_MS);
+    maxDate = maxDate ? (capDate.getTime() < maxDate.getTime() ? capDate : maxDate) : capDate;
+  }
+  if (!maxDate) return current;
   return current.getTime() > maxDate.getTime() ? maxDate : current;
 }
 
@@ -1155,10 +1169,7 @@ async function applyTariffToUser(userId, tariffCode) {
   if (isUpgrade && user?.tariffExpiresAt) {
     expiresAt = new Date(user.tariffExpiresAt);
   } else {
-    const base = isTariffActive(user?.tariffExpiresAt)
-      ? new Date(user.tariffExpiresAt)
-      : now;
-    expiresAt = new Date(base.getTime() + TARIFF_PERIOD_DAYS * DAY_MS);
+    expiresAt = new Date(now.getTime() + TARIFF_PERIOD_DAYS * DAY_MS);
   }
   const clamped = clampTariffExpiresAt(expiresAt, now);
   if (clamped) {
@@ -1582,6 +1593,7 @@ const YOOKASSA_SECRET_KEY = process.env.YOOKASSA_SECRET_KEY || '';
 const PAYMENT_RETURN_URL = process.env.PAYMENT_RETURN_URL || `${APP_AUTH_SCHEME}://payment`;
 const TARIFF_PERIOD_DAYS = Number(process.env.TARIFF_PERIOD_DAYS || 30);
 const TARIFF_MAX_DAYS = Number(process.env.TARIFF_MAX_DAYS || 365);
+const TARIFF_ACTIVE_MAX_DAYS = Number(process.env.TARIFF_ACTIVE_MAX_DAYS || TARIFF_PERIOD_DAYS);
 const WEIGHT_REMINDER_INTERVAL_MS = Number(process.env.WEIGHT_REMINDER_INTERVAL_MS || 300000);
 const WEIGHT_REMINDER_HOUR = Number(process.env.WEIGHT_REMINDER_HOUR || 15);
 const WEIGHT_REMINDER_MINUTE = Number(process.env.WEIGHT_REMINDER_MINUTE || 0);
@@ -2594,20 +2606,54 @@ app.post('/api/payments/create', async (req, res) => {
     const currentCode = tariffCodeFromName(dbUser?.tariffName);
     const currentLevel = TARIFF_LEVEL[currentCode] || 0;
     const targetLevel = TARIFF_LEVEL[tariffCode] || 0;
-    const currentActive = isTariffActive(dbUser?.tariffExpiresAt);
+    let currentExpires = dbUser?.tariffExpiresAt || null;
+    if (currentExpires) {
+      const clamped = clampTariffExpiresAt(currentExpires, now);
+      if (clamped && clamped.getTime() !== new Date(currentExpires).getTime()) {
+        await prisma.user.update({
+          where: { id: dbUser.id },
+          data: { tariffExpiresAt: clamped }
+        });
+        currentExpires = clamped;
+      }
+    }
+    const currentActive = isTariffActive(currentExpires);
     const dayMs = DAY_MS;
     let upgradeMeta = null;
 
-    if (currentActive && currentLevel > 0 && targetLevel > 0 && targetLevel < currentLevel) {
-      return res.status(400).json({ ok: false, error: 'tariff_downgrade_not_allowed' });
+    if (currentActive && currentLevel > 0 && targetLevel > 0) {
+      const currentName = tariffNameFromCode(currentCode) || dbUser?.tariffName || 'тариф';
+      const expLabel = currentExpires
+        ? formatDateKeyRu(toDateKeyWithOffset(new Date(currentExpires), 0))
+        : '';
+      if (targetLevel < currentLevel) {
+        return res.status(400).json({
+          ok: false,
+          error: 'tariff_downgrade_not_allowed',
+          message: `У вас уже тариф выше (${currentName}). Улучшение доступно, ухудшение — нет.`,
+          currentTariff: currentName,
+          tariffExpiresAt: currentExpires
+        });
+      }
+      if (targetLevel === currentLevel) {
+        return res.status(400).json({
+          ok: false,
+          error: 'tariff_already_active',
+          message: expLabel
+            ? `У вас уже куплен тариф ${currentName} до ${expLabel}.`
+            : `У вас уже куплен тариф ${currentName}.`,
+          currentTariff: currentName,
+          tariffExpiresAt: currentExpires
+        });
+      }
     }
 
     if (currentActive && currentLevel > 0 && targetLevel > currentLevel) {
       const currentPricing = pricing[currentCode];
       const currentPrice = currentPricing?.finalPriceRub ?? TARIFF_PRICE_RUB[currentCode];
       const diff = Number.isFinite(currentPrice) ? priceRub - currentPrice : null;
-      if (diff != null && diff > 0 && dbUser?.tariffExpiresAt) {
-        const effectiveExpires = clampTariffExpiresAt(dbUser.tariffExpiresAt, now);
+      if (diff != null && diff > 0 && currentExpires) {
+        const effectiveExpires = clampTariffExpiresAt(currentExpires, now);
         if (!effectiveExpires) {
           // fallback: treat as full price
         } else {
@@ -2685,18 +2731,43 @@ app.post('/api/payments/confirm', async (req, res) => {
     }
 
     if (payment?.status === 'succeeded') {
+      const now = new Date();
       const currentCode = tariffCodeFromName(dbUser?.tariffName);
       const currentLevel = TARIFF_LEVEL[currentCode] || 0;
       const targetLevel = TARIFF_LEVEL[tariffCode] || 0;
-      const currentActive = isTariffActive(dbUser?.tariffExpiresAt);
-      if (currentActive && currentLevel > 0 && targetLevel > 0 && targetLevel < currentLevel) {
-        return res.status(400).json({
-          ok: false,
-          error: 'tariff_downgrade_not_allowed',
-          paid: true,
-          status: payment?.status || 'unknown',
-          tariff: tariffCode
-        });
+      let currentExpires = dbUser?.tariffExpiresAt || null;
+      if (currentExpires) {
+        const clamped = clampTariffExpiresAt(currentExpires, now);
+        if (clamped) currentExpires = clamped;
+      }
+      const currentActive = isTariffActive(currentExpires);
+      if (currentActive && currentLevel > 0 && targetLevel > 0) {
+        const currentName = tariffNameFromCode(currentCode) || dbUser?.tariffName || 'тариф';
+        const expLabel = currentExpires
+          ? formatDateKeyRu(toDateKeyWithOffset(new Date(currentExpires), 0))
+          : '';
+        if (targetLevel < currentLevel) {
+          return res.status(400).json({
+            ok: false,
+            error: 'tariff_downgrade_not_allowed',
+            message: `У вас уже тариф выше (${currentName}). Улучшение доступно, ухудшение — нет.`,
+            paid: true,
+            status: payment?.status || 'unknown',
+            tariff: tariffCode
+          });
+        }
+        if (targetLevel === currentLevel) {
+          return res.status(400).json({
+            ok: false,
+            error: 'tariff_already_active',
+            message: expLabel
+              ? `У вас уже куплен тариф ${currentName} до ${expLabel}.`
+              : `У вас уже куплен тариф ${currentName}.`,
+            paid: true,
+            status: payment?.status || 'unknown',
+            tariff: tariffCode
+          });
+        }
       }
       await applyTariffToUser(dbUser.id, tariffCode);
     }

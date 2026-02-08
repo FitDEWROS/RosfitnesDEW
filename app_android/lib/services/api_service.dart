@@ -249,10 +249,17 @@ class ApiService {
       },
       body: jsonEncode(payload),
     );
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      throw Exception('HTTP ${res.statusCode}');
+    Map<String, dynamic> data;
+    try {
+      data = _decodeJson(res);
+    } catch (_) {
+      data = {'ok': false};
     }
-    return _decodeJson(res);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      data['ok'] = false;
+      data['status'] = res.statusCode;
+    }
+    return data;
   }
 
   Future<Map<String, dynamic>> confirmPayment({required String paymentId}) async {
