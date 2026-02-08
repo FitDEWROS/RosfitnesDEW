@@ -1,9 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
 import '../theme.dart';
 import '../models/exercise.dart';
 import '../services/api_service.dart';
+import '../services/video_cache_service.dart';
 
 class ExerciseDetailScreen extends StatefulWidget {
   final Exercise? exercise;
@@ -30,10 +32,17 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
     if (_loadingVideo) return;
     setState(() => _loadingVideo = true);
     try {
-      final resolved = await _api.resolveVideoUrl(url) ?? _api.normalizeVideoUrl(url);
-      _resolvedUrl = resolved;
-      final safeUrl = _api.safeVideoUrl(resolved);
-      final controller = VideoPlayerController.networkUrl(Uri.parse(safeUrl));
+      final cached = await VideoCacheService.instance.getCachedFile(url);
+      VideoPlayerController controller;
+      if (cached != null) {
+        _resolvedUrl = cached.path;
+        controller = VideoPlayerController.file(File(cached.path));
+      } else {
+        final resolved = await _api.resolveVideoUrl(url) ?? _api.normalizeVideoUrl(url);
+        _resolvedUrl = resolved;
+        final safeUrl = _api.safeVideoUrl(resolved);
+        controller = VideoPlayerController.networkUrl(Uri.parse(safeUrl));
+      }
       await controller.initialize();
       if (!mounted) return;
       setState(() {

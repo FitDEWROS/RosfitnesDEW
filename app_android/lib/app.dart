@@ -8,6 +8,7 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/programs_screen.dart';
 import 'screens/program_detail_screen.dart';
+import 'screens/program_week_screen.dart';
 import 'screens/workout_screen.dart';
 import 'screens/diary_screen.dart';
 import 'screens/metrics_screen.dart';
@@ -118,6 +119,7 @@ class _FitDewAppState extends State<FitDewApp> {
               '/home': (context) => const HomeScreen(),
               '/programs': (context) => const ProgramsScreen(),
               '/program': (context) => const ProgramDetailScreen(),
+              '/program_week': (context) => const ProgramWeekScreen(),
               '/workout': (context) => const WorkoutScreen(),
               '/diary': (context) => const DiaryScreen(),
               '/metrics': (context) => const MetricsScreen(),

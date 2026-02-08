@@ -33,6 +33,18 @@ class ApiService {
     return list;
   }
 
+  Future<Program> fetchProgramDetail(String slug) async {
+    final safeSlug = Uri.encodeComponent(slug);
+    final uri = Uri.parse('${AppConfig.apiBase}/api/programs/$safeSlug');
+    final res = await http.get(uri);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+    final data = _decodeJson(res);
+    final raw = data['program'] as Map<String, dynamic>? ?? const {};
+    return Program.fromJson(raw);
+  }
+
   Future<List<Exercise>> fetchExercises({
     required String type,
     bool guestOnly = false,

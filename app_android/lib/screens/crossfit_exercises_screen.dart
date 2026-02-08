@@ -17,8 +17,7 @@ class CrossfitExercisesScreen extends StatefulWidget {
   State<CrossfitExercisesScreen> createState() => _CrossfitExercisesScreenState();
 }
 
-class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen>
-    with SingleTickerProviderStateMixin {
+class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen> {
   final _api = ApiService();
   final TextEditingController _searchController = TextEditingController();
   static const List<String> _filterKeys = [
@@ -39,97 +38,24 @@ class _CrossfitExercisesScreenState extends State<CrossfitExercisesScreen>
   bool _loading = true;
   bool _showFilters = false;
   late Set<String> _activeFilters;
-  late final AnimationController _headerController;
-  late final Animation<double> _headerShift;
-
   @override
   void initState() {
     super.initState();
     _activeFilters = _filterKeys.toSet();
-    _headerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 5200),
-    )..repeat(reverse: true);
-    _headerShift =
-        CurvedAnimation(parent: _headerController, curve: Curves.easeInOut);
     _load();
     _searchController.addListener(_applyFilter);
   }
 
   @override
   void dispose() {
-    _headerController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   Widget _buildHeaderCard(BuildContext context, Widget child) {
-    final radius = BorderRadius.circular(20);
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        border: Border.all(color: Colors.white10),
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Container(color: AppTheme.cardColor(context)),
-            ),
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _headerShift,
-                builder: (context, _) {
-                  final t = _headerShift.value;
-                  final isLight =
-                      Theme.of(context).brightness == Brightness.light;
-                  return Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(-1.1 + 2.2 * t, -0.7),
-                        end: Alignment(1.1 - 2.2 * t, 0.85),
-                        colors: [
-                          const Color(0xFFC9A76A)
-                              .withOpacity(isLight ? 0.24 : 0.18),
-                          AppTheme.accentColor(context)
-                              .withOpacity(isLight ? 0.18 : 0.12),
-                          const Color(0xFF6A5B3D)
-                              .withOpacity(isLight ? 0.18 : 0.14),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _headerShift,
-                builder: (context, _) {
-                  final t = _headerShift.value;
-                  return Container(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: Alignment(0.3 + 0.5 * t, 1.1),
-                        radius: 1.1,
-                        colors: [
-                          AppTheme.accentColor(context).withOpacity(0.16),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: child,
-            ),
-          ],
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: child,
     );
   }
 

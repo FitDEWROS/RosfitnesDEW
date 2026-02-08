@@ -1010,7 +1010,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               const SizedBox(height: 14),
               _UsefulCard(
-                onTap: () => Navigator.pushNamed(context, '/programs'),
+                onTap: () => _showStub(context, 'Раздел в разработке.'),
               ),
             ],
           ),
