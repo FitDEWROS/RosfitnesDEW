@@ -445,6 +445,7 @@ function startPythonBot() {
     startPythonBot();
     startAutoAssign();
     startWeightReminders();
+    startTariffExpiryWarnings();
     startChatCleanup();
     app.listen(PORT, () => {
       console.log(`✅ Server is running on port ${PORT}`);
@@ -1143,7 +1144,15 @@ const AUTO_ASSIGN_HOURS = Number(process.env.AUTO_ASSIGN_HOURS || 12);
 const AUTO_ASSIGN_INTERVAL_MS = Number(process.env.AUTO_ASSIGN_INTERVAL_MS || 10 * 60 * 1000);
 const AUTO_ASSIGN_MIN_AGE_MS = Math.max(0, AUTO_ASSIGN_HOURS) * 60 * 60 * 1000;
 
-const NOTIFICATION_TYPES = ['nutrition_comment', 'program_available', 'exercise_available', 'chat_message', 'curator_assigned', 'weight_reminder'];
+const NOTIFICATION_TYPES = [
+  'nutrition_comment',
+  'program_available',
+  'exercise_available',
+  'chat_message',
+  'curator_assigned',
+  'weight_reminder',
+  'tariff_expiring'
+];
 
 const buildNotificationPreview = (text, limit = 160) => {
   const cleaned = cleanString(text);
@@ -1239,6 +1248,29 @@ const isWithinReminderWindow = (now, offsetMin) => {
   return minute >= WEIGHT_REMINDER_MINUTE && minute < WEIGHT_REMINDER_MINUTE + WEIGHT_REMINDER_WINDOW_MIN;
 };
 
+const formatDateKeyRu = (dateKey) => {
+  if (!dateKey || typeof dateKey !== 'string') return '';
+  const parts = dateKey.slice(0, 10).split('-');
+  if (parts.length !== 3) return '';
+  return `${parts[2]}.${parts[1]}.${parts[0]}`;
+};
+
+const pluralizeDaysRu = (value) => {
+  const mod10 = value % 10;
+  const mod100 = value % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'день';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'дня';
+  return 'дней';
+};
+
+const diffDaysKeys = (fromKey, toKey) => {
+  if (!fromKey || !toKey) return null;
+  const fromDate = new Date(`${fromKey}T00:00:00Z`);
+  const toDate = new Date(`${toKey}T00:00:00Z`);
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) return null;
+  return Math.trunc((fromDate.getTime() - toDate.getTime()) / (24 * 60 * 60 * 1000));
+};
+
 const runWeightReminders = async () => {
   if (weightReminderRunning) return;
   weightReminderRunning = true;
@@ -1285,6 +1317,93 @@ function startWeightReminders() {
   if (WEIGHT_REMINDER_INTERVAL_MS <= 0) return;
   runWeightReminders();
   const timer = setInterval(runWeightReminders, WEIGHT_REMINDER_INTERVAL_MS);
+  if (typeof timer.unref === 'function') timer.unref();
+}
+
+let tariffWarningRunning = false;
+const runTariffExpiryWarnings = async () => {
+  if (tariffWarningRunning) return;
+  tariffWarningRunning = true;
+  try {
+    if (TARIFF_WARNING_DAYS <= 0) return;
+    const now = new Date();
+    const users = await prisma.user.findMany({
+      where: {
+        role: 'user',
+        isCurator: false,
+        tariffExpiresAt: { not: null },
+        tariffName: { in: PAID_TARIFFS }
+      },
+      select: {
+        id: true,
+        tariffExpiresAt: true,
+        tariffReminderFor: true,
+        timezoneOffsetMin: true
+      }
+    });
+
+    for (const user of users) {
+      if (!user.tariffExpiresAt) continue;
+      const offset = Number.isFinite(user.timezoneOffsetMin)
+        ? user.timezoneOffsetMin
+        : 0;
+      const todayKey = toDateKeyWithOffset(now, offset);
+      const expKey = toDateKeyWithOffset(new Date(user.tariffExpiresAt), offset);
+      const daysLeft = diffDaysKeys(expKey, todayKey);
+      if (daysLeft === null || daysLeft < 0 || daysLeft > TARIFF_WARNING_DAYS) {
+        continue;
+      }
+      if (user.tariffReminderFor) {
+        const remindedKey = toDateKeyWithOffset(
+          new Date(user.tariffReminderFor),
+          offset
+        );
+        if (remindedKey === todayKey) continue;
+      }
+
+      const dateLabel = formatDateKeyRu(expKey);
+      const title = daysLeft <= 0
+        ? 'Тариф заканчивается сегодня'
+        : 'Тариф скоро заканчивается';
+      const message = daysLeft <= 0
+        ? `Тариф заканчивается сегодня${dateLabel ? ` (${dateLabel})` : ''}.`
+        : `Тариф заканчивается через ${daysLeft} ${pluralizeDaysRu(daysLeft)}${dateLabel ? ` (${dateLabel})` : ''}.`;
+
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: 'tariff_expiring',
+          title,
+          message,
+          data: {
+            expiresAt: user.tariffExpiresAt,
+            daysLeft
+          }
+        }
+      });
+      await sendPushNotifications([user.id], {
+        type: 'tariff_expiring',
+        title,
+        message,
+        data: { expiresAt: user.tariffExpiresAt, daysLeft }
+      });
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { tariffReminderFor: now }
+      });
+    }
+  } catch (e) {
+    console.error('[tariff-warning] error', e);
+  } finally {
+    tariffWarningRunning = false;
+  }
+};
+
+function startTariffExpiryWarnings() {
+  if (TARIFF_WARNING_INTERVAL_MS <= 0) return;
+  runTariffExpiryWarnings();
+  const timer = setInterval(runTariffExpiryWarnings, TARIFF_WARNING_INTERVAL_MS);
   if (typeof timer.unref === 'function') timer.unref();
 }
 
@@ -1346,6 +1465,8 @@ const WEIGHT_REMINDER_INTERVAL_MS = Number(process.env.WEIGHT_REMINDER_INTERVAL_
 const WEIGHT_REMINDER_HOUR = Number(process.env.WEIGHT_REMINDER_HOUR || 15);
 const WEIGHT_REMINDER_MINUTE = Number(process.env.WEIGHT_REMINDER_MINUTE || 0);
 const WEIGHT_REMINDER_WINDOW_MIN = Number(process.env.WEIGHT_REMINDER_WINDOW_MIN || 15);
+const TARIFF_WARNING_DAYS = Number(process.env.TARIFF_WARNING_DAYS || 3);
+const TARIFF_WARNING_INTERVAL_MS = Number(process.env.TARIFF_WARNING_INTERVAL_MS || 6 * 60 * 60 * 1000);
 const CHAT_RETENTION_DAYS_RAW = Number(process.env.CHAT_RETENTION_DAYS || 20);
 const CHAT_RETENTION_DAYS = Number.isFinite(CHAT_RETENTION_DAYS_RAW) ? CHAT_RETENTION_DAYS_RAW : 20;
 const CHAT_CLEANUP_INTERVAL_MS = Number(process.env.CHAT_CLEANUP_INTERVAL_MS || 6 * 60 * 60 * 1000);

@@ -13,6 +13,7 @@ import '../app.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../services/steps_service.dart';
+import '../utils/timezone.dart';
 
 enum TrainingMode { gym, crossfit }
 
@@ -147,12 +148,23 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _initSteps() async {
+    final reset = await _stepsService.resetForNewDayIfNeeded();
+    await _syncStepsHistory();
     final cached = await _stepsService.loadCachedSteps();
     if (cached != null && mounted) {
       setState(() => _steps = cached);
     }
+    if (reset && mounted) {
+      setState(() => _steps = 0);
+      try {
+        await _api.postSteps(
+          steps: 0,
+          timezoneOffsetMin: getTimezoneOffsetMin(),
+        );
+      } catch (_) {}
+    }
 
-    final offsetMin = DateTime.now().timeZoneOffset.inMinutes;
+    final offsetMin = getTimezoneOffsetMin();
     try {
       final res = await _api.fetchSteps(timezoneOffsetMin: offsetMin);
       if (res['ok'] == true) {
@@ -194,6 +206,37 @@ class _HomeScreenState extends State<HomeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkPendingPayment();
+      _handleStepsRollover();
+    }
+  }
+
+  Future<void> _handleStepsRollover() async {
+    final reset = await _stepsService.resetForNewDayIfNeeded();
+    await _syncStepsHistory();
+    if (!reset) return;
+    if (mounted) {
+      setState(() => _steps = 0);
+    }
+    try {
+      await _api.postSteps(
+        steps: 0,
+        timezoneOffsetMin: getTimezoneOffsetMin(),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _syncStepsHistory() async {
+    final pending = await _stepsService.getPendingHistory();
+    if (pending.isEmpty) return;
+    for (final entry in pending) {
+      try {
+        await _api.postSteps(
+          steps: entry.steps,
+          date: entry.date,
+          timezoneOffsetMin: getTimezoneOffsetMin(),
+        );
+        await _stepsService.markHistorySent(entry.date);
+      } catch (_) {}
     }
   }
 
@@ -258,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       await _api.postSteps(
         steps: steps,
-        timezoneOffsetMin: now.timeZoneOffset.inMinutes,
+        timezoneOffsetMin: getTimezoneOffsetMin(),
       );
     } catch (_) {}
   }

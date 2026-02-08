@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
+import '../utils/timezone.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -19,6 +20,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _name = '\u041c\u0410\u041a\u0421\u0418\u041c';
   String _username = '@maksim_nazarkin';
   String _tariff = '\u0412\u041b\u0410\u0414\u0415\u041b\u0415\u0426';
+  String? _tariffExpiresLabel;
+  bool _tariffExpiresSoon = false;
+  int? _tariffDaysLeft;
   String _userId = '354538028';
 
   final _heightController = TextEditingController();
@@ -38,6 +42,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isGuestUser = false;
   bool _profileEditable = true;
   bool _profileSaving = false;
+
+  static const int _tariffWarningDays = 3;
+  static const String _tariffWarnPrefKey = 'tariff_warn_date';
+  static const String _tariffExpiresPrefKey = 'tariff_expires_at';
 
   @override
   void initState() {
@@ -61,6 +69,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final auth = AuthService();
     final prefs = await SharedPreferences.getInstance();
     final cachedTariff = prefs.getString('tariff_name');
+    final cachedTariffExpires = prefs.getString(_tariffExpiresPrefKey);
     final cachedHeight = prefs.getString('profile_height_cm');
     final cachedWeight = prefs.getString('profile_weight_kg');
     final cachedAge = prefs.getString('profile_age');
@@ -77,6 +86,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final role = profile?['role']?.toString();
     final isCurator = profile?['isCurator'] == true || role == 'curator';
     final isStaff = role == 'admin' || role == 'sadmin' || isCurator;
+    final expiresRaw =
+        (profile?['tariffExpiresAt'] ?? cachedTariffExpires)?.toString();
     final tariffBase = (rawTariff != null && rawTariff.trim().isNotEmpty)
         ? rawTariff.trim()
         : (cachedTariff ?? '');
@@ -84,6 +95,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final displayTariff = _displayTariff(tariffBase, role, isCurator);
     if (tariffBase.isNotEmpty) {
       await prefs.setString('tariff_name', tariffBase);
+    }
+    if (profile != null) {
+      if (expiresRaw != null && expiresRaw.trim().isNotEmpty) {
+        await prefs.setString(_tariffExpiresPrefKey, expiresRaw);
+      } else {
+        await prefs.remove(_tariffExpiresPrefKey);
+      }
     }
     final firstName = (profile?['firstName'] ??
             profile?['first_name'] ??
@@ -99,6 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final heightText = _formatNumber(heightCm);
     final weightText = _formatNumber(weightKg);
     final ageText = _formatNumber(age);
+    final tariffMeta = _buildTariffMeta(expiresRaw, isStaff);
     String resolveField(String fromProfile, String? cachedValue, String current) {
       if (profileLoaded) return fromProfile;
       final cached = (cachedValue ?? '').trim();
@@ -134,6 +153,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _userId = tgId.toString();
       }
       _tariff = displayTariff.toUpperCase();
+      _tariffExpiresLabel = tariffMeta.label;
+      _tariffExpiresSoon = tariffMeta.soon;
+      _tariffDaysLeft = tariffMeta.daysLeft;
       _profileEditable = !isGuest;
       _isGuestUser = isGuest;
       _heightController.text = resolveField(
@@ -152,6 +174,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _ageController.text,
       );
     });
+
+    if (mounted && profileLoaded) {
+      await _maybeShowTariffWarning(
+        prefs,
+        tariffMeta.daysLeft,
+        tariffMeta.soon,
+      );
+    }
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -166,6 +196,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  _TariffMeta _buildTariffMeta(String? raw, bool isStaff) {
+    if (isStaff) return const _TariffMeta();
+    final parsed = _parseDate(raw);
+    if (parsed == null) return const _TariffMeta();
+    final local = parsed.toLocal();
+    final today = DateTime.now();
+    final localDate = DateTime(local.year, local.month, local.day);
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final daysLeft = localDate.difference(todayDate).inDays;
+    final soon = daysLeft >= 0 && daysLeft <= _tariffWarningDays;
+    return _TariffMeta(
+      label: _formatDate(localDate),
+      daysLeft: daysLeft,
+      soon: soon,
+    );
+  }
+
+  DateTime? _parseDate(String? value) {
+    final raw = (value ?? '').trim();
+    if (raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  String _formatDate(DateTime date) {
+    final d = date.day.toString().padLeft(2, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    return '$d.$m.${date.year}';
+  }
+
+  Future<void> _maybeShowTariffWarning(
+    SharedPreferences prefs,
+    int? daysLeft,
+    bool soon,
+  ) async {
+    if (!soon || daysLeft == null) return;
+    final todayKey = _dateKey(DateTime.now());
+    final last = prefs.getString(_tariffWarnPrefKey);
+    if (last == todayKey) return;
+    await prefs.setString(_tariffWarnPrefKey, todayKey);
+    final message = daysLeft <= 0
+        ? '\u0422\u0430\u0440\u0438\u0444 \u0437\u0430\u043a\u0430\u043d\u0447\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0441\u0435\u0433\u043e\u0434\u043d\u044f.'
+        : '\u0422\u0430\u0440\u0438\u0444 \u0437\u0430\u043a\u0430\u043d\u0447\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0447\u0435\u0440\u0435\u0437 $daysLeft ${_pluralDays(daysLeft)}.';
+    if (mounted) {
+      _showStub(context, message);
+    }
+  }
+
+  String _pluralDays(int value) {
+    final mod10 = value % 10;
+    final mod100 = value % 100;
+    if (mod10 == 1 && mod100 != 11) return '\u0434\u0435\u043d\u044c';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return '\u0434\u043d\u044f';
+    }
+    return '\u0434\u043d\u0435\u0439';
+  }
+
+  String _dateKey(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
   }
 
   String _formatNumber(dynamic value) {
@@ -240,7 +334,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         heightCm: height,
         weightKg: weight,
         age: age,
-        timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+        timezoneOffsetMin: getTimezoneOffsetMin(),
       );
       if (res['ok'] != true) {
         _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u044f');
@@ -646,7 +740,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final res = await _api.postWeight(
         weightKg: value,
         weekStart: _currentWeekKey,
-        timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+        timezoneOffsetMin: getTimezoneOffsetMin(),
       );
       if (res['error'] == 'locked') {
         _showStub(
@@ -686,7 +780,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         chestCm: chest,
         hipsCm: hips,
         monthStart: _currentMonthKey,
-        timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+        timezoneOffsetMin: getTimezoneOffsetMin(),
       );
       if (res['error'] == 'locked') {
         _showStub(
@@ -722,7 +816,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       contentType: file.mimeType ?? 'image/jpeg',
       size: bytes.length,
       monthStart: _currentMonthKey,
-      timezoneOffsetMin: DateTime.now().timeZoneOffset.inMinutes,
+      timezoneOffsetMin: getTimezoneOffsetMin(),
     );
     if (upload == null) {
       _showStub(context, '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438');
@@ -919,8 +1013,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _InfoChip(text: 'ID: $_userId'),
                         _InfoChip(text: '\u0422\u0410\u0420\u0418\u0424: $_tariff'),
+                        if (_tariffExpiresLabel != null)
+                          _InfoChip(
+                            text:
+                                '\u041e\u041f\u041b\u0410\u0427\u0415\u041d \u0414\u041e: $_tariffExpiresLabel',
+                            textColor: _tariffExpiresSoon
+                                ? AppTheme.accentStrongColor(context)
+                                : null,
+                            borderColor: _tariffExpiresSoon
+                                ? AppTheme.accentStrongColor(context)
+                                    .withOpacity(0.4)
+                                : null,
+                            backgroundColor: _tariffExpiresSoon
+                                ? AppTheme.accentStrongColor(context)
+                                    .withOpacity(0.14)
+                                : null,
+                          ),
                       ],
                     ),
+                    if (_tariffExpiresSoon && _tariffDaysLeft != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          _tariffDaysLeft == 0
+                              ? '\u0422\u0430\u0440\u0438\u0444 \u0437\u0430\u043a\u0430\u043d\u0447\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0441\u0435\u0433\u043e\u0434\u043d\u044f'
+                              : '\u0422\u0430\u0440\u0438\u0444 \u0437\u0430\u043a\u0430\u043d\u0447\u0438\u0432\u0430\u0435\u0442\u0441\u044f \u0447\u0435\u0440\u0435\u0437 $_tariffDaysLeft ${_pluralDays(_tariffDaysLeft!)}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                color: AppTheme.accentStrongColor(context),
+                              ),
+                        ),
+                      ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -1046,9 +1171,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+class _TariffMeta {
+  final String? label;
+  final int? daysLeft;
+  final bool soon;
+
+  const _TariffMeta({
+    this.label,
+    this.daysLeft,
+    this.soon = false,
+  });
+}
+
 class _InfoChip extends StatelessWidget {
   final String text;
-  const _InfoChip({required this.text});
+  final Color? textColor;
+  final Color? backgroundColor;
+  final Color? borderColor;
+  const _InfoChip({
+    required this.text,
+    this.textColor,
+    this.backgroundColor,
+    this.borderColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1056,15 +1201,18 @@ class _InfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
-        color: Colors.black12,
-        border: Border.all(color: Colors.white10),
+        color: backgroundColor ?? Colors.black12,
+        border: Border.all(color: borderColor ?? Colors.white10),
       ),
       child: Text(
         text,
         style: Theme.of(context)
             .textTheme
             .labelSmall
-            ?.copyWith(letterSpacing: 1.2),
+            ?.copyWith(
+              letterSpacing: 1.2,
+              color: textColor,
+            ),
       ),
     );
   }
