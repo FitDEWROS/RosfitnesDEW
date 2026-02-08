@@ -324,6 +324,15 @@ model PushToken {
   @@index([userId])
 }
 
+model TariffConfig {
+  id              Int      @id @default(autoincrement())
+  code            String   @unique
+  priceRub        Float    @db.DoublePrecision
+  discountPercent Float?   @db.DoublePrecision
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 model BodyMeasurement {
   id        Int      @id @default(autoincrement())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

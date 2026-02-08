@@ -560,6 +560,16 @@ app.get('/api/user', async (req, res) => {
           }
         });
       }
+      if (dbUser?.tariffExpiresAt) {
+        const now = new Date();
+        const clamped = clampTariffExpiresAt(dbUser.tariffExpiresAt, now);
+        if (clamped && clamped.getTime() !== new Date(dbUser.tariffExpiresAt).getTime()) {
+          dbUser = await prisma.user.update({
+            where: { id: dbUser.id },
+            data: { tariffExpiresAt: clamped }
+          });
+        }
+      }
       console.log('[api/user] dbUser:', dbUser);
     } catch (e) {
       console.error('[api/user] prisma findUnique error', e);
@@ -954,6 +964,11 @@ function optionalString(value) {
 const LEGACY_OPTIMAL_TARIFF = 'Выгодный';
 const ALLOWED_TARIFFS = ['Базовый', 'Оптимальный', 'Максимум'];
 const PAID_TARIFFS = Array.from(new Set([...ALLOWED_TARIFFS, LEGACY_OPTIMAL_TARIFF]));
+const TARIFF_LEVEL = {
+  base: 1,
+  optimal: 2,
+  maximum: 3
+};
 
 function normalizeTariffName(value) {
   const cleaned = cleanString(value);
@@ -970,6 +985,17 @@ function isChatTariffName(value) {
 function isTariffActive(expiresAt) {
   if (!expiresAt) return true;
   return new Date(expiresAt) > new Date();
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function clampTariffExpiresAt(expiresAt, now) {
+  if (!expiresAt) return null;
+  if (!Number.isFinite(TARIFF_MAX_DAYS) || TARIFF_MAX_DAYS <= 0) return expiresAt;
+  const maxDate = new Date(now.getTime() + TARIFF_MAX_DAYS * DAY_MS);
+  const current = new Date(expiresAt);
+  if (Number.isNaN(current.getTime())) return expiresAt;
+  return current.getTime() > maxDate.getTime() ? maxDate : current;
 }
 
 function normalizeTariffList(value) {
@@ -1016,6 +1042,15 @@ function normalizeTariffCode(value) {
   return '';
 }
 
+function tariffCodeFromName(value) {
+  const name = normalizeTariffName(value);
+  if (!name) return '';
+  if (name === 'Базовый') return 'base';
+  if (name === 'Оптимальный') return 'optimal';
+  if (name === 'Максимум') return 'maximum';
+  return '';
+}
+
 function tariffNameFromCode(code) {
   return TARIFF_CODE_TO_NAME[code] || '';
 }
@@ -1024,6 +1059,75 @@ const TARIFF_PRICE_RUB = {
   base: Number(process.env.TARIFF_PRICE_BASE_RUB || 1000),
   optimal: Number(process.env.TARIFF_PRICE_OPTIMAL_RUB || 5000),
   maximum: Number(process.env.TARIFF_PRICE_MAX_RUB || 15000)
+};
+
+const TARIFF_DEFAULTS = [
+  { code: 'base', name: 'Базовый', priceRub: TARIFF_PRICE_RUB.base },
+  { code: 'optimal', name: 'Оптимальный', priceRub: TARIFF_PRICE_RUB.optimal },
+  { code: 'maximum', name: 'Максимум', priceRub: TARIFF_PRICE_RUB.maximum }
+];
+
+const clampDiscountPercent = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.max(0, Math.min(num, 90));
+};
+
+const normalizePriceRub = (value, fallback) => {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return fallback;
+  return num;
+};
+
+const applyDiscount = (priceRub, discountPercent) => {
+  const percent = clampDiscountPercent(discountPercent);
+  const discounted = priceRub * (1 - percent / 100);
+  const safe = Number.isFinite(discounted) ? discounted : priceRub;
+  return Math.max(1, Number(safe.toFixed(2)));
+};
+
+const ensureTariffConfigs = async () => {
+  const rows = await prisma.tariffConfig.findMany();
+  const byCode = new Map(rows.map((row) => [row.code, row]));
+  const created = [];
+
+  for (const def of TARIFF_DEFAULTS) {
+    if (!byCode.has(def.code)) {
+      created.push(
+        prisma.tariffConfig.create({
+          data: {
+            code: def.code,
+            priceRub: normalizePriceRub(def.priceRub, 1),
+            discountPercent: 0
+          }
+        })
+      );
+    }
+  }
+
+  if (created.length) {
+    await Promise.all(created);
+  }
+};
+
+const getTariffPricingMap = async () => {
+  await ensureTariffConfigs();
+  const rows = await prisma.tariffConfig.findMany();
+  const map = {};
+  rows.forEach((row) => {
+    const defaults = TARIFF_DEFAULTS.find((item) => item.code === row.code);
+    const fallback = defaults ? defaults.priceRub : 1;
+    const priceRub = normalizePriceRub(row.priceRub, fallback);
+    const discountPercent = clampDiscountPercent(row.discountPercent);
+    map[row.code] = {
+      code: row.code,
+      name: defaults ? defaults.name : tariffNameFromCode(row.code),
+      priceRub,
+      discountPercent,
+      finalPriceRub: applyDiscount(priceRub, discountPercent)
+    };
+  });
+  return map;
 };
 
 function formatRubAmount(value) {
@@ -1037,13 +1141,29 @@ async function applyTariffToUser(userId, tariffCode) {
   if (!tariffName) return null;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { tariffExpiresAt: true }
+    select: { tariffExpiresAt: true, tariffName: true }
   });
   const now = new Date();
-  const base = isTariffActive(user?.tariffExpiresAt)
-    ? new Date(user.tariffExpiresAt)
-    : now;
-  const expiresAt = new Date(base.getTime() + TARIFF_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+  const currentCode = tariffCodeFromName(user?.tariffName);
+  const currentLevel = TARIFF_LEVEL[currentCode] || 0;
+  const targetLevel = TARIFF_LEVEL[tariffCode] || 0;
+  const isUpgrade = isTariffActive(user?.tariffExpiresAt)
+    && currentLevel > 0
+    && targetLevel > currentLevel;
+
+  let expiresAt;
+  if (isUpgrade && user?.tariffExpiresAt) {
+    expiresAt = new Date(user.tariffExpiresAt);
+  } else {
+    const base = isTariffActive(user?.tariffExpiresAt)
+      ? new Date(user.tariffExpiresAt)
+      : now;
+    expiresAt = new Date(base.getTime() + TARIFF_PERIOD_DAYS * DAY_MS);
+  }
+  const clamped = clampTariffExpiresAt(expiresAt, now);
+  if (clamped) {
+    expiresAt = clamped;
+  }
   return prisma.user.update({
     where: { id: userId },
     data: { tariffName, tariffExpiresAt: expiresAt }
@@ -1461,6 +1581,7 @@ const YOOKASSA_SHOP_ID = process.env.YOOKASSA_SHOP_ID || '';
 const YOOKASSA_SECRET_KEY = process.env.YOOKASSA_SECRET_KEY || '';
 const PAYMENT_RETURN_URL = process.env.PAYMENT_RETURN_URL || `${APP_AUTH_SCHEME}://payment`;
 const TARIFF_PERIOD_DAYS = Number(process.env.TARIFF_PERIOD_DAYS || 30);
+const TARIFF_MAX_DAYS = Number(process.env.TARIFF_MAX_DAYS || 365);
 const WEIGHT_REMINDER_INTERVAL_MS = Number(process.env.WEIGHT_REMINDER_INTERVAL_MS || 300000);
 const WEIGHT_REMINDER_HOUR = Number(process.env.WEIGHT_REMINDER_HOUR || 15);
 const WEIGHT_REMINDER_MINUTE = Number(process.env.WEIGHT_REMINDER_MINUTE || 0);
@@ -1918,6 +2039,82 @@ async function requireSuperAdmin(initData) {
 
   return { ok: true, tg_id: parsed.tg_id };
 }
+
+// === Admin: tariffs config ===
+app.get('/api/admin/tariffs', async (req, res) => {
+  try {
+    const initData = req.query?.initData || req.body?.initData;
+    const check = await requireSuperAdmin(initData);
+    if (!check.ok) return res.status(check.status || 403).json({ ok: false, error: check.error });
+
+    const pricing = await getTariffPricingMap();
+    const tariffs = TARIFF_DEFAULTS.map((item) => {
+      const row = pricing[item.code] || {};
+      return {
+        code: item.code,
+        name: item.name,
+        priceRub: row.priceRub ?? item.priceRub,
+        discountPercent: row.discountPercent ?? 0,
+        finalPriceRub: row.finalPriceRub ?? item.priceRub
+      };
+    });
+
+    res.json({ ok: true, tariffs });
+  } catch (e) {
+    console.error('[api/admin/tariffs:get] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
+app.post('/api/admin/tariffs', async (req, res) => {
+  try {
+    const initData = req.body?.initData || req.query?.initData;
+    const check = await requireSuperAdmin(initData);
+    if (!check.ok) return res.status(check.status || 403).json({ ok: false, error: check.error });
+
+    const items = Array.isArray(req.body?.tariffs) ? req.body.tariffs : [];
+    if (!items.length) {
+      return res.status(400).json({ ok: false, error: 'missing_tariffs' });
+    }
+
+    const updates = [];
+    for (const item of items) {
+      const code = normalizeTariffCode(item?.code || item?.tariff);
+      if (!code) continue;
+      const defaults = TARIFF_DEFAULTS.find((row) => row.code === code);
+      const priceRub = normalizePriceRub(item?.priceRub, defaults ? defaults.priceRub : 1);
+      const discountPercent = clampDiscountPercent(item?.discountPercent ?? item?.discount);
+      updates.push(
+        prisma.tariffConfig.upsert({
+          where: { code },
+          update: { priceRub, discountPercent },
+          create: { code, priceRub, discountPercent }
+        })
+      );
+    }
+
+    if (!updates.length) {
+      return res.status(400).json({ ok: false, error: 'invalid_tariffs' });
+    }
+
+    await Promise.all(updates);
+    const pricing = await getTariffPricingMap();
+    const tariffs = TARIFF_DEFAULTS.map((item) => {
+      const row = pricing[item.code] || {};
+      return {
+        code: item.code,
+        name: item.name,
+        priceRub: row.priceRub ?? item.priceRub,
+        discountPercent: row.discountPercent ?? 0,
+        finalPriceRub: row.finalPriceRub ?? item.priceRub
+      };
+    });
+    res.json({ ok: true, tariffs });
+  } catch (e) {
+    console.error('[api/admin/tariffs:post] error', e);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
 
 async function requireStaff(initData) {
   const parsed = parseInitData(initData);
@@ -2385,19 +2582,61 @@ app.post('/api/payments/create', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'invalid_tariff' });
     }
     const tariffName = tariffNameFromCode(tariffCode);
-    const priceRub = TARIFF_PRICE_RUB[tariffCode];
+    const pricing = await getTariffPricingMap();
+    const targetPricing = pricing[tariffCode];
+    let priceRub = targetPricing?.finalPriceRub ?? TARIFF_PRICE_RUB[tariffCode];
     if (!Number.isFinite(priceRub) || priceRub <= 0) {
       return res.status(400).json({ ok: false, error: 'invalid_price' });
     }
 
     const dbUser = await ensureUserRecord(parsed);
+    const now = new Date();
+    const currentCode = tariffCodeFromName(dbUser?.tariffName);
+    const currentLevel = TARIFF_LEVEL[currentCode] || 0;
+    const targetLevel = TARIFF_LEVEL[tariffCode] || 0;
+    const currentActive = isTariffActive(dbUser?.tariffExpiresAt);
+    const dayMs = DAY_MS;
+    let upgradeMeta = null;
+
+    if (currentActive && currentLevel > 0 && targetLevel > 0 && targetLevel < currentLevel) {
+      return res.status(400).json({ ok: false, error: 'tariff_downgrade_not_allowed' });
+    }
+
+    if (currentActive && currentLevel > 0 && targetLevel > currentLevel) {
+      const currentPricing = pricing[currentCode];
+      const currentPrice = currentPricing?.finalPriceRub ?? TARIFF_PRICE_RUB[currentCode];
+      const diff = Number.isFinite(currentPrice) ? priceRub - currentPrice : null;
+      if (diff != null && diff > 0 && dbUser?.tariffExpiresAt) {
+        const effectiveExpires = clampTariffExpiresAt(dbUser.tariffExpiresAt, now);
+        if (!effectiveExpires) {
+          // fallback: treat as full price
+        } else {
+          const remainingMs = new Date(effectiveExpires).getTime() - now.getTime();
+          const remainingDays = Math.ceil(remainingMs / dayMs);
+          if (remainingDays > 0) {
+            const prorated = (diff * remainingDays) / TARIFF_PERIOD_DAYS;
+            priceRub = Math.max(1, Number(prorated.toFixed(2)));
+            upgradeMeta = {
+              upgrade: true,
+              upgradeFrom: currentCode,
+              upgradeTo: tariffCode,
+              upgradeDays: remainingDays
+            };
+          }
+        }
+      }
+    }
     const idempotenceKey = crypto.randomUUID();
     const payload = {
       amount: { value: formatRubAmount(priceRub), currency: 'RUB' },
       capture: true,
       confirmation: { type: 'redirect', return_url: PAYMENT_RETURN_URL },
-      description: `Тариф ${tariffName}`,
-      metadata: { userId: dbUser.id, tariff: tariffCode }
+      description: upgradeMeta ? `Апгрейд тарифа до ${tariffName}` : `Тариф ${tariffName}`,
+      metadata: {
+        userId: dbUser.id,
+        tariff: tariffCode,
+        ...(upgradeMeta || {})
+      }
     };
 
     const payment = await yookassaRequest('POST', '/payments', payload, idempotenceKey);
@@ -2446,6 +2685,19 @@ app.post('/api/payments/confirm', async (req, res) => {
     }
 
     if (payment?.status === 'succeeded') {
+      const currentCode = tariffCodeFromName(dbUser?.tariffName);
+      const currentLevel = TARIFF_LEVEL[currentCode] || 0;
+      const targetLevel = TARIFF_LEVEL[tariffCode] || 0;
+      const currentActive = isTariffActive(dbUser?.tariffExpiresAt);
+      if (currentActive && currentLevel > 0 && targetLevel > 0 && targetLevel < currentLevel) {
+        return res.status(400).json({
+          ok: false,
+          error: 'tariff_downgrade_not_allowed',
+          paid: true,
+          status: payment?.status || 'unknown',
+          tariff: tariffCode
+        });
+      }
       await applyTariffToUser(dbUser.id, tariffCode);
     }
 

@@ -1588,6 +1588,10 @@
           <span class="action-title">Клиенты</span>
           <span class="action-desc">Список клиентов, назначение куратора и контроль питания.</span>
         </button>
+        <button class="action-card" id="openTariffs" type="button" hidden>
+          <span class="action-title">Цены и скидки</span>
+          <span class="action-desc">Управление стоимостью тарифов и скидками (только суперадмин).</span>
+        </button>
       </div>
     </section>
   </div>
@@ -1660,6 +1664,7 @@
       const openPrograms = document.getElementById("openPrograms");
       const openExercises = document.getElementById("openExercises");
       const openClients = document.getElementById("openClients");
+      const openTariffs = document.getElementById("openTariffs");
       const ownerTools = document.getElementById("ownerTools");
       const debugToggle = document.getElementById("debugToggle");
 
@@ -1683,6 +1688,7 @@
         if (openPrograms) openPrograms.disabled = !ok || !canTrain;
         if (openExercises) openExercises.disabled = !ok || !canTrain;
         if (openClients) openClients.disabled = !ok || !canCurate;
+        if (openTariffs) openTariffs.disabled = !ok;
       };
 
 
@@ -1744,6 +1750,12 @@
         });
       }
 
+      if (openTariffs) {
+        openTariffs.addEventListener("click", () => {
+          window.location.href = buildUrl("admin_tariffs.html");
+        });
+      }
+
 
       const checkAccess = async () => {
         if (!apiBase) {
@@ -1783,6 +1795,10 @@
             : "Доступ подтвержден. Доступен раздел клиентов.";
           setAccess(true, message, { canTrain, canCurate });
           if (ownerTools) ownerTools.hidden = !isOwner;
+          if (openTariffs) {
+            openTariffs.hidden = !isOwner;
+            openTariffs.disabled = !isOwner;
+          }
           if (debugToggle) {
             if (!isOwner) {
               debugToggle.checked = false;
