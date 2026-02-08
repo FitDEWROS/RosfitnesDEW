@@ -66,7 +66,7 @@ jobs:
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyPassword=$KEY_PASSWORD
           keyAlias=$ANDROID_KEY_ALIAS
-          storeFile=app/fitdew-release.jks
+          storeFile=fitdew-release.jks
           EOF
 
       - name: Bump build number for release
